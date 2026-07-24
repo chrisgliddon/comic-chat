@@ -19,10 +19,12 @@ CFG=oracle - Win32 Release
 OUTDIR=.\Release
 INTDIR=.\Release
 CPP_CFG=/MT /O2 /D "NDEBUG" /D "ORACLE_HARNESS"
+RSC_CFG=/D "NDEBUG"
 !ELSE
 OUTDIR=.\Debug
 INTDIR=.\Debug
 CPP_CFG=/MTd /Od /D "_DEBUG" /D "ORACLE_HARNESS"
+RSC_CFG=/D "_DEBUG"
 !ENDIF
 
 CPP=cl.exe
@@ -138,14 +140,26 @@ ALL : "$(OUTDIR)\OracleHarness.exe"
 	if not exist "$(ORACLE_INTDIR)/$(NULL)" mkdir "$(ORACLE_INTDIR)"
 
 # ---- Link (console subsystem) ----
-"$(OUTDIR)\OracleHarness.exe" : "$(ORACLE_INTDIR)" icchat.h $(ENGINE_OBJS) $(HARNESS_OBJS)
+# NOTE: chat.res is linked so that CString::LoadString can read the emotion
+# rule strings (ID_RULE_*) from the resource segment. Without it, the rules
+# load as empty strings and GetEmotionsFromString returns no emotions — which
+# the corpus didn't catch (no corpus case exercises a non-zero emotion dump).
+# The --textpose Tier-1 #1 dump mode exposed this gap.
+"$(OUTDIR)\OracleHarness.exe" : "$(ORACLE_INTDIR)" icchat.h $(ENGINE_OBJS) $(HARNESS_OBJS) "$(ORACLE_INTDIR)\chat.res"
 	$(LINK32) /nologo /subsystem:console /FORCE:MULTIPLE /incremental:no /debug \
  /machine:I386 /nodefaultlib:"libc" \
  /LIBPATH:"$(VCTOOLSINSTALLDIR)ATLMFC\lib\spectre\x86" /LIBPATH:"$(ARTLIB)" \
- $(ENGINE_OBJS) $(HARNESS_OBJS) \
+ $(ENGINE_OBJS) $(HARNESS_OBJS) "$(ORACLE_INTDIR)\chat.res" \
  uuid.lib secur32.lib comctl32.lib ole32.lib oleaut32.lib oldnames.lib wsock32.lib \
  shell32.lib winmm.lib imm32.lib winspool.lib comdlg32.lib oledlg.lib wininet.lib zlib.lib \
  /out:"$(OUTDIR)\OracleHarness.exe"
+
+# ---- Resource (chat.rc -> chat.res) ----
+# Compile the resource so LoadString(ID_RULE_*) works in the harness.
+RSC=rc.exe
+RSC_PROJ=/l 0x409 /fo"$(ORACLE_INTDIR)\chat.res" /i "." /i "$(ARTINC)" $(RSC_CFG)
+"$(ORACLE_INTDIR)\chat.res" : chat.rc
+	$(RSC) $(RSC_PROJ) chat.rc
 
 # ---- COM proxy from IDL ----
 icchat_i.c icchat.h : base\icchat.idl
