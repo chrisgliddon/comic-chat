@@ -622,36 +622,7 @@ CBody *CPanel::FetchSpeaker(UINT uID)
 	}
 
 	CAvatarX *av = GetAvatar(uID);
-#ifdef ORACLE_HARNESS
-	{
-		fprintf(stderr, "ORACLE: FetchSpeaker(avID=%d) av=%p m_body=%p class=%d\n",
-			uID, (void*)av, (void*)av->m_body, av->m_body ? av->m_body->GetClass() : -1);
-		if (av->m_body) {
-			if (av->m_body->GetClass() == BC_BODYDOUBLE) {
-				CBodyDouble *bd = (CBodyDouble*)av->m_body;
-				fprintf(stderr, "ORACLE:   m_body DOUBLE faceRec=%p torsoRec=%p\n",
-					(void*)bd->m_faceRec, (void*)bd->m_torsoRec);
-			} else {
-				CBodySingle *bs = (CBodySingle*)av->m_body;
-				fprintf(stderr, "ORACLE:   m_body SINGLE bodyRec=%p\n", (void*)bs->m_bodyRec);
-			}
-		}
-	}
-#endif
 	CBody *bdy = av->m_body->Clone();
-#ifdef ORACLE_HARNESS
-	{
-		fprintf(stderr, "ORACLE:   cloned bdy=%p class=%d\n", (void*)bdy, bdy->GetClass());
-		if (bdy->GetClass() == BC_BODYDOUBLE) {
-			CBodyDouble *bd = (CBodyDouble*)bdy;
-			fprintf(stderr, "ORACLE:   clone DOUBLE faceRec=%p torsoRec=%p\n",
-				(void*)bd->m_faceRec, (void*)bd->m_torsoRec);
-		} else {
-			CBodySingle *bs = (CBodySingle*)bdy;
-			fprintf(stderr, "ORACLE:   clone SINGLE bodyRec=%p\n", (void*)bs->m_bodyRec);
-		}
-	}
-#endif
 	av->RecordBody(bdy);
 
 	m_bodies.AddTail(bdy);
@@ -769,10 +740,6 @@ void CUnitPanel::LayoutAvatars() {
 	int bdyCount = 0, bdyWidth = 0, sumWidth = 0, maxNorm = 0;
 	int nBodies = m_bodies.GetCount();
 
-#ifdef ORACLE_HARNESS
-	fprintf(stderr, "ORACLE: LayoutAvatars ENTER nBodies=%d\n", nBodies);
-	fflush(stderr);
-#endif
 	// for now, lay them out in order
 	ASSERT(nBodies > 0 && nBodies < MAXBDYPERFRAME);
 	int maxBodyHeight = (int)(CUnitPanelPage::m_unitHeight / 1.9);
@@ -790,39 +757,12 @@ void CUnitPanel::LayoutAvatars() {
 
 	m_bodies.RemoveAll();
 
-#ifdef ORACLE_HARNESS
-	fprintf(stderr, "ORACLE: LayoutAvatars speakers=%d, calling OrderAvatars\n", bdyCount);
-	fflush(stderr);
-#endif
 	OrderAvatars(bRecs, bdyCount, placed);
 	ASSERT(bdyCount > 0);
 
-#ifdef ORACLE_HARNESS
-	fprintf(stderr, "ORACLE: LayoutAvatars OrderAvatars done, bdyCount=%d\n", bdyCount);
-	fflush(stderr);
-#endif
 	for (int i = 0; i < bdyCount; i++) {
 		CBody *b = ((CBodyRecord *)(placed[i]))->m_body;
-#ifdef ORACLE_HARNESS
-		{
-			fprintf(stderr, "ORACLE: LayoutAvatars i=%d body=%p class=%d\n", i, (void*)b, b->GetClass());
-			fflush(stderr);
-			if (b->GetClass() == BC_BODYDOUBLE) {
-				CBodyDouble *bd = (CBodyDouble*)b;
-				fprintf(stderr, "ORACLE:   DOUBLE faceRec=%p torsoRec=%p\n", (void*)bd->m_faceRec, (void*)bd->m_torsoRec);
-			} else {
-				CBodySingle *bs = (CBodySingle*)b;
-				fprintf(stderr, "ORACLE:   SINGLE bodyRec=%p\n", (void*)bs->m_bodyRec);
-			}
-			fflush(stderr);
-		}
-#endif
 		b->GetDimInfo(width[i], height[i], normHeight[i], headHeight[i], bitArrowX);
-#ifdef ORACLE_HARNESS
-		fprintf(stderr, "ORACLE: LayoutAvatars i=%d GetDimInfo done (w=%d h=%d normH=%d headH=%d arrowX=%d)\n",
-			i, (int)width[i], (int)height[i], (int)normHeight[i], (int)headHeight[i], (int)bitArrowX);
-		fflush(stderr);
-#endif
 		arrowX[i] = ((double) bitArrowX) / width[i];					// initially store arrows as percentage of width from left
 		maxNorm = max(maxNorm, normHeight[i]);
 	}
@@ -837,11 +777,6 @@ void CUnitPanel::LayoutAvatars() {
 		headHeight[i] = ROUND(scaleRatio * headHeight[i]);
 		bdyWidth += width[i];
 	}
-#ifdef ORACLE_HARNESS
-	fprintf(stderr, "ORACLE: LayoutAvatars scaling done (bdyWidth=%d unitW=%d unitH=%d maxBodyH=%d maxNorm=%d)\n",
-		bdyWidth, (int)CUnitPanelPage::m_unitWidth, (int)CUnitPanelPage::m_unitHeight, maxBodyHeight, maxNorm);
-	fflush(stderr);
-#endif
 
 	sumWidth = bdyWidth + (bdyCount+1) * minMargin;
 
@@ -874,16 +809,7 @@ void CUnitPanel::LayoutAvatars() {
 			bdyWidth += width[i];
 		}
 	} 
-#ifdef ORACLE_HARNESS
-	fprintf(stderr, "ORACLE: LayoutAvatars pre-AdjustArtToCoord (zoomFactor=%g bZoomIn=%d Establishing=%d)\n",
-		zoomFactor, (int)bZoomIn, (int)Establishing());
-	fflush(stderr);
-#endif
 	AdjustArtToCoord(-CUnitPanelPage::m_unitHeight + maxBodyHeight, zoomFactor);
-#ifdef ORACLE_HARNESS
-	fprintf(stderr, "ORACLE: LayoutAvatars AdjustArtToCoord done\n");
-	fflush(stderr);
-#endif
 
 	int margin = (CUnitPanelPage::m_unitWidth - bdyWidth) / (bdyCount+1); // margins also between avs and borders
 	int xOffset = margin;

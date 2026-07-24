@@ -469,12 +469,6 @@ void CAvatarComplex::SetNeutral() {
 	SetTorsoNeutral(body);
 	SetFaceNeutral(body);
 //	body->m_requested = FALSE;
-#ifdef ORACLE_HARNESS
-	fprintf(stderr, "ORACLE: SetNeutral(COMPLEX, avID=%d) body=%p faceRec=%p torsoRec=%p nFaces=%d nTorsos=%d fRec=%p bRec=%p\n",
-		m_avatarID, (void*)body, (void*)body->m_faceRec, (void*)body->m_torsoRec,
-		nFaces, nTorsos, (void*)fRec, (void*)bRec);
-	fflush(stderr);
-#endif
 	UpdateBody(body);
 }
 
