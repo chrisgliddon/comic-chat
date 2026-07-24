@@ -67,23 +67,31 @@
 
 | Date | Run | Purpose | Result |
 |---|---|---|---|
-| 2026-07-24 | 30118295993 | First successful build + glyph capture | Build PASS, glyphs PASS, replay crash (CChatDoc ctor or InitMyDocument) |
+| 2026-07-24 | 30121643636 | Harness build + replay | Build PASS, glyphs PASS, InitMyDocument PASS, avatar loading PASS, crash in CUnitPanelPage::AddLine |
 
 ## Current status
 
-The harness **builds and links** on windows-2022 CI. The `--glyphs` mode works
-and captures real Comic Sans MS font metrics from GDI (lfHeight=-240, tmHeight=345,
-tmAscent=270, tmDescent=75). The replay mode crashes during CChatDoc construction
-or InitMyDocument — likely because the global `CChatApp theApp` constructor calls
-`m_ImageList.Create()` which may need OLE/common-controls init, or because
-`NewDefaultProto(this)` / `GetCurrentBackDropID()` need more setup.
+The harness **builds, links, and runs** on windows-2022 CI. Achievements:
+- `--glyphs` mode captures real Comic Sans MS font metrics (lfHeight=-240, tmHeight=345)
+- `CChatDoc` construction works (with `AfxOleInit` + `AfxEnableControlContainer`)
+- `InitMyDocument` works (with `m_view=NULL` guard in `RefreshPanelN` + pre-set comics title)
+- Avatar loading works (bolo.avb, anna.avb loaded successfully from `.\ComicArt\`)
+- `ProcessLine` → `TallySpeech` works
+
+**Crash site**: Inside `CChatDoc::AddLine` → `CUnitPanelPage::AddLine` (panel.cpp:1058).
+This is the core panelization function that creates balloons, lays out avatars, and
+packs balloons. The crash is likely in `MakeBalloon` → `CBWoodringNormal` ctor →
+`BreakIntoLines` → `GetTextExtent`, or in `LayoutAvatars` / `LayoutBalloons`.
 
 ## Next steps
 
-1. Debug the replay crash: add stderr logging before/after CChatDoc construction
-   and InitMyDocument to pinpoint the crash site. The CI runner doesn't have a
-   debugger, so use diagnostic fprintf(stderr, ...) statements.
-2. Likely fix: call `AfxOleInit()` / `AfxEnableControlContainer()` before
-   constructing CChatDoc, or stub out the CChatApp constructor's ImageList.Create.
-3. Once replay works: verify determinism (two identical runs), freeze goldens,
-   run judge validation §6 (mutate a rule → corpus goes red).
+1. Add logging inside `CUnitPanelPage::AddLine` (panel.cpp:1058) to pinpoint the
+   exact crash line. Key suspects:
+   - `MakeBalloon` → `CBWoodringNormal` constructor → `CLabel` constructor (needs `m_fiWNormal`)
+   - `BreakIntoLines` → `GetClientDC()` → `GetTextExtent` (DC should work, but verify)
+   - `FetchSpeaker` → `GetAvatar(uID)` (avatar loaded, should work)
+   - `LayoutAvatars` → may need `CBody` state that isn't set up
+   - `LayoutBalloons` → `srand(m_seed)` + `randfloat()` + balloon packing
+2. Once the crash is fixed, verify determinism (two identical runs → byte-identical output)
+3. Freeze goldens, run judge validation §6 (mutate a rule → corpus goes red)
+4. Remove diagnostic logging once stable
