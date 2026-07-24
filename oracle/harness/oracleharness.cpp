@@ -525,6 +525,9 @@ static void InitHarness(const char* treeDir) {
     theApp.m_strDefaultArtDir = artDir;
     theApp.m_strAvatarDir = artDir;
     theApp.m_strBaseDir = treeDir;
+#ifdef ORACLE_HARNESS
+    fprintf(stderr, "ORACLE: artDir = %s\n", artDir);
+#endif
 
     // Initialize backdrops
     InitializeBackDrops();
@@ -564,13 +567,25 @@ int main(int argc, char** argv) {
     }
 
     // Determine tree directory (parent of the harness exe, or from inputs)
-    char treeDir[MAX_PATH] = ".";
-    GetModuleFileName(NULL, treeDir, MAX_PATH);
-    char* slash = strrchr(treeDir, '\\');
-    if (slash) *slash = 0;
-    // treeDir is now the Release/ dir; go up one to the tree root
-    slash = strrchr(treeDir, '\\');
-    if (slash) *slash = 0;
+    // Default: ".." relative to CWD (CI runs from v2.5-beta-1-modern\)
+    char treeDir[MAX_PATH] = "..";
+    // Also try exe-relative path as fallback
+    char exeDir[MAX_PATH];
+    GetModuleFileName(NULL, exeDir, MAX_PATH);
+    char* slash = strrchr(exeDir, '\\');
+    if (slash) {
+        *slash = 0;  // exeDir = Release/
+        slash = strrchr(exeDir, '\\');
+        if (slash) {
+            *slash = 0;  // exeDir = v2.5-beta-1-modern/
+            // If the directory exists, use it; otherwise keep ".."
+            char testPath[MAX_PATH];
+            snprintf(testPath, MAX_PATH, "%s\\ComicArt", exeDir);
+            if (GetFileAttributes(testPath) != (DWORD)-1) {
+                strcpy(treeDir, exeDir);
+            }
+        }
+    }
 
     // Glyph capture mode
     if (strcmp(argv[1], "--glyphs") == 0) {
