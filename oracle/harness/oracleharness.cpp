@@ -47,8 +47,8 @@
 // base/icchat.idl. The harness doesn't use OLE automation, but chat.obj
 // and bindauto.obj reference these globals.
 #include "icchat.h"
-GUID LIBID_iCChatLib = GUID_NULL;
-IID IID_ICChatAutomation = GUID_NULL;
+EXTERN_C const IID LIBID_iCChatLib = GUID_NULL;
+EXTERN_C const IID IID_ICChatAutomation = GUID_NULL;
 
 // We link against the real engine objs which define these:
 extern CChatApp theApp;
