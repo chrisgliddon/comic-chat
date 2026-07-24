@@ -37,7 +37,7 @@ ORACLE=..\oracle\harness
 # We use a separate intdir to avoid clashing with chat.mak's objs.
 ORACLE_INTDIR=$(INTDIR)\oracle
 
-CPP_PROJ=/nologo $(CPP_CFG) /W3 /GX /Zi /D "WIN32" /D "_CONSOLE" /D "_MBCS" \
+CPP_PROJ=/nologo $(CPP_CFG) /W3 /GX /Zi /Zc:forScope- /Zc:strictStrings- /D "WIN32" /D "_CONSOLE" /D "_MBCS" \
  /I "." /I "$(ARTINC)" /I "$(ORACLE)" /Fo"$(ORACLE_INTDIR)\\" /Fd"$(ORACLE_INTDIR)\\" /c
 
 # Engine files (subset that the harness links -- the logic tier files)
