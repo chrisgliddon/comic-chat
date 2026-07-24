@@ -67,12 +67,10 @@ ENGINE_OBJS= \
 	"$(ORACLE_INTDIR)\ccomp.obj" \
 	"$(ORACLE_INTDIR)\chicdial.obj" \
 	"$(ORACLE_INTDIR)\coolbar.obj" \
-	"$(ORACLE_INTDIR)\dpiscale.obj" \
 	"$(ORACLE_INTDIR)\intl.obj" \
 	"$(ORACLE_INTDIR)\jis2sjis.obj" \
 	"$(ORACLE_INTDIR)\sjis2jis.obj" \
 	"$(ORACLE_INTDIR)\pageview.obj" \
-	"$(ORACLE_INTDIR)\chatprot.obj" \
 	"$(ORACLE_INTDIR)\protsupp.obj" \
 	"$(ORACLE_INTDIR)\ircsock.obj" \
 	"$(ORACLE_INTDIR)\ircproto.obj" \
@@ -155,6 +153,9 @@ ALL : "$(OUTDIR)\OracleHarness.exe"
 # ---- COM proxy from IDL ----
 icchat_i.c icchat.h : base\icchat.idl
 	midl.exe /nologo /I "$(ARTINC)" /h icchat.h /iid icchat_i.c base\icchat.idl
+
+"$(ORACLE_INTDIR)\icchat_i.obj" : icchat_i.c icchat.h
+	$(CPP) $(CPP_PROJ) icchat_i.c
 
 # ---- Oracle harness sources ----
 "$(ORACLE_INTDIR)\oracleharness.obj" : "$(ORACLE)\oracleharness.cpp"
