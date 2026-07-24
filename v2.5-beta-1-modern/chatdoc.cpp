@@ -37,6 +37,10 @@
 #include "tabbar.h"	// for tabbar
 #include "protsupp.h"
 
+#ifdef ORACLE_HARNESS
+#include "oracleseed.h"
+#endif
+
 #include <tchar.h>
 #include <mbstring.h>
 
@@ -181,7 +185,6 @@ CChatDoc::CChatDoc()
 	m_bNewContent = FALSE;
 	m_seed = rand();
 #ifdef ORACLE_HARNESS
-	#include "oracleseed.h"
 	OracleRecordSeed("CChatDoc.ctor.m_seed", (long)m_seed);
 #endif
 	m_client = NULL;
@@ -209,7 +212,6 @@ CChatDoc::~CChatDoc()
 void CChatDoc::InitMyDocument() {
 	srand(m_seed);
 #ifdef ORACLE_HARNESS
-	#include "oracleseed.h"
 	OracleRecordSeed("CChatDoc.InitMyDocument.srand", (long)m_seed);
 #endif
 	// Set up art dir to be default (unless overridden later)

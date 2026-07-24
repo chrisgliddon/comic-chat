@@ -21,6 +21,10 @@
 #include <stdlib.h>
 #include <math.h>
 
+#ifdef ORACLE_HARNESS
+#include "oracleseed.h"
+#endif
+
 extern CChatApp theApp;
 extern BOOL		g_bNewedPanel;
 extern CBody	*GetBodyCamBody();
@@ -555,7 +559,6 @@ CPanel::CPanel()
 	// same way.
 	m_seed = rand();
 #ifdef ORACLE_HARNESS
-	#include "oracleseed.h"
 	OracleRecordSeed("CPanel.ctor.m_seed", (long)m_seed);
 #endif
 	m_hasBorder = TRUE;
@@ -870,7 +873,6 @@ BOOL CUnitPanel::LayoutBalloons(char **pszRest, CDWordArray **pprgdwRestFormatti
 
 	srand(m_seed);	// always layout panel the same random way
 #ifdef ORACLE_HARNESS
-	#include "oracleseed.h"
 	OracleRecordSeed("CUnitPanel.LayoutBalloons.srand", (long)m_seed);
 #endif
 

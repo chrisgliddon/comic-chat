@@ -15,6 +15,10 @@
 #include "chatdoc.h"
 #include <io.h>				// for avfile scan
 
+#ifdef ORACLE_HARNESS
+#include "oracleseed.h"
+#endif
+
 extern CChatApp theApp;
 
 void RefreshBodyCam(CAvatarX *newAv = NULL);
@@ -973,7 +977,6 @@ double randfloat();
 void CAvatarComplex::SetSequential(void *p, int n) {
 	UINT seed;
 #ifdef ORACLE_HARNESS
-	#include "oracleseed.h"
 	seed = OracleTickSeed((UINT)GetTickCount());
 #else
 	seed = (UINT) GetTickCount();
