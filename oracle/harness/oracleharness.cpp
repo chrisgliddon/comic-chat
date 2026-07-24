@@ -464,8 +464,16 @@ static ojson::Value DumpAvatarState(USHORT avatarID) {
 // Initialize the harness environment (fonts, emotion rules, avatars, DC)
 // ---------------------------------------------------------------------------
 static void InitHarness(const char* treeDir) {
+    fprintf(stderr, "ORACLE: InitHarness start\n");
+    
     // MFC requires AfxWinInit for basic functionality
     AfxWinInit(GetModuleHandle(NULL), NULL, ::GetCommandLine(), SW_HIDE);
+    
+    // OLE/control container init (normally in CChatApp::InitInstance)
+    AfxOleInit();
+    AfxEnableControlContainer();
+    
+    fprintf(stderr, "ORACLE: AfxWinInit + OLE init done\n");
 
     // Set up the global DC: desktop CClientDC with MM_TWIPS
     // (same as pageview.cpp:994-998)
@@ -474,6 +482,7 @@ static void InitHarness(const char* treeDir) {
         dc->SetMapMode(MM_TWIPS);
         cui.m_pvClientDC = dc;
     }
+    fprintf(stderr, "ORACLE: DC created\n");
 
     // Initialize fonts directly (replicates chat.cpp:495 + InitializeComicsFonts)
     // Pin: Comic Sans MS, 12pt -> twips
@@ -503,6 +512,7 @@ static void InitHarness(const char* treeDir) {
 
     // Create the panel fonts
     CUnitPanelPage::SetFonts(theApp.m_comicsFont, theApp.m_comicsColor);
+    fprintf(stderr, "ORACLE: fonts set\n");
 
     // Set art directory to the tree's ComicArt folder
     char artDir[MAX_PATH];
@@ -513,13 +523,16 @@ static void InitHarness(const char* treeDir) {
 
     // Initialize backdrops
     InitializeBackDrops();
+    fprintf(stderr, "ORACLE: backdrops initialized\n");
 
     // Load emotion rules (textpose.cpp)
     LoadEmotionStrings();
     InitializeEmotionRules();
+    fprintf(stderr, "ORACLE: emotion rules initialized\n");
 
     // Initialize avatar registry
     InitializeAvatars();
+    fprintf(stderr, "ORACLE: avatars initialized\n");
 }
 
 // ---------------------------------------------------------------------------
@@ -615,6 +628,7 @@ int main(int argc, char** argv) {
 
     // Initialize the harness environment
     InitHarness(treeDir);
+    fprintf(stderr, "ORACLE: InitHarness complete\n");
 
     // Pin panel columns
     CUnitPanelPage::SetUnitPanelsPerRow(panelsWide);
@@ -623,21 +637,24 @@ int main(int argc, char** argv) {
 
     // Activate the oracle determinism layer
     OracleSeedActivate(seed, tickBase);
+    fprintf(stderr, "ORACLE: seed activated (seed=%u, tickBase=%u)\n", seed, tickBase);
 
     // Load avatars from the inputs
     ojson::Value* avatars = inputs.Find("avatars");
-    // Map: avatar name -> avatarID
-    // We load each avatar and store the ID
 
+    fprintf(stderr, "ORACLE: creating CChatDoc...\n");
     // Create the document
     COracleChatDoc* doc = new COracleChatDoc();
+    fprintf(stderr, "ORACLE: CChatDoc created\n");
     cui.m_pvChatDoc = doc;  // GetChatDoc() macro will find it
 
     // Set comics view mode
     doc->m_bComicView = TRUE;
 
+    fprintf(stderr, "ORACLE: calling InitMyDocument...\n");
     // Initialize the document (creates first page, seeds the PRNG)
     doc->InitMyDocument();
+    fprintf(stderr, "ORACLE: InitMyDocument complete\n");
 
     // Load avatars and assign to speakers
     // inputs.avatars: array of {name, speakerId}
