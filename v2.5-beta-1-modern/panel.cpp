@@ -819,7 +819,8 @@ void CUnitPanel::LayoutAvatars() {
 #endif
 		b->GetDimInfo(width[i], height[i], normHeight[i], headHeight[i], bitArrowX);
 #ifdef ORACLE_HARNESS
-		fprintf(stderr, "ORACLE: LayoutAvatars i=%d GetDimInfo done\n", i);
+		fprintf(stderr, "ORACLE: LayoutAvatars i=%d GetDimInfo done (w=%d h=%d normH=%d headH=%d arrowX=%d)\n",
+			i, (int)width[i], (int)height[i], (int)normHeight[i], (int)headHeight[i], (int)bitArrowX);
 		fflush(stderr);
 #endif
 		arrowX[i] = ((double) bitArrowX) / width[i];					// initially store arrows as percentage of width from left
@@ -836,6 +837,11 @@ void CUnitPanel::LayoutAvatars() {
 		headHeight[i] = ROUND(scaleRatio * headHeight[i]);
 		bdyWidth += width[i];
 	}
+#ifdef ORACLE_HARNESS
+	fprintf(stderr, "ORACLE: LayoutAvatars scaling done (bdyWidth=%d unitW=%d unitH=%d maxBodyH=%d maxNorm=%d)\n",
+		bdyWidth, (int)CUnitPanelPage::m_unitWidth, (int)CUnitPanelPage::m_unitHeight, maxBodyHeight, maxNorm);
+	fflush(stderr);
+#endif
 
 	sumWidth = bdyWidth + (bdyCount+1) * minMargin;
 
@@ -868,7 +874,16 @@ void CUnitPanel::LayoutAvatars() {
 			bdyWidth += width[i];
 		}
 	} 
+#ifdef ORACLE_HARNESS
+	fprintf(stderr, "ORACLE: LayoutAvatars pre-AdjustArtToCoord (zoomFactor=%g bZoomIn=%d Establishing=%d)\n",
+		zoomFactor, (int)bZoomIn, (int)Establishing());
+	fflush(stderr);
+#endif
 	AdjustArtToCoord(-CUnitPanelPage::m_unitHeight + maxBodyHeight, zoomFactor);
+#ifdef ORACLE_HARNESS
+	fprintf(stderr, "ORACLE: LayoutAvatars AdjustArtToCoord done\n");
+	fflush(stderr);
+#endif
 
 	int margin = (CUnitPanelPage::m_unitWidth - bdyWidth) / (bdyCount+1); // margins also between avs and borders
 	int xOffset = margin;
