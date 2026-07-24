@@ -22,7 +22,8 @@ try {
 }
 
 function loadSchema(name) {
-  return JSON.parse(fs.readFileSync(path.join(__dirname, name), "utf8"));
+  const schemaDir = path.join(__dirname, "..", "schema");
+  return JSON.parse(fs.readFileSync(path.join(schemaDir, name), "utf8"));
 }
 
 function validateWithAjv(schemaName, file, data) {
