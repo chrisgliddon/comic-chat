@@ -139,15 +139,13 @@ ALL : "$(OUTDIR)\OracleHarness.exe"
 
 # ---- Link (console subsystem) ----
 "$(OUTDIR)\OracleHarness.exe" : "$(ORACLE_INTDIR)" icchat.h $(ENGINE_OBJS) $(HARNESS_OBJS)
-	$(LINK32) @<<
-/nologo /subsystem:console /FORCE:MULTIPLE /incremental:no /debug \
+	$(LINK32) /nologo /subsystem:console /FORCE:MULTIPLE /incremental:no /debug \
  /machine:I386 /nodefaultlib:"libc" \
  /LIBPATH:"$(VCTOOLSINSTALLDIR)ATLMFC\lib\spectre\x86" /LIBPATH:"$(ARTLIB)" \
  $(ENGINE_OBJS) $(HARNESS_OBJS) \
  uuid.lib secur32.lib comctl32.lib ole32.lib oleaut32.lib oldnames.lib wsock32.lib \
  shell32.lib winmm.lib imm32.lib winspool.lib comdlg32.lib oledlg.lib wininet.lib zlib.lib \
  /out:"$(OUTDIR)\OracleHarness.exe"
-<<
 
 # ---- COM proxy from IDL ----
 icchat_i.c icchat.h : base\icchat.idl
