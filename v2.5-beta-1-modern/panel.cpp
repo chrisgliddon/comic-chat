@@ -554,6 +554,10 @@ CPanel::CPanel()
 	// choose a set seed so that panel always refreshes the
 	// same way.
 	m_seed = rand();
+#ifdef ORACLE_HARNESS
+	#include "../oracle/harness/oracleseed.h"
+	OracleRecordSeed("CPanel.ctor.m_seed", (long)m_seed);
+#endif
 	m_hasBorder = TRUE;
 	m_backDrop.m_backID = GetChatDoc() ? GetChatDoc()->GetBackDropID() : 0;
 }
@@ -865,6 +869,10 @@ BOOL CUnitPanel::LayoutBalloons(char **pszRest, CDWordArray **pprgdwRestFormatti
 	POSITION	pos = m_elements.GetHeadPosition();
 
 	srand(m_seed);	// always layout panel the same random way
+#ifdef ORACLE_HARNESS
+	#include "../oracle/harness/oracleseed.h"
+	OracleRecordSeed("CUnitPanel.LayoutBalloons.srand", (long)m_seed);
+#endif
 
 	while (pos) {	// stash in an array for easy access
 		CBalloon *nextBalloon = (CBalloon *) m_elements.GetNext(pos);

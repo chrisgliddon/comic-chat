@@ -971,7 +971,13 @@ BOOL NullAvatar() {
 double randfloat();
 
 void CAvatarComplex::SetSequential(void *p, int n) {
-	UINT seed = (UINT) GetTickCount();
+	UINT seed;
+#ifdef ORACLE_HARNESS
+	#include "../oracle/harness/oracleseed.h"
+	seed = OracleTickSeed((UINT)GetTickCount());
+#else
+	seed = (UINT) GetTickCount();
+#endif
 	srand(seed);
 //	randfloat();  // first randfloat doesn't seem to be random.  Why?
 	int head = (int)(randfloat() * nFaces);
