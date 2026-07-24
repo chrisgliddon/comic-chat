@@ -544,8 +544,15 @@ static void InitHarness(const char* treeDir) {
 }
 
 // ---------------------------------------------------------------------------
-// Load an avatar by name and return its ID
+// Load an avatar by name and return its ID.
+// In the real app, GetAvatar3(avName, pui) associates each avatar with a
+// CUserInfo (so EvalPair/AddTalkTos can deref av->m_userInfo->m_udi.m_talkTos).
+// The harness uses LoadAvatar directly, so we must synthesize a CUserInfo per
+// avatar and attach it. The userInfoList keeps the CUserInfo objects alive
+// for the document's lifetime.
 // ---------------------------------------------------------------------------
+static CPtrList userInfoList;
+
 static USHORT LoadAvatarByName(const char* name) {
     fprintf(stderr, "ORACLE: loading avatar '%s'\n", name);
     fflush(stderr);
@@ -560,7 +567,17 @@ static USHORT LoadAvatarByName(const char* name) {
         fprintf(stderr, "ORACLE: failed to load avatar '%s'\n", name);
         return 0;
     }
-    fprintf(stderr, "ORACLE: avatar '%s' loaded as ID %d\n", name, av->m_avatarID);
+    // Synthesize a CUserInfo so panel ordering (EvalPair/AddTalkTos) can
+    // dereference av->m_userInfo->m_udi.m_talkTos without crashing. The talkTos
+    // list stays empty (no talk-to targets), which is the correct neutral
+    // state for the corpus (messages with talk-tos are a separate case).
+    CUserInfo* pui = new CUserInfo();
+    pui->SetAvatarID(av->m_avatarID);
+    pui->SetName(name);
+    av->m_userInfo = pui;
+    userInfoList.AddTail(pui);
+    fprintf(stderr, "ORACLE: avatar '%s' loaded as ID %d (pui=%p)\n",
+            name, av->m_avatarID, (void*)pui);
     return av->m_avatarID;
 }
 
