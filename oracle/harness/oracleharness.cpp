@@ -278,6 +278,119 @@ static ojson::Value CaptureTextpose() {
 }
 
 // ---------------------------------------------------------------------------
+// CaptureAvatario — Tier-1 #3 dump: emotion quantization round-trip
+// (EmotionToBytes -> BytesToEmotion, avatario.cpp:69-87). Runs a fixed
+// probe battery of (emotion, intensity) pairs through the wire encode/decode
+// and emits the round-trip data so the TS avatario port has a real oracle
+// golden to diff against.
+//
+// The battery covers every emFloats[] entry at intensity 1.0 (round-trip
+// check), an out-of-range emotion (NEUTRAL fallback), and a sweep of
+// intensities (truncation behavior). Each entry has:
+//   - input.{emotion, intensity}     — the source floats (%.17g)
+//   - emVal                          — the table index picked by EmotionToBytes
+//   - encoded.{emotion, intensity}   — the wire bytes (IndexToByte outputs)
+//   - decoded.{emotion, intensity}   — the floats recovered by BytesToEmotion
+// ---------------------------------------------------------------------------
+static ojson::Value CaptureAvatario() {
+    // Probe battery. KEEP IN SYNC with port/src/engine/avatario_dump.ts
+    // PROBES[] — both must contain the same inputs in the same order so
+    // the TS golden test can diff the dump byte-for-byte.
+    struct Probe { double emotion; double intensity; };
+    Probe probes[] = {
+        // 17 known emotions at intensity 1.0 (cover the entire emFloats[] table).
+        { 0.0, 1.0 },                       // NEUTRAL via 0.0
+        { EM_HAPPY, 1.0 },                  // HAPPY
+        { EM_COY, 1.0 },                    // COY
+        { EM_BORED, 1.0 },                  // BORED
+        { EM_SCARED, 1.0 },                 // SCARED
+        { EM_SAD, 1.0 },                    // SAD
+        { EM_ANGRY, 1.0 },                  // ANGRY
+        { EM_SHOUT, 1.0 },                  // SHOUT
+        { EM_LAUGH, 1.0 },                  // LAUGH
+        { EM_NEUTRAL, 1.0 },                // NEUTRAL via EM_NEUTRAL
+        { EM_WAVE, 1.0 },                   // WAVE
+        { EM_POINTOTHER, 1.0 },             // POINTOTHER
+        { EM_POINTSELF, 1.0 },              // POINTSELF
+        { EM_DOUBLEPOINT, 1.0 },            // DOUBLEPOINT
+        { EM_SHRUG, 1.0 },                  // SHRUG
+        { EM_3QRWALK, 1.0 },                // 3QRWALK
+        { EM_SIDEWALK, 1.0 },               // SIDEWALK
+        { EM_3QFWALK, 1.0 },                // 3QFWALK
+        // Out-of-range emotion -> emVal stays at 9 (NEUTRAL).
+        { 999.0, 1.0 },                     // out-of-range -> NEUTRAL
+        // Intensity scaling
+        { EM_HAPPY, 0.0 },                  // intensity=0 -> 0 byte
+        { EM_HAPPY, 0.3 },                  // intensity=0.3 -> 3 byte
+        { EM_HAPPY, 0.5 },                  // intensity=0.5 -> 5 byte
+        { EM_HAPPY, 1.5 },                  // intensity=1.5 -> 15 byte
+    };
+    int nProbes = sizeof(probes) / sizeof(probes[0]);
+
+    ojson::Value root = ojson::Value::Obj();
+
+    // Dump the emFloats[] table itself for oracle comparison.
+    int nFloats = sizeof(emFloats) / sizeof(float);
+    ojson::Value emFloatsArr = ojson::Value::Arr();
+    for (int i = 0; i < nFloats; i++) {
+        char buf[64];
+        sprintf(buf, "%.17g", (double)emFloats[i]);
+        emFloatsArr.Push(ojson::Value::Str(buf));
+    }
+    root.Set("emFloats", emFloatsArr);
+
+    // Run the probe battery through EmotionToBytes -> BytesToEmotion.
+    ojson::Value probesArr = ojson::Value::Arr();
+    for (int i = 0; i < nProbes; i++) {
+        CEmotion emIn((float)probes[i].intensity, (float)probes[i].emotion);
+        BYTE eByte, iByte;
+        EmotionToBytes(emIn, eByte, iByte);
+
+        // Decode back: pass the RAW table indices (ByteToIndex reverses
+        // the wire IndexToByte step the encoder applied).
+        CEmotion emOut;
+        BytesToEmotion(emOut, ByteToIndex(eByte), ByteToIndex(iByte));
+
+        // Compute emVal the encoder picked — independent re-derivation for
+        // the dump's sanity field (matches the port's dumpAvatarioProbes).
+        int emVal = 9; // default on no match
+        for (int j = 1; j < nFloats; j++) {
+            if (emFloats[j] == emIn.m_emotion) {
+                emVal = j;
+                break;
+            }
+        }
+
+        ojson::Value entry = ojson::Value::Obj();
+        // input
+        ojson::Value inObj = ojson::Value::Obj();
+        char buf[64];
+        sprintf(buf, "%.17g", (double)probes[i].emotion);
+        inObj.Set("emotion", ojson::Value::Str(buf));
+        sprintf(buf, "%.17g", (double)probes[i].intensity);
+        inObj.Set("intensity", ojson::Value::Str(buf));
+        entry.Set("input", inObj);
+        entry.Set("emVal", ojson::Value::Int(emVal));
+        // encoded (wire bytes)
+        ojson::Value encObj = ojson::Value::Obj();
+        encObj.Set("emotion", ojson::Value::Int((long)eByte));
+        encObj.Set("intensity", ojson::Value::Int((long)iByte));
+        entry.Set("encoded", encObj);
+        // decoded (back to floats)
+        ojson::Value decObj = ojson::Value::Obj();
+        sprintf(buf, "%.17g", (double)emOut.m_emotion);
+        decObj.Set("emotion", ojson::Value::Str(buf));
+        sprintf(buf, "%.17g", (double)emOut.m_intensity);
+        decObj.Set("intensity", ojson::Value::Str(buf));
+        entry.Set("decoded", decObj);
+
+        probesArr.Push(entry);
+    }
+    root.Set("probes", probesArr);
+    return root;
+}
+
+// ---------------------------------------------------------------------------
 // Dump a SRECT as a JSON object
 // ---------------------------------------------------------------------------
 static ojson::Value DumpSRECT(const SRECT& r) {
@@ -747,6 +860,24 @@ int main(int argc, char** argv) {
         fwrite(out.c_str(), 1, out.size(), f);
         fclose(f);
         printf("textpose written to %s\n", argv[2]);
+        return 0;
+    }
+
+    // Avatario capture mode (Tier-1 #3 dump: emotion quantization round-trip).
+    // Pure-logic, no DC or avatar loading needed — just the avatario module.
+    if (strcmp(argv[1], "--avatario") == 0) {
+        if (argc < 3) {
+            fprintf(stderr, "usage: OracleHarness.exe --avatario <avatario.json>\n");
+            return 2;
+        }
+        AfxWinInit(GetModuleHandle(NULL), NULL, ::GetCommandLine(), SW_HIDE);
+        ojson::Value av = CaptureAvatario();
+        FILE* f = fopen(argv[2], "wb");
+        if (!f) { fprintf(stderr, "cannot write %s\n", argv[2]); return 1; }
+        std::string out = av.EmitToString();
+        fwrite(out.c_str(), 1, out.size(), f);
+        fclose(f);
+        printf("avatario written to %s\n", argv[2]);
         return 0;
     }
 

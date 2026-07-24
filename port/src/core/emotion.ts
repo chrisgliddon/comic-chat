@@ -38,11 +38,24 @@ export const EM_ANGRY = Math.fround((5 * 2 * PI_V25) / 8);
 export const EM_SHOUT = Math.fround((6 * 2 * PI_V25) / 8);
 export const EM_LAUGH = Math.fround((7 * 2 * PI_V25) / 8);
 
+// NEUTRAL is the special "no emotion" value. C: `((float)0.0)` (avatar.h:264).
+// The avatario `emFloats[9]` entry is EM_NEUTRAL — distinct from emFloats[0]
+// which is also 0.0; the table is built that way for index-0 padding reasons.
+// Both are bit-identical to 0.0 so the encoder treats them as the same.
+export const EM_NEUTRAL = 0.0;
+
 // Special (non-directional) emotions — sentinel floats. These are integer-
-// valued so no float-cast precision issue.
+// valued so no float-cast precision issue. All eight are used in the avatario
+// `emFloats[]` table (avatario.cpp:45-64) and in `GetBodyFromEmotion`'s
+// nearest-neighbor selection.
 export const EM_WAVE = 1001.0;
 export const EM_POINTOTHER = 1002.0;
 export const EM_POINTSELF = 1003.0;
+export const EM_DOUBLEPOINT = 1004.0;
+export const EM_SHRUG = 1005.0;
+export const EM_3QRWALK = 1006.0;
+export const EM_SIDEWALK = 1007.0;
+export const EM_3QFWALK = 1008.0;
 
 // CEmotionOpts limits (avatar.h:23-25)
 export const MAXEMOPTS = 10;

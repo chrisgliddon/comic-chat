@@ -83,6 +83,26 @@ jobs:
             echo "No textpose golden yet - freeze by committing as textpose.golden.json"
           )
 
+      - name: Capture avatario (Tier-1 #3 dump: emotion quantization round-trip)
+        shell: cmd
+        run: |
+          if not exist oracle\avatario mkdir oracle\avatario
+          cd v2.5-beta-1-modern
+          Release\OracleHarness.exe --avatario ..\oracle\avatario\avatario.json
+          if errorlevel 1 exit /b 1
+          echo "Avatario captured."
+          type ..\oracle\avatario\avatario.json
+          if exist ..\oracle\avatario\avatario.golden.json (
+            node ..\oracle\scripts\diff-dumps.mjs ..\oracle\avatario\avatario.golden.json ..\oracle\avatario\avatario.json
+            if errorlevel 1 (
+              echo AVATARIO GOLDEN MISMATCH
+              exit /b 1
+            )
+            echo "Avatario golden match."
+          ) else (
+            echo "No avatario golden yet - freeze by committing as avatario.golden.json"
+          )
+
       - name: Judge validation - determinism (two identical runs)
         shell: cmd
         run: |
@@ -142,6 +162,8 @@ jobs:
             oracle/glyphs/glyphs.json
             oracle/textpose/textpose.json
             oracle/textpose/textpose.golden.json
+            oracle/avatario/avatario.json
+            oracle/avatario/avatario.golden.json
             oracle/corpus/*/expected.json
             oracle/corpus/*/actual.json
             oracle/corpus/*/run_a.json
