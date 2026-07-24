@@ -547,11 +547,20 @@ static void InitHarness(const char* treeDir) {
 // Load an avatar by name and return its ID
 // ---------------------------------------------------------------------------
 static USHORT LoadAvatarByName(const char* name) {
-    CAvatarX* av = LoadAvatar(name);
+    fprintf(stderr, "ORACLE: loading avatar '%s'\n", name);
+    fflush(stderr);
+    CAvatarX* av = NULL;
+    __try {
+        av = LoadAvatar(name);
+    } __except(EXCEPTION_EXECUTE_HANDLER) {
+        fprintf(stderr, "ORACLE: SEH exception loading avatar '%s'\n", name);
+        return 0;
+    }
     if (!av) {
         fprintf(stderr, "ORACLE: failed to load avatar '%s'\n", name);
         return 0;
     }
+    fprintf(stderr, "ORACLE: avatar '%s' loaded as ID %d\n", name, av->m_avatarID);
     return av->m_avatarID;
 }
 
