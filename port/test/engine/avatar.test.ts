@@ -95,7 +95,10 @@ describe("CAvatarSimple::GetBodyFromEmotion(CEmotion &)", () => {
     const av = mkSimple(SIMPLE_BREC);
     const body = av.GetBodyFromEmotion(new CEmotion(0.5, EM_SAD));
     expect(body.m_bodyIndex).toBe(2); // SAD
-    expect(av.m_lastBody).toBe(2);
+    // m_lastBody is NOT updated by GetBodyFromEmotion; the consumer's
+    // UpdateBody -> RecordBody path does that. The dump's fresh-avatar
+    // pattern never calls UpdateBody, so m_lastBody stays at -1.
+    expect(av.m_lastBody).toBe(-1);
   });
 
   it("exact match wins over higher-index entry with closer intensity (history bias)", () => {
@@ -104,7 +107,7 @@ describe("CAvatarSimple::GetBodyFromEmotion(CEmotion &)", () => {
     const av = mkSimple(SIMPLE_BREC);
     const body = av.GetBodyFromEmotion(new CEmotion(0.5, EM_SHOUT));
     expect(body.m_bodyIndex).toBe(4);
-    expect(av.m_lastBody).toBe(4);
+    expect(av.m_lastBody).toBe(-1);
   });
 
   it("non-matching emotion: angle-after-normalization can still pick a directional (known C quirk)", () => {
@@ -119,31 +122,30 @@ describe("CAvatarSimple::GetBodyFromEmotion(CEmotion &)", () => {
     const av = mkSimple(SIMPLE_BREC);
     const body = av.GetBodyFromEmotion(new CEmotion(1.0, EM_WAVE));
     expect(body.m_bodyIndex).toBe(1); // SCARED (angle coincidence)
-    expect(av.m_lastBody).toBe(1);
+    expect(av.m_lastBody).toBe(-1);
   });
 
   it("SetBodyNeutral wraps around the array (history bias)", () => {
-    // First set m_lastBody to 5 (LAUGH). Then ask for EM_DOUBLEPOINT (sentinel
-    // 1004). The angle from each directional entry to 1004 normalizes to a
-    // value; the smallest happens to be SHOUT (index 4) at ~0.38 < PI/8.
-    // So SHOUT wins — NOT the NEUTRAL fallback. The C quirk applies again.
+    // For input EM_DOUBLEPOINT (sentinel 1004), the angle from each
+    // directional entry to 1004 normalizes to a value; the smallest happens
+    // to be SHOUT (index 4) at ~0.38 < PI/8. So SHOUT wins — NOT the
+    // NEUTRAL fallback. The C quirk applies.
     const av = mkSimple(SIMPLE_BREC);
-    av.GetBodyFromEmotion(new CEmotion(0.5, EM_LAUGH)); // sets m_lastBody=5
-    expect(av.m_lastBody).toBe(5);
     const body = av.GetBodyFromEmotion(new CEmotion(1.0, 1004.0)); // EM_DOUBLEPOINT
-    expect(body.m_bodyIndex).toBe(4); // SHOUT (angle coincidence after normalize)
+    expect(body.m_bodyIndex).toBe(4); // SHOUT (angle coincidence)
+    expect(av.m_lastBody).toBe(-1);
   });
 
-  it("sequence of calls: m_lastBody history bias affects next scan start", () => {
-    // First call: ask for SHOUT -> exact match at 4. m_lastBody=4.
-    // Second call: ask for SAD -> starts at (4+1)%8=5, scans indices
-    // 5,6,7,0,1,2,3. SAD is at 2. Scan visits 5,6,7,0,1,2; finds exact
-    // match at 2, picks it.
+  it("sequence of calls: m_lastBody is NOT updated by selection (consumer does it)", () => {
+    // Two calls in sequence, both starting from m_lastBody=-1. The C
+    // selection path does not write m_lastBody; that's the consumer's
+    // job. Verify the port matches: m_lastBody stays -1.
     const av = mkSimple(SIMPLE_BREC);
     av.GetBodyFromEmotion(new CEmotion(0.5, EM_SHOUT));
-    expect(av.m_lastBody).toBe(4);
+    expect(av.m_lastBody).toBe(-1);
     const body = av.GetBodyFromEmotion(new CEmotion(0.5, EM_SAD));
     expect(body.m_bodyIndex).toBe(2);
+    expect(av.m_lastBody).toBe(-1);
   });
 });
 
@@ -186,8 +188,9 @@ describe("CAvatarComplex::GetBodyFromEmotion(CEmotion &)", () => {
     // Torso: bRec[1] = SAD (torso scan threshold is PI/8; SAD is exact match).
     expect(body.m_faceIndex).toBe(2);
     expect(body.m_torsoIndex).toBe(1);
-    expect(av.m_lastFace).toBe(2);
-    expect(av.m_lastTorso).toBe(1);
+    // m_lastFace/m_lastTorso NOT updated by selection (consumer does it).
+    expect(av.m_lastFace).toBe(-1);
+    expect(av.m_lastTorso).toBe(-1);
   });
 
   it("sentinel emotion: face falls to NEUTRAL, torso falls to NEUTRAL", () => {
@@ -227,8 +230,9 @@ describe("CAvatarComplex::GetBodyFromEmotionFromOpts(CEmotionOpts &)", () => {
     const av = mkComplex(COMPLEX_FREC, COMPLEX_BREC);
     // First call: set the prior state with a known emotion.
     av.GetBodyFromEmotion(new CEmotion(0.5, EM_HAPPY));
-    expect(av.m_lastFace).toBe(0);
-    expect(av.m_lastTorso).toBe(0);
+    // m_last* NOT updated by selection — they stay at the ctor default (-1).
+    expect(av.m_lastFace).toBe(-1);
+    expect(av.m_lastTorso).toBe(-1);
     // Then ask for a sentinel emotion via opts.
     const opts = new CEmotionOpts();
     opts.Add(1004.0, 1.0, 5); // EM_DOUBLEPOINT, not in either table
@@ -236,10 +240,12 @@ describe("CAvatarComplex::GetBodyFromEmotionFromOpts(CEmotionOpts &)", () => {
     // Face path: directional branch (1004 > 2*PI) -> exact-match torso
     // search, no face change. Torso: no exact match for 1004 -> tIndex=-1.
     // After the loop: foundF=-1 -> SetFaceNeutral; foundT=-1 -> SetTorsoNeutral.
-    // SetFaceNeutral: starts at m_lastFace+1=1, scans fRec[1..6] for
-    // (NEUTRAL, 0). fRec[1..5] are directional, fRec[6]=NEUTRAL -> found at 6.
-    // SetTorsoNeutral: starts at m_lastTorso+1=1, scans bRec[1..4] for
-    // (NEUTRAL, 0). bRec[1..3] are directional, bRec[4]=NEUTRAL -> found at 4.
+    // SetFaceNeutral: starts at m_lastFace+1=1 (m_lastFace is -1), scans
+    // fRec[0..6] for (NEUTRAL, 0). fRec[0..5] are directional, fRec[6]=NEUTRAL
+    // -> found at 6.
+    // SetTorsoNeutral: starts at m_lastTorso+1=1 (m_lastTorso is -1), scans
+    // bRec[0..4] for (NEUTRAL, 0). bRec[0..3] are directional, bRec[4]=NEUTRAL
+    // -> found at 4.
     expect(body.m_faceIndex).toBe(6); // NEUTRAL fallback
     expect(body.m_torsoIndex).toBe(4); // NEUTRAL fallback
   });

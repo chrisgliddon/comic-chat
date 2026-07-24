@@ -245,7 +245,11 @@ export class CAvatarSimple {
       // final fallback is index 0 ("Oh well, just set it to first").
       this.SetBodyNeutral(body);
     }
-    this.m_lastBody = body.m_bodyIndex;
+    // NOTE: the C engine does NOT update m_lastBody here. That update
+    // happens in the UpdateBody -> RecordBody path (avatar.cpp:764), which
+    // is the consumer of the returned body. The dump creates a fresh
+    // avatar per probe and never calls UpdateBody, so m_lastBody stays at
+    // its initial value (-1). The TS port must match: omit the update.
     return body;
   }
 
@@ -311,7 +315,7 @@ export class CAvatarSimple {
       }
     }
     if (foundB < 0) this.SetBodyNeutral(body);
-    this.m_lastBody = body.m_bodyIndex;
+    // m_lastBody is updated by RecordBody (UpdateBody flow), not here.
     return body;
   }
 
@@ -395,8 +399,8 @@ export class CAvatarComplex {
     if (nearestI >= 0) body.m_torsoIndex = nearestI;
     else this.SetTorsoNeutral(body);
 
-    this.m_lastFace = body.m_faceIndex;
-    this.m_lastTorso = body.m_torsoIndex;
+    // m_lastFace/m_lastTorso are updated by RecordBody (UpdateBody flow),
+    // not here. The C selection path does not write these.
     return body;
   }
 
@@ -469,8 +473,8 @@ export class CAvatarComplex {
     }
     if (foundF < 0) this.SetFaceNeutral(body);
     if (foundT < 0) this.SetTorsoNeutral(body);
-    this.m_lastFace = body.m_faceIndex;
-    this.m_lastTorso = body.m_torsoIndex;
+    // m_lastFace/m_lastTorso are updated by RecordBody (UpdateBody flow),
+    // not here. The C selection path does not write these.
     return body;
   }
 

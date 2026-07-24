@@ -1,0 +1,158 @@
+{
+  "simple": [
+    {
+      "input": {
+        "emotion": "0",
+        "intensity": "0.5"
+      },
+      "bodyIndex": 0,
+      "m_lastBody": -1
+    },
+    {
+      "input": {
+        "emotion": "3.1415927410125732",
+        "intensity": "0.5"
+      },
+      "bodyIndex": 2,
+      "m_lastBody": -1
+    },
+    {
+      "input": {
+        "emotion": "4.7123889923095703",
+        "intensity": "0.5"
+      },
+      "bodyIndex": 4,
+      "m_lastBody": -1
+    },
+    {
+      "input": {
+        "emotion": "5.4977869987487793",
+        "intensity": "0.5"
+      },
+      "bodyIndex": 5,
+      "m_lastBody": -1
+    },
+    {
+      "input": {
+        "emotion": "2.3561944961547852",
+        "intensity": "0.5"
+      },
+      "bodyIndex": 1,
+      "m_lastBody": -1
+    },
+    {
+      "input": {
+        "emotion": "3.9269907474517822",
+        "intensity": "0.5"
+      },
+      "bodyIndex": 3,
+      "m_lastBody": -1
+    },
+    {
+      "input": {
+        "emotion": "1001",
+        "intensity": "1"
+      },
+      "bodyIndex": 1,
+      "m_lastBody": -1
+    },
+    {
+      "input": {
+        "emotion": "1004",
+        "intensity": "1"
+      },
+      "bodyIndex": 4,
+      "m_lastBody": -1
+    },
+    {
+      "input": {
+        "emotion": "9999",
+        "intensity": "1"
+      },
+      "bodyIndex": 1,
+      "m_lastBody": -1
+    }
+  ],
+  "complex": [
+    {
+      "input": {
+        "emotion": "0",
+        "intensity": "0.5"
+      },
+      "faceIndex": 0,
+      "torsoIndex": 0,
+      "m_lastFace": -1,
+      "m_lastTorso": -1
+    },
+    {
+      "input": {
+        "emotion": "3.1415927410125732",
+        "intensity": "0.5"
+      },
+      "faceIndex": 2,
+      "torsoIndex": 1,
+      "m_lastFace": -1,
+      "m_lastTorso": -1
+    },
+    {
+      "input": {
+        "emotion": "4.7123889923095703",
+        "intensity": "0.5"
+      },
+      "faceIndex": 4,
+      "torsoIndex": 3,
+      "m_lastFace": -1,
+      "m_lastTorso": -1
+    },
+    {
+      "input": {
+        "emotion": "5.4977869987487793",
+        "intensity": "0.5"
+      },
+      "faceIndex": 5,
+      "torsoIndex": 4,
+      "m_lastFace": -1,
+      "m_lastTorso": -1
+    },
+    {
+      "input": {
+        "emotion": "2.3561944961547852",
+        "intensity": "0.5"
+      },
+      "faceIndex": 1,
+      "torsoIndex": 4,
+      "m_lastFace": -1,
+      "m_lastTorso": -1
+    },
+    {
+      "input": {
+        "emotion": "3.9269907474517822",
+        "intensity": "0.5"
+      },
+      "faceIndex": 3,
+      "torsoIndex": 2,
+      "m_lastFace": -1,
+      "m_lastTorso": -1
+    },
+    {
+      "input": {
+        "emotion": "1001",
+        "intensity": "1"
+      },
+      "faceIndex": 1,
+      "torsoIndex": 4,
+      "m_lastFace": -1,
+      "m_lastTorso": -1
+    },
+    {
+      "input": {
+        "emotion": "1004",
+        "intensity": "1"
+      },
+      "faceIndex": 4,
+      "torsoIndex": 3,
+      "m_lastFace": -1,
+      "m_lastTorso": -1
+    }
+  ]
+}
