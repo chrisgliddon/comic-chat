@@ -67,4 +67,23 @@
 
 | Date | Run | Purpose | Result |
 |---|---|---|---|
-| 2026-07-24 | (pending) | First harness build + determinism check | TBD |
+| 2026-07-24 | 30118295993 | First successful build + glyph capture | Build PASS, glyphs PASS, replay crash (CChatDoc ctor or InitMyDocument) |
+
+## Current status
+
+The harness **builds and links** on windows-2022 CI. The `--glyphs` mode works
+and captures real Comic Sans MS font metrics from GDI (lfHeight=-240, tmHeight=345,
+tmAscent=270, tmDescent=75). The replay mode crashes during CChatDoc construction
+or InitMyDocument — likely because the global `CChatApp theApp` constructor calls
+`m_ImageList.Create()` which may need OLE/common-controls init, or because
+`NewDefaultProto(this)` / `GetCurrentBackDropID()` need more setup.
+
+## Next steps
+
+1. Debug the replay crash: add stderr logging before/after CChatDoc construction
+   and InitMyDocument to pinpoint the crash site. The CI runner doesn't have a
+   debugger, so use diagnostic fprintf(stderr, ...) statements.
+2. Likely fix: call `AfxOleInit()` / `AfxEnableControlContainer()` before
+   constructing CChatDoc, or stub out the CChatApp constructor's ImageList.Create.
+3. Once replay works: verify determinism (two identical runs), freeze goldens,
+   run judge validation §6 (mutate a rule → corpus goes red).
