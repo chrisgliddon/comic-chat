@@ -50,9 +50,14 @@ function loadJson(file) {
 }
 
 function diffFilePair(fa, fb, label) {
-  // Byte-identical is the strong check; JSON-equal is the diagnostic.
+  // Byte-identity is the strong check (catches nondeterministic emit). We
+  // normalize CRLF→LF before comparing because git checkout on Windows can
+  // introduce CRLF line endings into a committed golden even though the
+  // harness emits LF; line endings are not semantic. A genuine regression
+  // still surfaces as a structural diff below.
+  const norm = (buf) => buf.toString("utf8").replace(/\r\n/g, "\n");
   const rawA = fs.readFileSync(fa), rawB = fs.readFileSync(fb);
-  if (rawA.equals(rawB)) return null;
+  if (norm(rawA) === norm(rawB)) return null;
   const d = firstDiff(loadJson(fa), loadJson(fb));
   if (d) return { label, ...d };
   return { label, path: "<bytes>", a: "files differ in bytes but are JSON-equal", b: "(formatting/nondeterministic emit?)" };

@@ -1,0 +1,4 @@
+# Oracle dumps and corpus must keep LF line endings so byte-identity
+# comparisons are stable across Windows/macOS/Linux checkouts.
+oracle/**/*.json text eol=lf
+oracle/glyphs/*.json text eol=lf
