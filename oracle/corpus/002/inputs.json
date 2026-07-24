@@ -1,0 +1,16 @@
+{
+  "seed": 42,
+  "tickSeedBase": 1000,
+  "panelsWide": 2,
+  "avatars": [
+    {"name": "bolo", "speakerId": 1},
+    {"name": "anna", "speakerId": 2}
+  ],
+  "messages": [
+    {"speakerId": 1, "text": "This is a normal said message.", "mode": 0},
+    {"speakerId": 2, "text": "This is a whispered message.", "mode": 1},
+    {"speakerId": 1, "text": "This is a thought message.", "mode": 2},
+    {"speakerId": 2, "text": "waves hello to everyone", "mode": 4},
+    {"speakerId": 1, "text": "Back to normal speech.", "mode": 0}
+  ]
+}

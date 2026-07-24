@@ -1,0 +1,14 @@
+{
+  "seed": 42,
+  "tickSeedBase": 1000,
+  "panelsWide": 2,
+  "avatars": [
+    {"name": "bolo", "speakerId": 1},
+    {"name": "anna", "speakerId": 2}
+  ],
+  "messages": [
+    {"speakerId": 1, "text": "Short message one.", "mode": 0},
+    {"speakerId": 2, "text": "Short message two.", "mode": 0},
+    {"speakerId": 1, "text": "This is an extremely long message that will almost certainly overflow the panel boundary because it contains way too many words for a single comic panel balloon, forcing the engine to split it across panels and test the overflow spill panel break trigger and the SplitHeight logic in the balloon code.", "mode": 0}
+  ]
+}

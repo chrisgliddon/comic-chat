@@ -1,0 +1,17 @@
+{
+  "seed": 42,
+  "tickSeedBase": 1000,
+  "panelsWide": 2,
+  "avatars": [
+    {"name": "cro", "speakerId": 1},
+    {"name": "denise", "speakerId": 2},
+    {"name": "lynnea", "speakerId": 3},
+    {"name": "veronica", "speakerId": 4}
+  ],
+  "messages": [
+    {"speakerId": 1, "text": "I am using the cro avatar.", "mode": 0},
+    {"speakerId": 2, "text": "I am using the denise avatar.", "mode": 0},
+    {"speakerId": 3, "text": "I am using the lynnea avatar.", "mode": 0},
+    {"speakerId": 4, "text": "I am using the veronica avatar.", "mode": 0}
+  ]
+}

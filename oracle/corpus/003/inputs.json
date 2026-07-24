@@ -1,0 +1,18 @@
+{
+  "seed": 42,
+  "tickSeedBase": 1000,
+  "panelsWide": 2,
+  "avatars": [
+    {"name": "bolo", "speakerId": 1},
+    {"name": "anna", "speakerId": 2}
+  ],
+  "messages": [
+    {"speakerId": 1, "text": "First message in panel.", "mode": 0},
+    {"speakerId": 2, "text": "Second message.", "mode": 0},
+    {"speakerId": 1, "text": "Third message.", "mode": 0},
+    {"speakerId": 2, "text": "Fourth message.", "mode": 0},
+    {"speakerId": 1, "text": "Fifth message - should trigger new panel (>=5 balloons).", "mode": 0},
+    {"speakerId": 2, "text": "<Brk>", "mode": 0},
+    {"speakerId": 1, "text": "After break - new panel.", "mode": 0}
+  ]
+}
