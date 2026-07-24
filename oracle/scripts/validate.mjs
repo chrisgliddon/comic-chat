@@ -15,8 +15,16 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 let Ajv = null;
 try {
-  const ajvMod = await import("ajv");
-  Ajv = ajvMod.default;
+  // The schemas use draft 2020-12 ($defs, not definitions), so import the
+  // 2020-12-capable entry point. Falls back to the default export on older
+  // ajv versions or when the 2020 module is absent.
+  try {
+    const ajv2020 = await import("ajv/dist/2020.js");
+    Ajv = ajv2020.default;
+  } catch {
+    const ajvMod = await import("ajv");
+    Ajv = ajvMod.default;
+  }
 } catch {
   // ajv not installed — fall back to basic structural checks
 }
