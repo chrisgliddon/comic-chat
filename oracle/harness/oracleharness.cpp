@@ -682,6 +682,11 @@ int main(int argc, char** argv) {
     // Initialize the document (creates first page, seeds the PRNG)
     doc->InitMyDocument();
     fprintf(stderr, "ORACLE: InitMyDocument complete\n");
+    fflush(stderr);
+
+    // Load avatars and assign to speakers
+    fprintf(stderr, "ORACLE: setting up speaker map\n");
+    fflush(stderr);
 
     // Load avatars and assign to speakers
     // inputs.avatars: array of {name, speakerId}
