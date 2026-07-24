@@ -659,6 +659,7 @@ int main(int argc, char** argv) {
 
     // Load avatars from the inputs
     ojson::Value* avatars = inputs.Find("avatars");
+    fprintf(stderr, "ORACLE: loading avatars (avatars=%p, type=%d)\n", (void*)avatars, avatars ? avatars->type : -1);
 
     fprintf(stderr, "ORACLE: creating CChatDoc...\n");
     // Create the document
