@@ -284,22 +284,18 @@ static ojson::Value DumpBalloon(CBalloon* balloon) {
         }
         spline.Set("cps", cps);
 
-        // Bezier points (computed by ComputeBezpts)
+        // Bezier points (computed by ComputeBezpts).
+        // The bezpts array is allocated with exactly BezierCount() entries
+        // (spline.cpp:175) and ComputeBezpts writes bezpts[0] then 3 per
+        // cubic segment up to BezierCount() total. BezierCount = 3*KnotCount-8.
+        // Reading past BezierCount() yields uninitialized memory and
+        // non-deterministic dumps, so bound the loop strictly by BezierCount().
         if (sp->bezpts) {
-            int nBez = sp->BezierCount() * 3 + 1; // cubic segments
-            // Actually BezierCount returns the number of cubic segments;
-            // bezpts has 3*nBez+1 points (but could be different).
-            // We dump what's there based on KnotCount.
             int knotCount = sp->KnotCount();
             int bezCount = sp->BezierCount();
             ojson::Value bez = ojson::Value::Arr();
-            // bezpts stores 2 points per cubic segment (control + end),
-            // but the exact layout depends on CubicToBezier. We dump
-            // the raw array of POINTs for the computed count.
-            // BezierCount = (3 * KnotCount) - 8, bezpts = 2 * BezierCount
-            int nBezPts = bezCount > 0 ? bezCount * 2 : 0;
-            // Guard: the array might be smaller; dump safely
-            for (int i = 0; i < nBezPts && i < knotCount * 6; i++) {
+            int nBezPts = bezCount;  // exact allocation, no overread
+            for (int i = 0; i < nBezPts; i++) {
                 ojson::Value bp = ojson::Value::Obj();
                 bp.Set("x", ojson::Value::Int(sp->bezpts[i].x));
                 bp.Set("y", ojson::Value::Int(sp->bezpts[i].y));
@@ -307,6 +303,7 @@ static ojson::Value DumpBalloon(CBalloon* balloon) {
             }
             spline.Set("bezpts", bez);
             spline.Set("bezierCount", ojson::Value::Int(bezCount));
+            spline.Set("knotCount", ojson::Value::Int(knotCount));
         }
 
         v.Set("spline", spline);
