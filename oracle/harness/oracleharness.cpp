@@ -430,7 +430,13 @@ static ojson::Value DumpAvatarState(USHORT avatarID) {
         ojson::Value body = ojson::Value::Obj();
         body.Set("class", ojson::Value::Int(av->m_body->GetClass()));
         body.Set("flip", ojson::Value::Int(av->m_body->m_flip));
-        body.Set("bbox", DumpSRECT(av->m_body->m_bbox));
+        // NOTE: the avatar's neutral-body m_bbox is only populated by the body
+        // cam's DrawBody path (RefreshBody), which the headless harness does
+        // not run. Dumping it here would capture uninitialized SRECT.Top/Bottom
+        // (CPanelElement ctor only sets Left/Right = -1) and break determinism.
+        // The per-panel body bboxes (set by CUnitPanel::LayoutAvatars via
+        // SetBBox) are dumped separately in DumpPanel and are the Tier-3 #3
+        // target, so we omit the neutral bbox here.
 
         // Get emotion state
         CEmotion face, torso;
