@@ -78,20 +78,25 @@ The harness **builds, links, and runs** on windows-2022 CI. Achievements:
 - Avatar loading works (bolo.avb, anna.avb loaded successfully from `.\ComicArt\`)
 - `ProcessLine` → `TallySpeech` works
 
-**Crash site**: Inside `CChatDoc::AddLine` → `CUnitPanelPage::AddLine` (panel.cpp:1058).
-This is the core panelization function that creates balloons, lays out avatars, and
-packs balloons. The crash is likely in `MakeBalloon` → `CBWoodringNormal` ctor →
-`BreakIntoLines` → `GetTextExtent`, or in `LayoutAvatars` / `LayoutBalloons`.
+**Crash site**: Inside `CUnitPanelPage::AddLine` → `LayoutAvatars` (panel.cpp:733).
+Specifically at `b->GetDimInfo(...)` (panel.cpp:765) where `b` is a `CBody*` whose
+`m_faceRec`/`m_torsoRec`/`m_bodyRec` may be NULL. The body is created by
+`FetchSpeaker` → `av->m_body->Clone()` → `GetDimInfo` accesses the rec pointers.
+
+The root cause is likely that the avatar's `SetNeutral()` didn't properly populate
+the face/torso/body recs, or that the body cloned from `m_body` has NULL recs
+because the avatar file parsing didn't fully initialize them in the headless
+environment (e.g., missing `GetChatDoc()` calls during avatar init).
 
 ## Next steps
 
-1. Add logging inside `CUnitPanelPage::AddLine` (panel.cpp:1058) to pinpoint the
-   exact crash line. Key suspects:
-   - `MakeBalloon` → `CBWoodringNormal` constructor → `CLabel` constructor (needs `m_fiWNormal`)
-   - `BreakIntoLines` → `GetClientDC()` → `GetTextExtent` (DC should work, but verify)
-   - `FetchSpeaker` → `GetAvatar(uID)` (avatar loaded, should work)
-   - `LayoutAvatars` → may need `CBody` state that isn't set up
-   - `LayoutBalloons` → `srand(m_seed)` + `randfloat()` + balloon packing
-2. Once the crash is fixed, verify determinism (two identical runs → byte-identical output)
-3. Freeze goldens, run judge validation §6 (mutate a rule → corpus goes red)
-4. Remove diagnostic logging once stable
+1. Add logging inside `LayoutAvatars` before the `GetDimInfo` call to verify
+   `b->GetClass()` and check if `m_faceRec`/`m_torsoRec`/`m_bodyRec` are NULL.
+2. If recs are NULL, investigate `SetNeutral()` → `SetFaceNeutral`/`SetTorsoNeutral`
+   to see why they don't populate the recs. May need to call `GetBodyFromEmotion`
+   with a valid emotion before the body is used.
+3. Alternative: the avatar's `m_body` might be NULL (SetNeutral failed silently).
+   Add a NULL check on `av->m_body` in `FetchSpeaker` before calling `Clone()`.
+4. Once the crash is fixed, verify determinism (two identical runs → byte-identical)
+5. Freeze goldens, run judge validation §6 (mutate a rule → corpus goes red)
+6. Remove diagnostic logging once stable
