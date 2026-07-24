@@ -654,6 +654,10 @@ int main(int argc, char** argv) {
     // Set comics view mode
     doc->m_bComicView = TRUE;
 
+    // Pre-set a fixed title so GetComicsTitle() doesn't call GetRandomTitle()
+    // (which needs string resources the console exe doesn't have)
+    doc->SetComicsTitle("Oracle Comic");
+
     fprintf(stderr, "ORACLE: calling InitMyDocument...\n");
     // Initialize the document (creates first page, seeds the PRNG)
     doc->InitMyDocument();
