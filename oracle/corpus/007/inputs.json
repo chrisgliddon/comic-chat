@@ -2,14 +2,37 @@
   "seed": 42,
   "tickSeedBase": 1000,
   "panelsWide": 2,
+  "treeDir": ".",
   "avatars": [
-    {"name": "bolo", "speakerId": 1},
-    {"name": "anna", "speakerId": 2}
+    {
+      "name": "bolo",
+      "speakerId": 1
+    },
+    {
+      "name": "anna",
+      "speakerId": 2
+    }
   ],
   "messages": [
-    {"speakerId": 1, "text": "I have something to say.", "mode": 0},
-    {"speakerId": 2, "text": "Go ahead.", "mode": 0},
-    {"speakerId": 1, "text": "Well, first of all...", "mode": 0},
-    {"speakerId": 1, "text": "I already spoke so this should be in a new panel.", "mode": 0}
+    {
+      "speakerId": 1,
+      "text": "I have something to say.",
+      "mode": 0
+    },
+    {
+      "speakerId": 2,
+      "text": "Go ahead.",
+      "mode": 0
+    },
+    {
+      "speakerId": 1,
+      "text": "Well, first of all...",
+      "mode": 0
+    },
+    {
+      "speakerId": 1,
+      "text": "I already spoke so this should be in a new panel.",
+      "mode": 0
+    }
   ]
 }

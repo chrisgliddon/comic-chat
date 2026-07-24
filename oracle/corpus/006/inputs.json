@@ -2,16 +2,47 @@
   "seed": 42,
   "tickSeedBase": 1000,
   "panelsWide": 2,
+  "treeDir": ".",
   "avatars": [
-    {"name": "bolo", "speakerId": 1},
-    {"name": "anna", "speakerId": 2}
+    {
+      "name": "bolo",
+      "speakerId": 1
+    },
+    {
+      "name": "anna",
+      "speakerId": 2
+    }
   ],
   "messages": [
-    {"speakerId": 1, "text": "HI THERE!!! I'M SO HAPPY TO SEE YOU!!!", "mode": 0},
-    {"speakerId": 2, "text": "lol that's funny :)", "mode": 0},
-    {"speakerId": 1, "text": "ROTFL you are killing me", "mode": 0},
-    {"speakerId": 2, "text": "Hi everyone, welcome to the chat!", "mode": 0},
-    {"speakerId": 1, "text": "I think you should go left.", "mode": 0},
-    {"speakerId": 2, "text": "You are absolutely right.", "mode": 0}
+    {
+      "speakerId": 1,
+      "text": "HI THERE!!! I'M SO HAPPY TO SEE YOU!!!",
+      "mode": 0
+    },
+    {
+      "speakerId": 2,
+      "text": "lol that's funny :)",
+      "mode": 0
+    },
+    {
+      "speakerId": 1,
+      "text": "ROTFL you are killing me",
+      "mode": 0
+    },
+    {
+      "speakerId": 2,
+      "text": "Hi everyone, welcome to the chat!",
+      "mode": 0
+    },
+    {
+      "speakerId": 1,
+      "text": "I think you should go left.",
+      "mode": 0
+    },
+    {
+      "speakerId": 2,
+      "text": "You are absolutely right.",
+      "mode": 0
+    }
   ]
 }

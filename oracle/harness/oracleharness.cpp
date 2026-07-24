@@ -522,14 +522,21 @@ static void InitHarness(const char* treeDir) {
     CUnitPanelPage::SetFonts(theApp.m_comicsFont, theApp.m_comicsColor);
     fprintf(stderr, "ORACLE: fonts set\n");
 
-    // Set art directory to the tree's ComicArt folder
-    char artDir[MAX_PATH];
-    snprintf(artDir, MAX_PATH, "%s\\ComicArt", treeDir);
-    theApp.m_strDefaultArtDir = artDir;
-    theApp.m_strAvatarDir = artDir;
+    // Set art directory to the tree's ComicArt folder.
+    // SetArtDir (protsupp.cpp:164) constructs the avatar/backdrop dir as
+    //   m_strBaseDir + "\\" + m_strDefaultArtDir
+    // so m_strDefaultArtDir must be a RELATIVE name ("ComicArt"), not a full
+    // path, and m_strBaseDir must be the tree root. Using a full path here
+    // made SetArtDir double-join the path, so avatar loading failed for every
+    // corpus case except the one using treeDir="." (which collapsed via ".").
     theApp.m_strBaseDir = treeDir;
+    theApp.m_strDefaultArtDir = "ComicArt";
+    // Initialize the avatar/backdrop dirs to match (SetArtDir will be called
+    // again by InitMyDocument, but InitializeBackDrops below reads them).
+    theApp.m_strBackDropDir = CString(treeDir) + "\\ComicArt";
+    theApp.m_strAvatarDir = theApp.m_strBackDropDir;
 #ifdef ORACLE_HARNESS
-    fprintf(stderr, "ORACLE: artDir = %s\n", artDir);
+    fprintf(stderr, "ORACLE: treeDir=%s artDir=%s\n", treeDir, (const char*)theApp.m_strAvatarDir);
 #endif
 
     // Initialize backdrops

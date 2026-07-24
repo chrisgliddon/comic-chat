@@ -2,18 +2,56 @@
   "seed": 42,
   "tickSeedBase": 1000,
   "panelsWide": 2,
+  "treeDir": ".",
   "avatars": [
-    {"name": "bolo", "speakerId": 1},
-    {"name": "anna", "speakerId": 2},
-    {"name": "connor", "speakerId": 3}
+    {
+      "name": "bolo",
+      "speakerId": 1
+    },
+    {
+      "name": "anna",
+      "speakerId": 2
+    },
+    {
+      "name": "connor",
+      "speakerId": 3
+    }
   ],
   "messages": [
-    {"speakerId": 1, "text": "Page one, panel one.", "mode": 0},
-    {"speakerId": 2, "text": "Page one, panel two.", "mode": 0},
-    {"speakerId": 3, "text": "Page one, panel three.", "mode": 0},
-    {"speakerId": 1, "text": "Page one, panel four.", "mode": 0},
-    {"speakerId": 2, "text": "Page one, panel five - new page soon.", "mode": 0},
-    {"speakerId": 3, "text": "This should be on a new page.", "mode": 0},
-    {"speakerId": 1, "text": "And another page after this.", "mode": 0}
+    {
+      "speakerId": 1,
+      "text": "Page one, panel one.",
+      "mode": 0
+    },
+    {
+      "speakerId": 2,
+      "text": "Page one, panel two.",
+      "mode": 0
+    },
+    {
+      "speakerId": 3,
+      "text": "Page one, panel three.",
+      "mode": 0
+    },
+    {
+      "speakerId": 1,
+      "text": "Page one, panel four.",
+      "mode": 0
+    },
+    {
+      "speakerId": 2,
+      "text": "Page one, panel five - new page soon.",
+      "mode": 0
+    },
+    {
+      "speakerId": 3,
+      "text": "This should be on a new page.",
+      "mode": 0
+    },
+    {
+      "speakerId": 1,
+      "text": "And another page after this.",
+      "mode": 0
+    }
   ]
 }
