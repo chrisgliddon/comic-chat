@@ -80,30 +80,33 @@ jobs:
           echo "Determinism check passed: two runs are byte-identical."
 
       - name: Run corpus cases (compare against frozen goldens)
-        shell: cmd
+        shell: pwsh
         run: |
-          cd v2.5-beta-1-modern
-          setlocal enabledelayedexpansion
-          for /d %%D in (..\oracle\corpus\0*) do (
-            if exist %%D\inputs.json (
-              echo Running case %%~nxD
-              Release\OracleHarness.exe %%D\inputs.json %%D\actual.json
-              if errorlevel 1 (
-                echo CASE %%~nxD FAILED (harness crash)
-                exit /b 1
-              )
-              if exist %%D\expected.json (
-                node ..\oracle\scripts\diff-dumps.mjs %%D\expected.json %%D\actual.json
-                if errorlevel 1 (
-                  echo GOLDEN MISMATCH %%~nxD: corpus diverged from frozen golden
-                  exit /b 1
-                )
-                echo GOLDEN MATCH %%~nxD
-              ) else (
-                echo No golden for %%~nxD - wrote actual.json (freeze by committing as expected.json)
-              )
-            )
-          )
+          Set-Location v2.5-beta-1-modern
+          $corpusDir = Resolve-Path ..\oracle\corpus
+          $cases = Get-ChildItem -Path $corpusDir -Directory | Where-Object { Test-Path "$($_.FullName)\inputs.json" } | Sort-Object Name
+          foreach ($case in $cases) {
+            $name = $case.Name
+            Write-Host "Running case $name"
+            $inp = "$($case.FullName)\inputs.json"
+            $actual = "$($case.FullName)\actual.json"
+            & Release\OracleHarness.exe $inp $actual
+            if ($LASTEXITCODE -ne 0) {
+              Write-Host "CASE $name FAILED (harness crash, exit $LASTEXITCODE)"
+              exit 1
+            }
+            $expected = "$($case.FullName)\expected.json"
+            if (Test-Path $expected) {
+              & node ..\oracle\scripts\diff-dumps.mjs $expected $actual
+              if ($LASTEXITCODE -ne 0) {
+                Write-Host "GOLDEN MISMATCH $name : corpus diverged from frozen golden"
+                exit 1
+              }
+              Write-Host "GOLDEN MATCH $name"
+            } else {
+              Write-Host "No golden for $name - wrote actual.json (freeze by committing as expected.json)"
+            }
+          }
 
       - name: Validate corpus against schemas
         shell: pwsh
