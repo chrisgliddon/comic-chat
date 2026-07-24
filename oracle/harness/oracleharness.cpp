@@ -651,6 +651,10 @@ int main(int argc, char** argv) {
     fprintf(stderr, "ORACLE: CChatDoc created\n");
     cui.m_pvChatDoc = doc;  // GetChatDoc() macro will find it
 
+    // m_view is not initialized by CChatDoc ctor — set to NULL so
+    // RefreshPanelN's ORACLE_HARNESS guard skips UpdateViewsX
+    doc->m_view = NULL;
+
     // Set comics view mode
     doc->m_bComicView = TRUE;
 
