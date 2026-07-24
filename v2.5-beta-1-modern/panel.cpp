@@ -1290,10 +1290,16 @@ void CUnitPanelPage::AddTitle(const char *title) {
 	CString starringStr;
 	RECT border;
 
+#ifdef ORACLE_HARNESS
+	fprintf(stderr, "ORACLE: AddTitle - creating title label (m_fiTitle=%p)\n", (void*)m_fiTitle);
+#endif
 	CLabel *titleL = new CLabel(title, m_fiTitle);
 	titleL->SetBBox(0, -m_unitHeight/2, m_unitWidth, -100);
 	titleL->GetBBox(&border);
 	starringStr.LoadString(ID_STARRING);
+#ifdef ORACLE_HARNESS
+	fprintf(stderr, "ORACLE: AddTitle - starringStr='%s' (m_fiShout=%p)\n", (const char*)starringStr, (void*)m_fiShout);
+#endif
 	CLabel *starringL = new CLabel(starringStr, m_fiShout);
 	starringL->SetBBox(0, -m_unitHeight, m_unitWidth, border.bottom);
 	CUnitPanel *newPanel = new CUnitPanel;
@@ -1302,8 +1308,17 @@ void CUnitPanelPage::AddTitle(const char *title) {
 	newPanel->m_elements.AddTail(titleL);
 	newPanel->m_elements.AddTail(starringL);
 	starringL->GetBBox(&border);
+#ifdef ORACLE_HARNESS
+	fprintf(stderr, "ORACLE: AddTitle - calling AddStars\n");
+#endif
 	AddStars(newPanel, border.bottom);
+#ifdef ORACLE_HARNESS
+	fprintf(stderr, "ORACLE: AddTitle - calling AddPanel\n");
+#endif
 	AddPanel(newPanel);
+#ifdef ORACLE_HARNESS
+	fprintf(stderr, "ORACLE: AddTitle - done\n");
+#endif
 }
 
 
