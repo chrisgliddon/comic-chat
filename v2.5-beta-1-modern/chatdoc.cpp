@@ -473,8 +473,16 @@ void CChatDoc::ProcessLine(UINT uID, const char *szLine, USHORT uModes, BYTE bbC
 {
 	CString strMesg(szLine);
 
+#ifdef ORACLE_HARNESS
+	fprintf(stderr, "ORACLE: ProcessLine - strMesg='%s', bbCooked=%d\n", (const char*)strMesg, bbCooked);
+#endif
+
 	if (!bbCooked)
 		ChatPreSendText(strMesg, uID);
+
+#ifdef ORACLE_HARNESS
+	fprintf(stderr, "ORACLE: ProcessLine - after ChatPreSendText\n");
+#endif
 
 //	if (uModes & BM_ACTION)
 //	{
@@ -487,7 +495,13 @@ void CChatDoc::ProcessLine(UINT uID, const char *szLine, USHORT uModes, BYTE bbC
 	
 	if (strcmp(strMesg, "<Brk>") != 0)
 		TallySpeech(uID);
+#ifdef ORACLE_HARNESS
+	fprintf(stderr, "ORACLE: ProcessLine - after TallySpeech\n");
+#endif
 	AddLine(uID, strMesg, uModes, prgdwFormatting);
+#ifdef ORACLE_HARNESS
+	fprintf(stderr, "ORACLE: ProcessLine - after AddLine\n");
+#endif
 }
 
 
