@@ -403,6 +403,154 @@ static ojson::Value CaptureAvatario() {
 }
 
 // ---------------------------------------------------------------------------
+// CaptureAvatarPose — Tier-1 #2 dump: emotion-to-pose selection on
+// SYNTHETIC avatars. Constructs CAvatarSimple and CAvatarComplex with
+// known bRec/fRec arrays (no real .avb loading — that's Phase 4 avbfile
+// work) and runs a probe battery of GetBodyFromEmotion calls. Emits the
+// chosen bodyIndex/faceIndex/torsoIndex + the post-state m_last*.
+//
+// The synthetic data + probe list mirror `port/src/engine/avatar_dump.ts`
+// exactly so the TS golden test can diff byte-for-byte. This is a UNIT
+// test of the nearest-neighbor selection — it does NOT exercise the real
+// avatar-loading path (which is Phase 4 `avbfile.cpp`).
+// ---------------------------------------------------------------------------
+static ojson::Value CaptureAvatarPose() {
+    // Synthetic bRec (8 entries — 6 directional + NEUTRAL + WAVE). Identical
+    // to the TS dump's SIMPLE_BREC. poseIDs and faceX/faceY are
+    // oracle-irrelevant (we only emit integer indices).
+    RBODYREC simpleBRec[8] = {
+        { 100, (float)EM_HAPPY,  0.5f, 10, 5 },
+        { 101, (float)EM_SCARED, 0.5f, 10, 5 },
+        { 102, (float)EM_SAD,    0.5f, 10, 5 },
+        { 103, (float)EM_ANGRY,  0.5f, 10, 5 },
+        { 104, (float)EM_SHOUT,  0.5f, 10, 5 },
+        { 105, (float)EM_LAUGH,  0.5f, 10, 5 },
+        { 110, (float)EM_NEUTRAL, 0.0f, 10, 5 },
+        { 120, (float)EM_WAVE,   1.0f, 10, 5 },
+    };
+    int simpleN = sizeof(simpleBRec) / sizeof(simpleBRec[0]);
+
+    // Complex avatar synthetic data — matches the TS dump.
+    FACEREC complexFRec[7] = {
+        { 200, (float)EM_HAPPY,  0.5f, 0, 0, 0, 0, 8, 4 },
+        { 201, (float)EM_SCARED, 0.5f, 0, 0, 0, 0, 8, 4 },
+        { 202, (float)EM_SAD,    0.5f, 0, 0, 0, 0, 8, 4 },
+        { 203, (float)EM_ANGRY,  0.5f, 0, 0, 0, 0, 8, 4 },
+        { 204, (float)EM_SHOUT,  0.5f, 0, 0, 0, 0, 8, 4 },
+        { 205, (float)EM_LAUGH,  0.5f, 0, 0, 0, 0, 8, 4 },
+        { 210, (float)EM_NEUTRAL, 0.0f, 0, 0, 0, 0, 8, 4 },
+    };
+    BODYREC complexBRec[5] = {
+        { 300, (float)EM_HAPPY,  0.5f, 0, 0 },
+        { 301, (float)EM_SAD,    0.5f, 0, 0 },
+        { 302, (float)EM_ANGRY,  0.5f, 0, 0 },
+        { 303, (float)EM_SHOUT,  0.5f, 0, 0 },
+        { 310, (float)EM_NEUTRAL, 0.0f, 0, 0 },
+    };
+    int complexFN = sizeof(complexFRec) / sizeof(complexFRec[0]);
+    int complexBN = sizeof(complexBRec) / sizeof(complexBRec[0]);
+
+    // Probe battery — identical to the TS dumpAvatarProbes arrays.
+    struct Probe { double emotion; double intensity; };
+    Probe simpleProbes[] = {
+        { EM_HAPPY, 0.5 },
+        { EM_SAD,   0.5 },
+        { EM_SHOUT, 0.5 },
+        { EM_LAUGH, 0.5 },
+        { EM_SCARED, 0.5 },
+        { EM_ANGRY, 0.5 },
+        { EM_WAVE, 1.0 },
+        { 1004.0, 1.0 },  // EM_DOUBLEPOINT sentinel
+        { 9999.0, 1.0 },  // unknown sentinel
+    };
+    int nSimpleProbes = sizeof(simpleProbes) / sizeof(simpleProbes[0]);
+
+    Probe complexProbes[] = {
+        { EM_HAPPY, 0.5 },
+        { EM_SAD,   0.5 },
+        { EM_SHOUT, 0.5 },
+        { EM_LAUGH, 0.5 },
+        { EM_SCARED, 0.5 },
+        { EM_ANGRY, 0.5 },
+        { EM_WAVE, 1.0 },
+        { 1004.0, 1.0 },  // EM_DOUBLEPOINT sentinel
+    };
+    int nComplexProbes = sizeof(complexProbes) / sizeof(complexProbes[0]);
+
+    ojson::Value root = ojson::Value::Obj();
+
+    // Simple avatar probes — fresh avatar per probe (m_lastBody resets to -1).
+    ojson::Value simpleArr = ojson::Value::Arr();
+    for (int i = 0; i < nSimpleProbes; i++) {
+        CAvatarSimple av;
+        av.bRec = simpleBRec;
+        av.m_nBodies = simpleN;
+        av.m_lastBody = -1; // redundant (ctor sets it), explicit for clarity
+        // Prevent ~CAvatarSimple from freeing our stack bRec.
+        av.m_origID = 1;
+
+        CEmotion emIn((float)simpleProbes[i].intensity, (float)simpleProbes[i].emotion);
+        CBody *bodyPtr = av.GetBodyFromEmotion(emIn);
+        CBodySingle *body = (CBodySingle *)bodyPtr;
+        int bodyIndex = body->m_bodyRec - simpleBRec;
+
+        ojson::Value entry = ojson::Value::Obj();
+        ojson::Value inObj = ojson::Value::Obj();
+        char buf[64];
+        sprintf(buf, "%.17g", simpleProbes[i].emotion);
+        inObj.Set("emotion", ojson::Value::Str(buf));
+        sprintf(buf, "%.17g", simpleProbes[i].intensity);
+        inObj.Set("intensity", ojson::Value::Str(buf));
+        entry.Set("input", inObj);
+        entry.Set("bodyIndex", ojson::Value::Int(bodyIndex));
+        entry.Set("m_lastBody", ojson::Value::Int(av.m_lastBody));
+        simpleArr.Push(entry);
+
+        delete body; // GetBodyFromEmotion does `new CBodySingle`
+    }
+    root.Set("simple", simpleArr);
+
+    // Complex avatar probes — fresh avatar per probe.
+    ojson::Value complexArr = ojson::Value::Arr();
+    for (int i = 0; i < nComplexProbes; i++) {
+        CAvatarComplex av;
+        av.fRec = complexFRec;
+        av.bRec = complexBRec;
+        av.nFaces = complexFN;
+        av.nTorsos = complexBN;
+        av.m_lastFace = -1;
+        av.m_lastTorso = -1;
+        // Prevent ~CAvatarComplex from freeing our stack fRec/bRec.
+        av.m_origID = 1;
+
+        CEmotion emIn((float)complexProbes[i].intensity, (float)complexProbes[i].emotion);
+        CBody *bodyPtr = av.GetBodyFromEmotion(emIn);
+        CBodyDouble *body = (CBodyDouble *)bodyPtr;
+        int faceIndex = body->m_faceRec - complexFRec;
+        int torsoIndex = body->m_torsoRec - complexBRec;
+
+        ojson::Value entry = ojson::Value::Obj();
+        ojson::Value inObj = ojson::Value::Obj();
+        char buf[64];
+        sprintf(buf, "%.17g", complexProbes[i].emotion);
+        inObj.Set("emotion", ojson::Value::Str(buf));
+        sprintf(buf, "%.17g", complexProbes[i].intensity);
+        inObj.Set("intensity", ojson::Value::Str(buf));
+        entry.Set("input", inObj);
+        entry.Set("faceIndex", ojson::Value::Int(faceIndex));
+        entry.Set("torsoIndex", ojson::Value::Int(torsoIndex));
+        entry.Set("m_lastFace", ojson::Value::Int(av.m_lastFace));
+        entry.Set("m_lastTorso", ojson::Value::Int(av.m_lastTorso));
+        complexArr.Push(entry);
+
+        delete body; // GetBodyFromEmotion does `new CBodyDouble`
+    }
+    root.Set("complex", complexArr);
+
+    return root;
+}
+
+// ---------------------------------------------------------------------------
 // Dump a SRECT as a JSON object
 // ---------------------------------------------------------------------------
 static ojson::Value DumpSRECT(const SRECT& r) {
@@ -890,6 +1038,25 @@ int main(int argc, char** argv) {
         fwrite(out.c_str(), 1, out.size(), f);
         fclose(f);
         printf("avatario written to %s\n", argv[2]);
+        return 0;
+    }
+
+    // Avatar-pose capture mode (Tier-1 #2 dump: emotion-to-pose selection on
+    // synthetic avatars). No DC, no avatar loading, no chatdoc — just the
+    // GetBodyFromEmotion nearest-neighbor logic exercised on known input.
+    if (strcmp(argv[1], "--avatar-pose") == 0) {
+        if (argc < 3) {
+            fprintf(stderr, "usage: OracleHarness.exe --avatar-pose <avatar.json>\n");
+            return 2;
+        }
+        AfxWinInit(GetModuleHandle(NULL), NULL, ::GetCommandLine(), SW_HIDE);
+        ojson::Value av = CaptureAvatarPose();
+        FILE* f = fopen(argv[2], "wb");
+        if (!f) { fprintf(stderr, "cannot write %s\n", argv[2]); return 1; }
+        std::string out = av.EmitToString();
+        fwrite(out.c_str(), 1, out.size(), f);
+        fclose(f);
+        printf("avatar-pose written to %s\n", argv[2]);
         return 0;
     }
 
