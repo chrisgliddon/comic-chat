@@ -1,0 +1,763 @@
+// oracleharness.cpp - C++ console oracle harness for Comic Chat v2.5-beta-1-modern.
+//
+// Links the real engine .obj files + static MFC, supplies a stub theApp/cui
+// with a desktop CClientDC (MM_TWIPS), and replays scripted message sequences
+// through CChatDoc::ProcessLine -> CUnitPanelPage::AddLine, then dumps the
+// Tier-3 engine state as expected.json.
+//
+// Build: nmake /f oracle.mak CFG="oracle - Win32 Release"
+//   (called from the v2.5-beta-1-modern directory with ORACLE=1)
+//
+// Usage: OracleHarness.exe <inputs.json> <expected.json>
+//        OracleHarness.exe --glyphs <glyphs.json>
+//
+// See oracle/harness/README.md for the linkage design decision.
+
+#include "stdafx.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "chat.h"
+#include "ui.h"
+#include "chatdoc.h"
+#include "panel.h"
+#include "balloon.h"
+#include "avatar.h"
+#include "avatario.h"
+#include "bbox.h"
+#include "pe.h"
+#include "spline.h"
+#include "traj.h"
+#include "pageview.h"
+#include "backdrop.h"
+#include "userinfo.h"
+#include "chatprot.h"
+
+#include "../oracle/harness/ojson.h"
+#include "../oracle/harness/oracleseed.h"
+
+// We link against the real engine objs which define these:
+extern CChatApp theApp;
+extern CUI cui;
+
+// Globals from the engine we need:
+extern void LoadEmotionStrings();
+extern void InitializeEmotionRules();
+extern void InitializeBackDrops();
+extern int GetCurrentBackDropID();
+extern void SetArtDir(const char *);
+extern void InitializeAvatars();
+extern CAvatarX *LoadAvatar(const char *avName);
+extern CAvatarX *GetAvatar(USHORT avatarID);
+extern double randfloat();
+
+// CChatDoc has a protected ctor + DECLARE_DYNCREATE; we need to construct
+// it. The MFC runtime class is accessible via the doc template machinery,
+// but in a console harness we bypass that. We friend-access via a helper.
+// Since CChatDoc() is protected and DECLARE_DYNCREATE'd, we use the
+// CRuntimeClass::CreateObject path which MFC provides.
+// Actually, the simplest approach: we declare a public-ctor subclass
+// right here, but CChatDoc's dtor and key methods are public, so we just
+// need to get past the protected ctor. We use a one-line shim.
+
+// The MFC CRuntimeClass for CChatDoc is exported by DECLARE_DYNCREATE.
+// We access it via RUNTIME_CLASS(CChatDoc) which requires the class to
+// be in the MFC runtime chain. Since we link the real chatdoc.obj,
+// IMPLEMENT_DYNCREATE(CChatDoc, CDocObjectServerDoc) is in the image.
+// But CDocObjectServerDoc needs OLE init... Let's try constructing
+// directly via a friend hack.
+
+// Friend hack: CChatDoc has a protected constructor. We create a
+// minimal subclass with a public constructor that calls the base.
+// This works because CChatDoc's constructor is protected, not private,
+// and MFC DECLARE_DYNCREATE makes the runtime class available.
+class COracleChatDoc : public CChatDoc {
+public:
+    COracleChatDoc() : CChatDoc() {}
+};
+
+// We need a stub CChatView whose GetDocument() returns our doc.
+// The engine's SayEntry::Execute calls GetView()->GetDocument(), but
+// we don't use ExecuteHistory -- we call ProcessLine directly.
+// GetChatDoc() macro -> cui.GetChatDocPv() -> cui.m_pvChatDoc
+// We set cui.m_pvChatDoc to our doc.
+
+// ---------------------------------------------------------------------------
+// Stub CWinApp: we need theApp to exist as a global (it's defined in
+// chat.cpp), but CWinApp normally requires InitInstance. We don't call
+// theApp.InitInstance() -- we call the individual init functions
+// directly. However, CWinApp's constructor does some MFC internal
+// registration that requires AfxWinInit. We call AfxWinInit manually.
+// ---------------------------------------------------------------------------
+
+// Forward declarations of init functions we call directly
+extern "C" BYTE GetCorrectCharSet();
+extern int PointsToTwips(int);
+
+static int g_screenDpi = 96;
+
+// ---------------------------------------------------------------------------
+// Glyph capture: dump advance widths + CFontInfo scalars
+// ---------------------------------------------------------------------------
+static ojson::Value CaptureGlyphs() {
+    ojson::Value root = ojson::Value::Obj();
+
+    // Create a desktop DC with MM_TWIPS, same as pageview.cpp:994
+    CClientDC dc(GetDesktopWindow());
+    dc.SetMapMode(MM_TWIPS);
+
+    // Pin the font: Comic Sans MS at the default balloon size
+    // From chat.cpp:381, m_iFontHeightBalloon = PointsToTwips(atoi(strDefaultFontHeight))
+    // IDS_DFLT_COMICSPNTSIZE = "12" in the modern tree (chat.rc:2336)
+    int fontHeight = PointsToTwips(12);
+    LOGFONT lf;
+    memset(&lf, 0, sizeof(lf));
+    lf.lfHeight = fontHeight;
+    lf.lfWidth = 0;
+    lf.lfWeight = FW_NORMAL;
+    lf.lfItalic = FALSE;
+    lf.lfUnderline = FALSE;
+    lf.lfStrikeOut = FALSE;
+    lf.lfCharSet = ANSI_CHARSET;
+    lf.lfOutPrecision = OUT_DEFAULT_PRECIS;
+    lf.lfClipPrecision = CLIP_DEFAULT_PRECIS;
+    lf.lfQuality = DEFAULT_QUALITY;
+    lf.lfPitchAndFamily = DEFAULT_PITCH | FF_DONTCARE;
+    strcpy(lf.lfFaceName, "Comic Sans MS");
+
+    CFont font;
+    font.CreateFontIndirect(&lf);
+    CFont* pOldFont = dc.SelectObject(&font);
+
+    TEXTMETRIC tm;
+    dc.GetTextMetrics(&tm);
+
+    // CFontInfo scalars (balloon.h:47, fonts.cpp:89)
+    double reduction = (double)abs(lf.lfHeight) / 180.0;
+    int doVKern = 1; // Comic Sans MS
+    short leading = (short)(-40 * reduction * doVKern);
+    short baseAdd = (short)(30 * reduction * doVKern);
+
+    ojson::Value fontInfo = ojson::Value::Obj();
+    fontInfo.Set("faceName", ojson::Value::Str("Comic Sans MS"));
+    fontInfo.Set("lfHeight", ojson::Value::Int(fontHeight));
+    fontInfo.Set("tmHeight", ojson::Value::Int(tm.tmHeight));
+    fontInfo.Set("tmAscent", ojson::Value::Int(tm.tmAscent));
+    fontInfo.Set("tmDescent", ojson::Value::Int(tm.tmDescent));
+    fontInfo.Set("tmInternalLeading", ojson::Value::Int(tm.tmInternalLeading));
+    fontInfo.Set("tmExternalLeading", ojson::Value::Int(tm.tmExternalLeading));
+    fontInfo.Set("tmAveCharWidth", ojson::Value::Int(tm.tmAveCharWidth));
+    fontInfo.Set("tmMaxCharWidth", ojson::Value::Int(tm.tmMaxCharWidth));
+    fontInfo.Set("tmOverhang", ojson::Value::Int(tm.tmOverhang));
+
+    ojson::Value cfi = ojson::Value::Obj();
+    cfi.Set("m_leading", ojson::Value::Int(leading));
+    cfi.Set("m_baseAdd", ojson::Value::Int(baseAdd));
+    // lineHeight and continuationWidth are computed in CFontInfo ctor (fonts.cpp)
+    // m_lineHeight = tm.tmHeight + m_leading
+    // m_continuationWidth = GetTextExtent("...") width
+    CSize contExt = dc.GetTextExtent("...", 3);
+    cfi.Set("m_lineHeight", ojson::Value::Int((short)(tm.tmHeight + leading)));
+    cfi.Set("m_continuationWidth", ojson::Value::Int((short)contExt.cx));
+    // topOffset = tm.tmAscent + leading + baseAdd (see CFontInfo ctor)
+    cfi.Set("m_topOffset", ojson::Value::Int((short)(tm.tmAscent + leading + baseAdd)));
+    fontInfo.Set("cFontInfo", cfi);
+
+    // Glyph advance widths for ASCII 0x20-0x7E + common corpus chars
+    ojson::Value advances = ojson::Value::Arr();
+    for (int c = 0x20; c <= 0x7E; c++) {
+        char ch[2] = { (char)c, 0 };
+        CSize ext = dc.GetTextExtent(ch, 1);
+        ojson::Value entry = ojson::Value::Obj();
+        entry.Set("char", ojson::Value::Int(c));
+        entry.Set("advance", ojson::Value::Int(ext.cx));
+        advances.Push(entry);
+    }
+    fontInfo.Set("glyphAdvances", advances);
+
+    dc.SelectObject(pOldFont);
+    root.Set("font", fontInfo);
+    root.Set("dpi", ojson::Value::Int(g_screenDpi));
+    root.Set("mapMode", ojson::Value::Str("MM_TWIPS"));
+
+    return root;
+}
+
+// ---------------------------------------------------------------------------
+// Dump a SRECT as a JSON object
+// ---------------------------------------------------------------------------
+static ojson::Value DumpSRECT(const SRECT& r) {
+    ojson::Value v = ojson::Value::Obj();
+    v.Set("left", ojson::Value::Int(r.Left));
+    v.Set("top", ojson::Value::Int(r.Top));
+    v.Set("right", ojson::Value::Int(r.Right));
+    v.Set("bottom", ojson::Value::Int(r.Bottom));
+    return v;
+}
+
+// ---------------------------------------------------------------------------
+// Dump a RECT as a JSON object
+// ---------------------------------------------------------------------------
+static ojson::Value DumpRECT(const RECT& r) {
+    ojson::Value v = ojson::Value::Obj();
+    v.Set("left", ojson::Value::Int(r.left));
+    v.Set("top", ojson::Value::Int(r.top));
+    v.Set("right", ojson::Value::Int(r.right));
+    v.Set("bottom", ojson::Value::Int(r.bottom));
+    return v;
+}
+
+// ---------------------------------------------------------------------------
+// Dump CFormatInfo (Tier-3 #4: line-break output)
+// ---------------------------------------------------------------------------
+static ojson::Value DumpFormatInfo(const CFormatInfo& fi) {
+    ojson::Value v = ojson::Value::Obj();
+    v.Set("nLines", ojson::Value::Int(fi.m_nLines));
+    v.Set("maxWidth", ojson::Value::Int(fi.m_iMaxWidth));
+
+    ojson::Value lengths = ojson::Value::Arr();
+    ojson::Value widths = ojson::Value::Arr();
+    ojson::Value leftX = ojson::Value::Arr();
+    ojson::Value starts = ojson::Value::Arr();
+    for (int i = 0; i < fi.m_nLines; i++) {
+        lengths.Push(ojson::Value::Int(fi.m_rgiLengths[i]));
+        widths.Push(ojson::Value::Int(fi.m_rgiWidths[i]));
+        leftX.Push(ojson::Value::Int(fi.m_rgiLeftX[i]));
+        // m_rgszStarts are char pointers into the label text
+        starts.Push(ojson::Value::Int((long)(fi.m_rgszStarts[i] - fi.m_rgszStarts[0])));
+    }
+    v.Set("rgiLengths", lengths);
+    v.Set("rgiWidths", widths);
+    v.Set("rgiLeftX", leftX);
+    v.Set("rgiStartOffsets", starts);
+    v.Set("bbox", DumpSRECT(fi.m_bbox));
+    return v;
+}
+
+// ---------------------------------------------------------------------------
+// Dump a CBalloon (Tier-3 #5/#6: balloon bbox/routeRgn/tail + spline cps)
+// ---------------------------------------------------------------------------
+static ojson::Value DumpBalloon(CBalloon* balloon) {
+    ojson::Value v = ojson::Value::Obj();
+
+    // Balloon bbox
+    RECT bbox;
+    balloon->GetBBox(&bbox);
+    v.Set("bbox", DumpRECT(bbox));
+
+    // trueBox and routeRgn (SRECT, relative to balloon origin)
+    v.Set("trueBox", DumpSRECT(balloon->m_trueBox));
+    v.Set("routeRgn", DumpSRECT(balloon->m_routeRgn));
+
+    // CFormatInfo (line breaks)
+    if (balloon->m_fInfo) {
+        v.Set("formatInfo", DumpFormatInfo(*balloon->m_fInfo));
+    }
+
+    // Spline control points (Tier-3 #6)
+    if (balloon->m_spline) {
+        CSpline* sp = balloon->m_spline;
+        ojson::Value spline = ojson::Value::Obj();
+        spline.Set("nCps", ojson::Value::Int(sp->nCps));
+        spline.Set("closed", ojson::Value::Bool(sp->closed ? true : false));
+
+        ojson::Value cps = ojson::Value::Arr();
+        for (int i = 0; i < sp->nCps; i++) {
+            ojson::Value cp = ojson::Value::Obj();
+            cp.Set("x", ojson::Value::Int(sp->cps[i].x));
+            cp.Set("y", ojson::Value::Int(sp->cps[i].y));
+            cps.Push(cp);
+        }
+        spline.Set("cps", cps);
+
+        // Bezier points (computed by ComputeBezpts)
+        if (sp->bezpts) {
+            int nBez = sp->BezierCount() * 3 + 1; // cubic segments
+            // Actually BezierCount returns the number of cubic segments;
+            // bezpts has 3*nBez+1 points (but could be different).
+            // We dump what's there based on KnotCount.
+            int knotCount = sp->KnotCount();
+            int bezCount = sp->BezierCount();
+            ojson::Value bez = ojson::Value::Arr();
+            // bezpts stores 2 points per cubic segment (control + end),
+            // but the exact layout depends on CubicToBezier. We dump
+            // the raw array of POINTs for the computed count.
+            // BezierCount = (3 * KnotCount) - 8, bezpts = 2 * BezierCount
+            int nBezPts = bezCount > 0 ? bezCount * 2 : 0;
+            // Guard: the array might be smaller; dump safely
+            for (int i = 0; i < nBezPts && i < knotCount * 6; i++) {
+                ojson::Value bp = ojson::Value::Obj();
+                bp.Set("x", ojson::Value::Int(sp->bezpts[i].x));
+                bp.Set("y", ojson::Value::Int(sp->bezpts[i].y));
+                bez.Push(bp);
+            }
+            spline.Set("bezpts", bez);
+            spline.Set("bezierCount", ojson::Value::Int(bezCount));
+        }
+
+        v.Set("spline", spline);
+    }
+
+    // Arrow/tail points (CArrow on the balloon)
+    // The arrow is stored in the balloon's spline AddArrow, which sets
+    // m_traj. The traj has the tail points.
+    if (balloon->m_traj) {
+        CTraj* traj = balloon->m_traj;
+        ojson::Value tj = ojson::Value::Obj();
+        // CTraj stores the arrow points; dump what we can access
+        // traj.h defines the structure
+        v.Set("traj", tj);
+    }
+
+    // Speaker
+    if (balloon->m_speaker) {
+        v.Set("speakerAvatarID", ojson::Value::Int(balloon->m_speaker->m_avatarID));
+        v.Set("speakerFlip", ojson::Value::Int(balloon->m_speaker->m_flip));
+    }
+
+    // Balloon type
+    v.Set("type", ojson::Value::Int(balloon->GetType()));
+
+    return v;
+}
+
+// ---------------------------------------------------------------------------
+// Dump a CPanel (Tier-3 #1-3: membership, avatar order/flip, zoom, body rects)
+// ---------------------------------------------------------------------------
+static ojson::Value DumpPanel(CPanel* panel) {
+    ojson::Value v = ojson::Value::Obj();
+
+    v.Set("seed", ojson::Value::Int((long)panel->m_seed));
+    v.Set("hasBorder", ojson::Value::Bool(panel->m_hasBorder ? true : false));
+
+    // Balloons (m_elements)
+    ojson::Value balloons = ojson::Value::Arr();
+    POSITION pos = panel->m_elements.GetHeadPosition();
+    while (pos) {
+        CPanelElement* elem = (CPanelElement*)panel->m_elements.GetNext(pos);
+        if (elem->GetType() & PE_BALLOON) {
+            balloons.Push(DumpBalloon((CBalloon*)elem));
+        }
+    }
+    v.Set("balloons", balloons);
+
+    // Bodies (m_bodies) - avatar order, flip, bbox
+    ojson::Value bodies = ojson::Value::Arr();
+    POSITION bpos = panel->m_bodies.GetHeadPosition();
+    while (bpos) {
+        CBody* body = (CBody*)panel->m_bodies.GetNext(bpos);
+        ojson::Value b = ojson::Value::Obj();
+        b.Set("avatarID", ojson::Value::Int(body->m_avatarID));
+        b.Set("flip", ojson::Value::Int(body->m_flip));
+        b.Set("requested", ojson::Value::Int(body->m_requested));
+        b.Set("bbox", DumpSRECT(body->m_bbox));
+        b.Set("arrowX", ojson::Value::Int(body->m_arrowX));
+        b.Set("class", ojson::Value::Int(body->GetClass()));
+        bodies.Push(b);
+    }
+    v.Set("bodies", bodies);
+
+    return v;
+}
+
+// ---------------------------------------------------------------------------
+// Dump a CPage (the page with its panels)
+// ---------------------------------------------------------------------------
+static ojson::Value DumpPage(CPage* page) {
+    ojson::Value v = ojson::Value::Obj();
+    v.Set("newPanel", ojson::Value::Bool(page->m_newPanel ? true : false));
+
+    RECT bbox;
+    page->GetBBox(&bbox);
+    v.Set("bbox", DumpRECT(bbox));
+
+    ojson::Value panels = ojson::Value::Arr();
+    POSITION pos = page->m_panels.GetHeadPosition();
+    while (pos) {
+        CPanel* panel = (CPanel*)page->m_panels.GetNext(pos);
+        panels.Push(DumpPanel(panel));
+    }
+    v.Set("panels", panels);
+
+    return v;
+}
+
+// ---------------------------------------------------------------------------
+// Dump seed ledger (Phase 0: every seed recorded)
+// ---------------------------------------------------------------------------
+static ojson::Value DumpSeedLedger() {
+    ojson::Value v = ojson::Value::Arr();
+    int n = OracleSeedRecordCount();
+    for (int i = 0; i < n; i++) {
+        const OracleSeedRecord* r = OracleSeedRecordAt(i);
+        ojson::Value entry = ojson::Value::Obj();
+        entry.Set("site", ojson::Value::Str(r->site));
+        entry.Set("value", ojson::Value::Int(r->value));
+        v.Push(entry);
+    }
+    return v;
+}
+
+// ---------------------------------------------------------------------------
+// Dump avatar state (Tier-3 #7: hidden state)
+// ---------------------------------------------------------------------------
+static ojson::Value DumpAvatarState(USHORT avatarID) {
+    ojson::Value v = ojson::Value::Obj();
+    CAvatarX* av = GetAvatar(avatarID);
+    if (!av) {
+        v.Set("exists", ojson::Value::Bool(false));
+        return v;
+    }
+    v.Set("exists", ojson::Value::Bool(true));
+    v.Set("name", ojson::Value::Str(av->m_name ? av->m_name : ""));
+    v.Set("lastDir", ojson::Value::Int(av->m_lastDir));
+    v.Set("lastRight", ojson::Value::Int(av->m_lastRight));
+    v.Set("lastLeft", ojson::Value::Int(av->m_lastLeft));
+    v.Set("nSends", ojson::Value::Int(av->m_nSends));
+
+    if (av->m_body) {
+        ojson::Value body = ojson::Value::Obj();
+        body.Set("class", ojson::Value::Int(av->m_body->GetClass()));
+        body.Set("flip", ojson::Value::Int(av->m_body->m_flip));
+        body.Set("bbox", DumpSRECT(av->m_body->m_bbox));
+
+        // Get emotion state
+        CEmotion face, torso;
+        av->GetEmotions(face, torso);
+        ojson::Value fE = ojson::Value::Obj();
+        fE.Set("emotion", ojson::Value::Dbl(face.m_emotion));
+        fE.Set("intensity", ojson::Value::Dbl(face.m_intensity));
+        body.Set("faceEmotion", fE);
+        ojson::Value tE = ojson::Value::Obj();
+        tE.Set("emotion", ojson::Value::Dbl(torso.m_emotion));
+        tE.Set("intensity", ojson::Value::Dbl(torso.m_intensity));
+        body.Set("torsoEmotion", tE);
+
+        // Get indices
+        CHAR chFace, chTorso;
+        BYTE bbReq;
+        av->GetIndices(chFace, chTorso, bbReq);
+        body.Set("faceIndex", ojson::Value::Int(chFace));
+        body.Set("torsoIndex", ojson::Value::Int(chTorso));
+        body.Set("bbRequested", ojson::Value::Int(bbReq));
+
+        v.Set("body", body);
+    }
+    return v;
+}
+
+// ---------------------------------------------------------------------------
+// Initialize the harness environment (fonts, emotion rules, avatars, DC)
+// ---------------------------------------------------------------------------
+static void InitHarness(const char* treeDir) {
+    // MFC requires AfxWinInit for basic functionality
+    AfxWinInit(GetModuleHandle(NULL), NULL, ::GetCommandLine(), SW_HIDE);
+
+    // Set up the global DC: desktop CClientDC with MM_TWIPS
+    // (same as pageview.cpp:994-998)
+    if (!cui.m_pvClientDC) {
+        CClientDC* dc = new CClientDC(GetDesktopWindow());
+        dc->SetMapMode(MM_TWIPS);
+        cui.m_pvClientDC = dc;
+    }
+
+    // Initialize fonts directly (replicates chat.cpp:495 + InitializeComicsFonts)
+    // Pin: Comic Sans MS, 12pt -> twips
+    int fontHeight = PointsToTwips(12);
+    memset(&theApp.m_comicsFont, 0, sizeof(LOGFONT));
+    theApp.m_comicsFont.lfHeight = fontHeight;
+    theApp.m_comicsFont.lfWidth = 0;
+    theApp.m_comicsFont.lfWeight = FW_NORMAL;
+    theApp.m_comicsFont.lfItalic = FALSE;
+    theApp.m_comicsFont.lfUnderline = FALSE;
+    theApp.m_comicsFont.lfStrikeOut = FALSE;
+    theApp.m_comicsFont.lfCharSet = ANSI_CHARSET;
+    theApp.m_comicsFont.lfOutPrecision = OUT_DEFAULT_PRECIS;
+    theApp.m_comicsFont.lfClipPrecision = CLIP_DEFAULT_PRECIS;
+    theApp.m_comicsFont.lfQuality = DEFAULT_QUALITY;
+    theApp.m_comicsFont.lfPitchAndFamily = DEFAULT_PITCH | FF_DONTCARE;
+    strcpy(theApp.m_comicsFont.lfFaceName, "Comic Sans MS");
+    theApp.m_iFontHeightBalloon = fontHeight;
+    theApp.m_comicsColor = RGB(0, 0, 0);
+    theApp.m_textColor = RGB(0, 0, 0);
+    theApp.m_charSet = ANSI_CHARSET;
+    theApp.m_bComicView = TRUE;
+    theApp.m_bNoRefresh = TRUE;  // suppress view refresh calls
+    theApp.m_flags1 = (DWORD)~0; // all flags on (incl F1_RTFCOMIC)
+    theApp.m_bIconMembers = TRUE;
+    strcpy(theApp.m_szGuiFaceName, "Comic Sans MS");
+
+    // Create the panel fonts
+    CUnitPanelPage::SetFonts(theApp.m_comicsFont, theApp.m_comicsColor);
+
+    // Set art directory to the tree's ComicArt folder
+    char artDir[MAX_PATH];
+    snprintf(artDir, MAX_PATH, "%s\\ComicArt", treeDir);
+    theApp.m_strDefaultArtDir = artDir;
+    theApp.m_strAvatarDir = artDir;
+    theApp.m_strBaseDir = treeDir;
+
+    // Initialize backdrops
+    InitializeBackDrops();
+
+    // Load emotion rules (textpose.cpp)
+    LoadEmotionStrings();
+    InitializeEmotionRules();
+
+    // Initialize avatar registry
+    InitializeAvatars();
+}
+
+// ---------------------------------------------------------------------------
+// Load an avatar by name and return its ID
+// ---------------------------------------------------------------------------
+static USHORT LoadAvatarByName(const char* name) {
+    CAvatarX* av = LoadAvatar(name);
+    if (!av) {
+        fprintf(stderr, "ORACLE: failed to load avatar '%s'\n", name);
+        return 0;
+    }
+    return av->m_avatarID;
+}
+
+// ---------------------------------------------------------------------------
+// Main: replay inputs.json -> expected.json
+// ---------------------------------------------------------------------------
+int main(int argc, char** argv) {
+    // Parse args
+    if (argc < 2) {
+        fprintf(stderr, "usage: OracleHarness.exe <inputs.json> <expected.json>\n");
+        fprintf(stderr, "       OracleHarness.exe --glyphs <glyphs.json>\n");
+        return 2;
+    }
+
+    // Determine tree directory (parent of the harness exe, or from inputs)
+    char treeDir[MAX_PATH] = ".";
+    GetModuleFileName(NULL, treeDir, MAX_PATH);
+    char* slash = strrchr(treeDir, '\\');
+    if (slash) *slash = 0;
+    // treeDir is now the Release/ dir; go up one to the tree root
+    slash = strrchr(treeDir, '\\');
+    if (slash) *slash = 0;
+
+    // Glyph capture mode
+    if (strcmp(argv[1], "--glyphs") == 0) {
+        if (argc < 3) {
+            fprintf(stderr, "usage: OracleHarness.exe --glyphs <glyphs.json>\n");
+            return 2;
+        }
+        AfxWinInit(GetModuleHandle(NULL), NULL, ::GetCommandLine(), SW_HIDE);
+        if (!cui.m_pvClientDC) {
+            CClientDC* dc = new CClientDC(GetDesktopWindow());
+            dc->SetMapMode(MM_TWIPS);
+            cui.m_pvClientDC = dc;
+        }
+        ojson::Value glyphs = CaptureGlyphs();
+        FILE* f = fopen(argv[2], "wb");
+        if (!f) { fprintf(stderr, "cannot write %s\n", argv[2]); return 1; }
+        std::string out = glyphs.EmitToString();
+        fwrite(out.c_str(), 1, out.size(), f);
+        fclose(f);
+        printf("glyphs written to %s\n", argv[2]);
+        return 0;
+    }
+
+    // Normal replay mode
+    if (argc < 3) {
+        fprintf(stderr, "usage: OracleHarness.exe <inputs.json> <expected.json>\n");
+        return 2;
+    }
+
+    const char* inputsPath = argv[1];
+    const char* expectedPath = argv[2];
+
+    // Read inputs.json
+    FILE* fin = fopen(inputsPath, "rb");
+    if (!fin) { fprintf(stderr, "cannot open %s\n", inputsPath); return 1; }
+    fseek(fin, 0, SEEK_END);
+    long sz = ftell(fin);
+    fseek(fin, 0, SEEK_SET);
+    std::string inputsText(sz, '\0');
+    fread(&inputsText[0], 1, sz, fin);
+    fclose(fin);
+
+    ojson::Value inputs;
+    std::string parseErr;
+    if (!ojson::Parse(inputsText, inputs, parseErr)) {
+        fprintf(stderr, "parse error in %s: %s\n", inputsPath, parseErr.c_str());
+        return 1;
+    }
+
+    // Read seed and config
+    unsigned int seed = (unsigned int)inputs.GetInt("seed", 42);
+    unsigned int tickBase = (unsigned int)inputs.GetInt("tickSeedBase", 1000);
+    int panelsWide = (int)inputs.GetInt("panelsWide", 2);
+    const char* treeDirFromInput = inputs.GetStr("treeDir", "");
+    if (treeDirFromInput[0]) {
+        strncpy(treeDir, treeDirFromInput, MAX_PATH - 1);
+        treeDir[MAX_PATH - 1] = 0;
+    }
+
+    // Initialize the harness environment
+    InitHarness(treeDir);
+
+    // Pin panel columns
+    CUnitPanelPage::SetUnitPanelsPerRow(panelsWide);
+    CUnitPanelPage::SetUnitPanelWidth(4860);  // pin world width
+    CUnitPanelPage::SetUnitPanelHeight(4860);
+
+    // Activate the oracle determinism layer
+    OracleSeedActivate(seed, tickBase);
+
+    // Load avatars from the inputs
+    ojson::Value* avatars = inputs.Find("avatars");
+    // Map: avatar name -> avatarID
+    // We load each avatar and store the ID
+
+    // Create the document
+    COracleChatDoc* doc = new COracleChatDoc();
+    cui.m_pvChatDoc = doc;  // GetChatDoc() macro will find it
+
+    // Set comics view mode
+    doc->m_bComicView = TRUE;
+
+    // Initialize the document (creates first page, seeds the PRNG)
+    doc->InitMyDocument();
+
+    // Load avatars and assign to speakers
+    // inputs.avatars: array of {name, speakerId}
+    // We load each avatar and map speakerId -> avatarID
+    struct SpeakerAv { int speakerId; USHORT avatarID; };
+    SpeakerAv speakerMap[64];
+    int nSpeakers = 0;
+
+    if (avatars && avatars->type == ojson::T_ARRAY) {
+        for (size_t i = 0; i < avatars->arr.size(); i++) {
+            ojson::Value& a = avatars->arr[i];
+            const char* name = a.GetStr("name", "");
+            int speakerId = (int)a.GetInt("speakerId", (long)i);
+            if (nSpeakers < 64) {
+                USHORT avID = LoadAvatarByName(name);
+                speakerMap[nSpeakers].speakerId = speakerId;
+                speakerMap[nSpeakers].avatarID = avID;
+                nSpeakers++;
+            }
+        }
+    }
+
+    // If no avatars specified, load a default
+    if (nSpeakers == 0) {
+        USHORT avID = LoadAvatarByName("bolo");
+        speakerMap[0].speakerId = 1;
+        speakerMap[0].avatarID = avID;
+        nSpeakers = 1;
+    }
+
+    // Set my avatar to the first one
+    if (nSpeakers > 0) {
+        doc->m_myAvatarID = speakerMap[0].avatarID;
+    }
+
+    // Replay messages
+    ojson::Value* messages = inputs.Find("messages");
+    ojson::Value dumpRoot = ojson::Value::Obj();
+    ojson::Value perMessageDumps = ojson::Value::Arr();
+
+    // Mode constants (from protsupp.h / chatprot.h)
+    // BM_SAY=0, BM_WHISPER=1, BM_THINK=2, BM_ACTION=4
+    // These map to the uModes parameter of ProcessLine
+
+    if (messages && messages->type == ojson::T_ARRAY) {
+        for (size_t i = 0; i < messages->arr.size(); i++) {
+            ojson::Value& msg = messages->arr[i];
+            int speakerId = (int)msg.GetInt("speakerId", 1);
+            const char* text = msg.GetStr("text", "");
+            int mode = (int)msg.GetInt("mode", 0); // 0=say, 1=whisper, 2=think, 4=action
+            int bbCooked = (int)msg.GetInt("bbCooked", 1);
+
+            // Find avatarID for this speaker
+            USHORT avatarID = 0;
+            for (int s = 0; s < nSpeakers; s++) {
+                if (speakerMap[s].speakerId == speakerId) {
+                    avatarID = speakerMap[s].avatarID;
+                    break;
+                }
+            }
+            if (!avatarID && nSpeakers > 0) {
+                avatarID = speakerMap[0].avatarID;
+            }
+
+            // Process the line through the engine
+            doc->ProcessLine(avatarID, text, (USHORT)mode, (BYTE)bbCooked, NULL);
+
+            // Dump state after this message
+            ojson::Value msgDump = ojson::Value::Obj();
+            msgDump.Set("messageIndex", ojson::Value::Int((long)i));
+            msgDump.Set("speakerId", ojson::Value::Int(speakerId));
+            msgDump.Set("text", ojson::Value::Str(text));
+            msgDump.Set("mode", ojson::Value::Int(mode));
+
+            // Dump the current page (tail of m_pages is the newest; head is
+            // actually the newest per AddNewPage which does AddHead... but
+            // the engine's AddLine uses GetTail which is the oldest page.
+            // Wait: AddNewPage does m_pages.AddHead, and AddLine uses
+            // m_pages.GetTail() -- so the first page is at the tail.
+            // The "current" page being written to is the tail.)
+            CPage* currentPage = (CPage*)doc->m_pages.GetTail();
+            if (currentPage) {
+                msgDump.Set("page", DumpPage(currentPage));
+            }
+
+            // Dump all pages (for multi-panel pagination tracking)
+            ojson::Value allPages = ojson::Value::Arr();
+            POSITION ppos = doc->m_pages.GetHeadPosition();
+            while (ppos) {
+                CPage* p = (CPage*)doc->m_pages.GetNext(ppos);
+                allPages.Push(DumpPage(p));
+            }
+            msgDump.Set("allPages", allPages);
+
+            // Dump avatar states for all speakers
+            ojson::Value avStates = ojson::Value::Obj();
+            for (int s = 0; s < nSpeakers; s++) {
+                char key[32];
+                snprintf(key, sizeof(key), "%d", speakerMap[s].speakerId);
+                avStates.Set(key, DumpAvatarState(speakerMap[s].avatarID));
+            }
+            msgDump.Set("avatarStates", avStates);
+
+            perMessageDumps.Push(msgDump);
+        }
+    }
+
+    dumpRoot.Set("seed", ojson::Value::Int((long)seed));
+    dumpRoot.Set("tickSeedBase", ojson::Value::Int((long)tickBase));
+    dumpRoot.Set("panelsWide", ojson::Value::Int(panelsWide));
+    dumpRoot.Set("messages", perMessageDumps);
+
+    // Dump seed ledger (Phase 0 determinism verification)
+    dumpRoot.Set("seedLedger", DumpSeedLedger());
+
+    // Dump font info for this run
+    ojson::Value fontInfo = ojson::Value::Obj();
+    fontInfo.Set("faceName", ojson::Value::Str("Comic Sans MS"));
+    fontInfo.Set("lfHeight", ojson::Value::Int(theApp.m_iFontHeightBalloon));
+    fontInfo.Set("charSet", ojson::Value::Int(ANSI_CHARSET));
+    dumpRoot.Set("fontConfig", fontInfo);
+
+    // Write expected.json
+    std::string out = dumpRoot.EmitToString();
+    FILE* fout = fopen(expectedPath, "wb");
+    if (!fout) { fprintf(stderr, "cannot write %s\n", expectedPath); return 1; }
+    fwrite(out.c_str(), 1, out.size(), fout);
+    fclose(fout);
+
+    printf("oracle dump written to %s (%d messages)\n",
+           expectedPath, (int)perMessageDumps.arr.size());
+
+    // Cleanup
+    delete doc;
+
+    return 0;
+}

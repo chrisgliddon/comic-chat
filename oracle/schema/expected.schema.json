@@ -1,0 +1,194 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://comic-chat/oracle/expected.schema.json",
+  "title": "Oracle Expected Dump",
+  "description": "Tier-3 engine state dump from the oracle harness (plan doc Tier 3)",
+  "type": "object",
+  "required": ["seed", "messages"],
+  "properties": {
+    "seed": { "type": "integer" },
+    "tickSeedBase": { "type": "integer" },
+    "panelsWide": { "type": "integer" },
+    "fontConfig": {
+      "type": "object",
+      "properties": {
+        "faceName": { "type": "string" },
+        "lfHeight": { "type": "integer" },
+        "charSet": { "type": "integer" }
+      }
+    },
+    "seedLedger": {
+      "type": "array",
+      "description": "Every seed consumed during the run (Phase 0 determinism verification)",
+      "items": {
+        "type": "object",
+        "properties": {
+          "site": { "type": "string" },
+          "value": { "type": "integer" }
+        }
+      }
+    },
+    "messages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["messageIndex", "speakerId", "text"],
+        "properties": {
+          "messageIndex": { "type": "integer" },
+          "speakerId": { "type": "integer" },
+          "text": { "type": "string" },
+          "mode": { "type": "integer" },
+          "page": { "$ref": "#/$defs/page" },
+          "allPages": {
+            "type": "array",
+            "items": { "$ref": "#/$defs/page" }
+          },
+          "avatarStates": {
+            "type": "object",
+            "additionalProperties": { "$ref": "#/$defs/avatarState" }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "page": {
+      "type": "object",
+      "properties": {
+        "newPanel": { "type": "boolean" },
+        "bbox": { "$ref": "#/$defs/rect" },
+        "panels": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/panel" }
+        }
+      }
+    },
+    "panel": {
+      "type": "object",
+      "properties": {
+        "seed": { "type": "integer" },
+        "hasBorder": { "type": "boolean" },
+        "balloons": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/balloon" }
+        },
+        "bodies": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/body" }
+        }
+      }
+    },
+    "balloon": {
+      "type": "object",
+      "properties": {
+        "bbox": { "$ref": "#/$defs/rect" },
+        "trueBox": { "$ref": "#/$defs/srect" },
+        "routeRgn": { "$ref": "#/$defs/srect" },
+        "type": { "type": "integer" },
+        "speakerAvatarID": { "type": "integer" },
+        "speakerFlip": { "type": "integer" },
+        "formatInfo": { "$ref": "#/$defs/formatInfo" },
+        "spline": { "$ref": "#/$defs/spline" }
+      }
+    },
+    "formatInfo": {
+      "type": "object",
+      "properties": {
+        "nLines": { "type": "integer" },
+        "maxWidth": { "type": "integer" },
+        "rgiLengths": { "type": "array", "items": { "type": "integer" } },
+        "rgiWidths": { "type": "array", "items": { "type": "integer" } },
+        "rgiLeftX": { "type": "array", "items": { "type": "integer" } },
+        "rgiStartOffsets": { "type": "array", "items": { "type": "integer" } },
+        "bbox": { "$ref": "#/$defs/srect" }
+      }
+    },
+    "spline": {
+      "type": "object",
+      "properties": {
+        "nCps": { "type": "integer" },
+        "closed": { "type": "boolean" },
+        "cps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": { "x": { "type": "integer" }, "y": { "type": "integer" } }
+          }
+        },
+        "bezpts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": { "x": { "type": "integer" }, "y": { "type": "integer" } }
+          }
+        },
+        "bezierCount": { "type": "integer" }
+      }
+    },
+    "body": {
+      "type": "object",
+      "properties": {
+        "avatarID": { "type": "integer" },
+        "flip": { "type": "integer" },
+        "requested": { "type": "integer" },
+        "bbox": { "$ref": "#/$defs/srect" },
+        "arrowX": { "type": "integer" },
+        "class": { "type": "integer" }
+      }
+    },
+    "avatarState": {
+      "type": "object",
+      "properties": {
+        "exists": { "type": "boolean" },
+        "name": { "type": "string" },
+        "lastDir": { "type": "integer" },
+        "lastRight": { "type": "integer" },
+        "lastLeft": { "type": "integer" },
+        "nSends": { "type": "integer" },
+        "body": {
+          "type": "object",
+          "properties": {
+            "class": { "type": "integer" },
+            "flip": { "type": "integer" },
+            "bbox": { "$ref": "#/$defs/srect" },
+            "faceEmotion": {
+              "type": "object",
+              "properties": {
+                "emotion": { "type": "number" },
+                "intensity": { "type": "number" }
+              }
+            },
+            "torsoEmotion": {
+              "type": "object",
+              "properties": {
+                "emotion": { "type": "number" },
+                "intensity": { "type": "number" }
+              }
+            },
+            "faceIndex": { "type": "integer" },
+            "torsoIndex": { "type": "integer" },
+            "bbRequested": { "type": "integer" }
+          }
+        }
+      }
+    },
+    "rect": {
+      "type": "object",
+      "properties": {
+        "left": { "type": "integer" },
+        "top": { "type": "integer" },
+        "right": { "type": "integer" },
+        "bottom": { "type": "integer" }
+      }
+    },
+    "srect": {
+      "type": "object",
+      "properties": {
+        "left": { "type": "integer" },
+        "top": { "type": "integer" },
+        "right": { "type": "integer" },
+        "bottom": { "type": "integer" }
+      }
+    }
+  }
+}

@@ -1,0 +1,112 @@
+name: Oracle harness
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/oracle.yml"
+      - "oracle/**"
+      - "v2.5-beta-1-modern/oracle.mak"
+      - "v2.5-beta-1-modern/avatar.cpp"
+      - "v2.5-beta-1-modern/chatdoc.cpp"
+      - "v2.5-beta-1-modern/panel.cpp"
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-run:
+    name: Build harness, run judge validation, capture glyphs
+    runs-on: windows-2022
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build the oracle harness
+        shell: cmd
+        run: |
+          for /f "usebackq delims=" %%I in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do set "VSINSTALL=%%I"
+          if not defined VSINSTALL (
+            echo No Visual Studio C++ installation was found.
+            exit /b 1
+          )
+          call "%VSINSTALL%\VC\Auxiliary\Build\vcvars32.bat"
+          if errorlevel 1 exit /b 1
+          if not exist "%VCToolsInstallDir%ATLMFC\lib\spectre\x86" (
+            echo The x86 Spectre-mitigated MFC libraries are missing.
+            exit /b 1
+          )
+
+          if exist "v2.5-beta-1-modern\Release\oracle" rmdir /s /q "v2.5-beta-1-modern\Release\oracle"
+          pushd "v2.5-beta-1-modern"
+          nmake /f oracle.mak CFG="oracle - Win32 Release"
+          if errorlevel 1 (
+            echo HARNESS BUILD FAILED
+            exit /b 1
+          )
+          popd
+
+      - name: Capture glyph tables
+        shell: cmd
+        run: |
+          cd v2.5-beta-1-modern
+          Release\OracleHarness.exe --glyphs ..\oracle\glyphs\glyphs.json
+          if errorlevel 1 exit /b 1
+          echo "Glyphs captured."
+          type ..\oracle\glyphs\glyphs.json
+
+      - name: Judge validation - determinism (two identical runs)
+        shell: cmd
+        run: |
+          cd v2.5-beta-1-modern
+          if not exist ..\oracle\corpus\001 mkdir ..\oracle\corpus\001
+          Release\OracleHarness.exe ..\oracle\corpus\001\inputs.json ..\oracle\corpus\001\run_a.json
+          if errorlevel 1 exit /b 1
+          Release\OracleHarness.exe ..\oracle\corpus\001\inputs.json ..\oracle\corpus\001\run_b.json
+          if errorlevel 1 exit /b 1
+          node ..\oracle\scripts\diff-dumps.mjs ..\oracle\corpus\001\run_a.json ..\oracle\corpus\001\run_b.json
+          if errorlevel 1 (
+            echo DETERMINISM CHECK FAILED: two runs with same seed produced different output
+            exit /b 1
+          )
+          echo "Determinism check passed: two runs are byte-identical."
+
+      - name: Run corpus cases
+        shell: cmd
+        run: |
+          cd v2.5-beta-1-modern
+          for /d %%D in (..\oracle\corpus\0*) do (
+            if exist %%D\inputs.json (
+              echo Running case %%~nxD
+              Release\OracleHarness.exe %%D\inputs.json %%D\expected.json
+              if errorlevel 1 (
+                echo CASE %%~nxD FAILED
+                exit /b 1
+              )
+            )
+          )
+
+      - name: Validate corpus against schemas
+        shell: pwsh
+        run: |
+          npm install ajv --no-save
+          node oracle/scripts/validate.mjs --corpus oracle/corpus
+
+      - name: Upload oracle artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: oracle-artifacts-${{ github.sha }}
+          path: |
+            oracle/glyphs/glyphs.json
+            oracle/corpus/*/expected.json
+            oracle/corpus/*/run_a.json
+            oracle/corpus/*/run_b.json
+          if-no-files-found: warn
+          retention-days: 30

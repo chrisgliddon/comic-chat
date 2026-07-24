@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://comic-chat/oracle/inputs.schema.json",
+  "title": "Oracle Inputs",
+  "description": "Scripted message sequence for the Comic Chat oracle harness (plan doc Tier 4)",
+  "type": "object",
+  "required": ["seed", "messages"],
+  "properties": {
+    "seed": {
+      "type": "integer",
+      "description": "Initial PRNG seed (pins the CRT rand() stream)"
+    },
+    "tickSeedBase": {
+      "type": "integer",
+      "description": "Base for the deterministic GetTickCount replacement (base, base+1, ...)",
+      "default": 1000
+    },
+    "panelsWide": {
+      "type": "integer",
+      "description": "Number of panels per row (SetPanelsWide)",
+      "default": 2
+    },
+    "treeDir": {
+      "type": "string",
+      "description": "Path to the v2.5-beta-1-modern tree root (for avatar/art loading). If empty, uses exe-relative path."
+    },
+    "avatars": {
+      "type": "array",
+      "description": "Avatar assignments for speakers",
+      "items": {
+        "type": "object",
+        "required": ["name", "speakerId"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Avatar file name (without .avb extension), e.g. 'bolo', 'anna'"
+          },
+          "speakerId": {
+            "type": "integer",
+            "description": "Speaker identifier used in messages"
+          }
+        }
+      }
+    },
+    "messages": {
+      "type": "array",
+      "description": "Scripted messages to replay through the engine",
+      "items": {
+        "type": "object",
+        "required": ["speakerId", "text"],
+        "properties": {
+          "speakerId": {
+            "type": "integer",
+            "description": "Which speaker/avatar sends this message"
+          },
+          "text": {
+            "type": "string",
+            "description": "Message text (may include <Brk>, formatting codes, unicode)"
+          },
+          "mode": {
+            "type": "integer",
+            "description": "Speech mode: 0=say, 1=whisper, 2=think, 4=action",
+            "enum": [0, 1, 2, 4],
+            "default": 0
+          },
+          "bbCooked": {
+            "type": "integer",
+            "description": "Whether the message is pre-cooked (1 = skip ChatPreSendText)",
+            "default": 1
+          }
+        }
+      }
+    }
+  }
+}
