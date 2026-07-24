@@ -830,7 +830,14 @@ void PrintBMP() {
 BOOL g_bNewedPanel = FALSE;
 
 BOOL Establishing() {
+#ifdef ORACLE_HARNESS
+	// In the console harness there is no view; the view's document is just
+	// GetChatDoc(), so go straight there and skip the NULL GetView() deref.
+	CChatDoc *doc = GetChatDoc();
+	CPage *page1 = (CPage *) doc->m_pages.GetHead();
+#else
 	CPage *page1 = (CPage *) GetView()->GetDocument()->m_pages.GetHead();
+#endif
 	int count = page1->m_panels.GetCount();
 	if (count <= 1 || (!g_bNewedPanel && count <= 2)) return TRUE;
 	else return FALSE;
