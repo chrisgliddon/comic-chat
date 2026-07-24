@@ -1,0 +1,369 @@
+{
+  "emFloats": [
+    "0",
+    "0",
+    "0.78539818525314331",
+    "1.5707963705062866",
+    "2.3561944961547852",
+    "3.1415927410125732",
+    "3.9269907474517822",
+    "4.7123889923095703",
+    "5.4977869987487793",
+    "0",
+    "1001",
+    "1002",
+    "1003",
+    "1004",
+    "1005",
+    "1006",
+    "1007",
+    "1008"
+  ],
+  "probes": [
+    {
+      "input": {
+        "emotion": "0",
+        "intensity": "1"
+      },
+      "emVal": 1,
+      "encoded": {
+        "emotion": 49,
+        "intensity": 58
+      },
+      "decoded": {
+        "emotion": "0",
+        "intensity": "1"
+      }
+    },
+    {
+      "input": {
+        "emotion": "0",
+        "intensity": "1"
+      },
+      "emVal": 1,
+      "encoded": {
+        "emotion": 49,
+        "intensity": 58
+      },
+      "decoded": {
+        "emotion": "0",
+        "intensity": "1"
+      }
+    },
+    {
+      "input": {
+        "emotion": "0.78539818525314331",
+        "intensity": "1"
+      },
+      "emVal": 2,
+      "encoded": {
+        "emotion": 50,
+        "intensity": 58
+      },
+      "decoded": {
+        "emotion": "0.78539818525314331",
+        "intensity": "1"
+      }
+    },
+    {
+      "input": {
+        "emotion": "1.5707963705062866",
+        "intensity": "1"
+      },
+      "emVal": 3,
+      "encoded": {
+        "emotion": 51,
+        "intensity": 58
+      },
+      "decoded": {
+        "emotion": "1.5707963705062866",
+        "intensity": "1"
+      }
+    },
+    {
+      "input": {
+        "emotion": "2.3561944961547852",
+        "intensity": "1"
+      },
+      "emVal": 4,
+      "encoded": {
+        "emotion": 52,
+        "intensity": 58
+      },
+      "decoded": {
+        "emotion": "2.3561944961547852",
+        "intensity": "1"
+      }
+    },
+    {
+      "input": {
+        "emotion": "3.1415927410125732",
+        "intensity": "1"
+      },
+      "emVal": 5,
+      "encoded": {
+        "emotion": 53,
+        "intensity": 58
+      },
+      "decoded": {
+        "emotion": "3.1415927410125732",
+        "intensity": "1"
+      }
+    },
+    {
+      "input": {
+        "emotion": "3.9269907474517822",
+        "intensity": "1"
+      },
+      "emVal": 6,
+      "encoded": {
+        "emotion": 54,
+        "intensity": 58
+      },
+      "decoded": {
+        "emotion": "3.9269907474517822",
+        "intensity": "1"
+      }
+    },
+    {
+      "input": {
+        "emotion": "4.7123889923095703",
+        "intensity": "1"
+      },
+      "emVal": 7,
+      "encoded": {
+        "emotion": 55,
+        "intensity": 58
+      },
+      "decoded": {
+        "emotion": "4.7123889923095703",
+        "intensity": "1"
+      }
+    },
+    {
+      "input": {
+        "emotion": "5.4977869987487793",
+        "intensity": "1"
+      },
+      "emVal": 8,
+      "encoded": {
+        "emotion": 56,
+        "intensity": 58
+      },
+      "decoded": {
+        "emotion": "5.4977869987487793",
+        "intensity": "1"
+      }
+    },
+    {
+      "input": {
+        "emotion": "0",
+        "intensity": "1"
+      },
+      "emVal": 1,
+      "encoded": {
+        "emotion": 49,
+        "intensity": 58
+      },
+      "decoded": {
+        "emotion": "0",
+        "intensity": "1"
+      }
+    },
+    {
+      "input": {
+        "emotion": "1001",
+        "intensity": "1"
+      },
+      "emVal": 10,
+      "encoded": {
+        "emotion": 58,
+        "intensity": 58
+      },
+      "decoded": {
+        "emotion": "1001",
+        "intensity": "1"
+      }
+    },
+    {
+      "input": {
+        "emotion": "1002",
+        "intensity": "1"
+      },
+      "emVal": 11,
+      "encoded": {
+        "emotion": 59,
+        "intensity": 58
+      },
+      "decoded": {
+        "emotion": "1002",
+        "intensity": "1"
+      }
+    },
+    {
+      "input": {
+        "emotion": "1003",
+        "intensity": "1"
+      },
+      "emVal": 12,
+      "encoded": {
+        "emotion": 60,
+        "intensity": 58
+      },
+      "decoded": {
+        "emotion": "1003",
+        "intensity": "1"
+      }
+    },
+    {
+      "input": {
+        "emotion": "1004",
+        "intensity": "1"
+      },
+      "emVal": 13,
+      "encoded": {
+        "emotion": 61,
+        "intensity": 58
+      },
+      "decoded": {
+        "emotion": "1004",
+        "intensity": "1"
+      }
+    },
+    {
+      "input": {
+        "emotion": "1005",
+        "intensity": "1"
+      },
+      "emVal": 14,
+      "encoded": {
+        "emotion": 62,
+        "intensity": 58
+      },
+      "decoded": {
+        "emotion": "1005",
+        "intensity": "1"
+      }
+    },
+    {
+      "input": {
+        "emotion": "1006",
+        "intensity": "1"
+      },
+      "emVal": 15,
+      "encoded": {
+        "emotion": 63,
+        "intensity": 58
+      },
+      "decoded": {
+        "emotion": "1006",
+        "intensity": "1"
+      }
+    },
+    {
+      "input": {
+        "emotion": "1007",
+        "intensity": "1"
+      },
+      "emVal": 16,
+      "encoded": {
+        "emotion": 64,
+        "intensity": 58
+      },
+      "decoded": {
+        "emotion": "1007",
+        "intensity": "1"
+      }
+    },
+    {
+      "input": {
+        "emotion": "1008",
+        "intensity": "1"
+      },
+      "emVal": 17,
+      "encoded": {
+        "emotion": 65,
+        "intensity": 58
+      },
+      "decoded": {
+        "emotion": "1008",
+        "intensity": "1"
+      }
+    },
+    {
+      "input": {
+        "emotion": "999",
+        "intensity": "1"
+      },
+      "emVal": 9,
+      "encoded": {
+        "emotion": 57,
+        "intensity": 58
+      },
+      "decoded": {
+        "emotion": "0",
+        "intensity": "1"
+      }
+    },
+    {
+      "input": {
+        "emotion": "0",
+        "intensity": "0"
+      },
+      "emVal": 1,
+      "encoded": {
+        "emotion": 49,
+        "intensity": 48
+      },
+      "decoded": {
+        "emotion": "0",
+        "intensity": "0"
+      }
+    },
+    {
+      "input": {
+        "emotion": "0",
+        "intensity": "0.29999999999999999"
+      },
+      "emVal": 1,
+      "encoded": {
+        "emotion": 49,
+        "intensity": 51
+      },
+      "decoded": {
+        "emotion": "0",
+        "intensity": "0.30000001192092896"
+      }
+    },
+    {
+      "input": {
+        "emotion": "0",
+        "intensity": "0.5"
+      },
+      "emVal": 1,
+      "encoded": {
+        "emotion": 49,
+        "intensity": 53
+      },
+      "decoded": {
+        "emotion": "0",
+        "intensity": "0.5"
+      }
+    },
+    {
+      "input": {
+        "emotion": "0",
+        "intensity": "1.5"
+      },
+      "emVal": 1,
+      "encoded": {
+        "emotion": 49,
+        "intensity": 63
+      },
+      "decoded": {
+        "emotion": "0",
+        "intensity": "1.5"
+      }
+    }
+  ]
+}
