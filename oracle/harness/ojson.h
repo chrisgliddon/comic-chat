@@ -53,6 +53,11 @@ public:
             if (obj[k].first == key) return &obj[k].second;
         return 0;
     }
+    Value *Find(const std::string &key) {
+        for (size_t k = 0; k < obj.size(); ++k)
+            if (obj[k].first == key) return &obj[k].second;
+        return 0;
+    }
     // Typed getters with defaults (missing key or wrong type -> default).
     long GetInt(const std::string &key, long def) const {
         const Value *v = Find(key);

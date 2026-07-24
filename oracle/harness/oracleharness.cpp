@@ -110,7 +110,7 @@ static ojson::Value CaptureGlyphs() {
     ojson::Value root = ojson::Value::Obj();
 
     // Create a desktop DC with MM_TWIPS, same as pageview.cpp:994
-    CClientDC dc(GetDesktopWindow());
+    CClientDC dc(CWnd::FromHandle(::GetDesktopWindow()));
     dc.SetMapMode(MM_TWIPS);
 
     // Pin the font: Comic Sans MS at the default balloon size
@@ -463,7 +463,7 @@ static void InitHarness(const char* treeDir) {
     // Set up the global DC: desktop CClientDC with MM_TWIPS
     // (same as pageview.cpp:994-998)
     if (!cui.m_pvClientDC) {
-        CClientDC* dc = new CClientDC(GetDesktopWindow());
+        CClientDC* dc = new CClientDC(CWnd::FromHandle(::GetDesktopWindow()));
         dc->SetMapMode(MM_TWIPS);
         cui.m_pvClientDC = dc;
     }
@@ -555,7 +555,7 @@ int main(int argc, char** argv) {
         }
         AfxWinInit(GetModuleHandle(NULL), NULL, ::GetCommandLine(), SW_HIDE);
         if (!cui.m_pvClientDC) {
-            CClientDC* dc = new CClientDC(GetDesktopWindow());
+            CClientDC* dc = new CClientDC(CWnd::FromHandle(::GetDesktopWindow()));
             dc->SetMapMode(MM_TWIPS);
             cui.m_pvClientDC = dc;
         }
@@ -599,7 +599,8 @@ int main(int argc, char** argv) {
     unsigned int seed = (unsigned int)inputs.GetInt("seed", 42);
     unsigned int tickBase = (unsigned int)inputs.GetInt("tickSeedBase", 1000);
     int panelsWide = (int)inputs.GetInt("panelsWide", 2);
-    const char* treeDirFromInput = inputs.GetStr("treeDir", "");
+    std::string treeDirFromInputStr = inputs.GetStr("treeDir", "");
+    const char* treeDirFromInput = treeDirFromInputStr.c_str();
     if (treeDirFromInput[0]) {
         strncpy(treeDir, treeDirFromInput, MAX_PATH - 1);
         treeDir[MAX_PATH - 1] = 0;
@@ -641,7 +642,8 @@ int main(int argc, char** argv) {
     if (avatars && avatars->type == ojson::T_ARRAY) {
         for (size_t i = 0; i < avatars->arr.size(); i++) {
             ojson::Value& a = avatars->arr[i];
-            const char* name = a.GetStr("name", "");
+            std::string nameStr = a.GetStr("name", "");
+            const char* name = nameStr.c_str();
             int speakerId = (int)a.GetInt("speakerId", (long)i);
             if (nSpeakers < 64) {
                 USHORT avID = LoadAvatarByName(name);
@@ -678,7 +680,8 @@ int main(int argc, char** argv) {
         for (size_t i = 0; i < messages->arr.size(); i++) {
             ojson::Value& msg = messages->arr[i];
             int speakerId = (int)msg.GetInt("speakerId", 1);
-            const char* text = msg.GetStr("text", "");
+            std::string textStr = msg.GetStr("text", "");
+            const char* text = textStr.c_str();
             int mode = (int)msg.GetInt("mode", 0); // 0=say, 1=whisper, 2=think, 4=action
             int bbCooked = (int)msg.GetInt("bbCooked", 1);
 
