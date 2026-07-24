@@ -124,8 +124,7 @@ ENGINE_OBJS= \
 	"$(ORACLE_INTDIR)\webreq.obj" \
 	"$(ORACLE_INTDIR)\whisprbx.obj" \
 	"$(ORACLE_INTDIR)\mcithrd.obj" \
-	"$(ORACLE_INTDIR)\dlylddll.obj" \
-	"$(ORACLE_INTDIR)\icchat_i.obj"
+	"$(ORACLE_INTDIR)\dlylddll.obj"
 
 # Oracle harness specific objs
 HARNESS_OBJS= \
