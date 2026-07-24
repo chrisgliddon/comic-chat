@@ -56,6 +56,7 @@ jobs:
       - name: Capture glyph tables
         shell: cmd
         run: |
+          if not exist oracle\glyphs mkdir oracle\glyphs
           cd v2.5-beta-1-modern
           Release\OracleHarness.exe --glyphs ..\oracle\glyphs\glyphs.json
           if errorlevel 1 exit /b 1
