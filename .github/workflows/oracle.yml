@@ -79,17 +79,28 @@ jobs:
           )
           echo "Determinism check passed: two runs are byte-identical."
 
-      - name: Run corpus cases
+      - name: Run corpus cases (compare against frozen goldens)
         shell: cmd
         run: |
           cd v2.5-beta-1-modern
+          setlocal enabledelayedexpansion
           for /d %%D in (..\oracle\corpus\0*) do (
             if exist %%D\inputs.json (
               echo Running case %%~nxD
-              Release\OracleHarness.exe %%D\inputs.json %%D\expected.json
+              Release\OracleHarness.exe %%D\inputs.json %%D\actual.json
               if errorlevel 1 (
-                echo CASE %%~nxD FAILED
+                echo CASE %%~nxD FAILED (harness crash)
                 exit /b 1
+              )
+              if exist %%D\expected.json (
+                node ..\oracle\scripts\diff-dumps.mjs %%D\expected.json %%D\actual.json
+                if errorlevel 1 (
+                  echo GOLDEN MISMATCH %%~nxD: corpus diverged from frozen golden
+                  exit /b 1
+                )
+                echo GOLDEN MATCH %%~nxD
+              ) else (
+                echo No golden for %%~nxD - wrote actual.json (freeze by committing as expected.json)
               )
             )
           )
@@ -107,6 +118,7 @@ jobs:
           path: |
             oracle/glyphs/glyphs.json
             oracle/corpus/*/expected.json
+            oracle/corpus/*/actual.json
             oracle/corpus/*/run_a.json
             oracle/corpus/*/run_b.json
           if-no-files-found: warn
