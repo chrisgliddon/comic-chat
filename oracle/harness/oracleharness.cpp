@@ -64,6 +64,7 @@ extern void InitializeAvatars();
 extern CAvatarX *LoadAvatar(const char *avName);
 extern CAvatarX *GetAvatar(USHORT avatarID);
 extern double randfloat();
+extern void GetEmotionsFromString(CString &str, CEmotionOpts &emOpts);
 
 // CChatDoc has a protected ctor + DECLARE_DYNCREATE; we need to construct
 // it. The MFC runtime class is accessible via the doc template machinery,
@@ -194,6 +195,85 @@ static ojson::Value CaptureGlyphs() {
     root.Set("dpi", ojson::Value::Int(g_screenDpi));
     root.Set("mapMode", ojson::Value::Str("MM_TWIPS"));
 
+    return root;
+}
+
+// ---------------------------------------------------------------------------
+// CaptureTextpose — Tier-1 #1 dump: run a fixed battery of probe strings
+// through GetEmotionsFromString and emit the CEmotionOpts results. This gives
+// the TS textpose port a real oracle golden to diff against (closing the gap
+// noted in the Phase-4 textpose port, where only hand-computed goldens existed).
+//
+// The battery covers each rule family: AllCaps, FindString (case-sens/insens),
+// CheckWord, CheckStart, multi-rule interaction, dedup, and negative cases.
+// Each entry: { "text": "...", "opts": [ {emotion, intensity, priority}, ... ] }.
+// ---------------------------------------------------------------------------
+static ojson::Value CaptureTextpose() {
+    // Probe battery. Keep in sync with port/test/engine/textpose.test.ts cases
+    // so the TS golden test can consume this dump directly.
+    const char* probes[] = {
+        "HELLO",                    // AllCaps -> SHOUT
+        "what!!!",                  // FindString("!!!") -> SHOUT
+        "hello",                    // no SHOUT (lowercase)
+        "that is LOL",              // CheckWord* LOL -> LAUGH
+        "that is lol",              // case-insensitive LOL -> LAUGH
+        "ROTFL",                    // CheckWord* ROTFL -> LAUGH
+        "hehe that's great",        // FindString* HEHE -> LAUGH
+        "xLOL",                     // mid-word, no LAUGH
+        "hi :)",                    // FindString :) -> HAPPY
+        ":-) nice",                 // FindString :-) -> HAPPY
+        "oh :( sad",               // FindString :( -> SAD
+        ":-( bummer",              // FindString :-( -> SAD
+        ";-) maybe",               // FindString ;-) -> COY
+        ";) sure",                  // FindString ;) -> COY
+        "Hello there",             // CheckStart* Hello -> WAVE
+        "Hi",                       // CheckStart* Hi -> WAVE
+        "Howdy partner",           // CheckStart* Howdy -> WAVE
+        "Bye now",                  // CheckStart* Bye -> WAVE
+        "Welcome",                  // CheckStart* Welcome -> WAVE
+        "hello there",             // case-insensitive -> WAVE
+        "Hellothere",              // no boundary after -> no WAVE
+        "Well. Hello there",       // second-sentence Hello -> WAVE
+        "I think so",              // CheckStart* I -> POINTSELF
+        "I'm going",               // CheckStart* I + CheckWord* i'm -> POINTSELF (prio 7)
+        "i am here",               // CheckWord* i am -> POINTSELF
+        "You are nice",            // CheckStart* You -> POINTOTHER
+        "how are you",             // CheckWord* are you -> POINTOTHER (prio 8)
+        "will you go",             // CheckWord* will you -> POINTOTHER
+        "Hello LOL :)",            // multi-rule: WAVE + LAUGH + HAPPY
+        "I'm sure",                // dedup: POINTSELF prio 7 wins over 3
+        "the quick brown fox jumps", // no triggers
+        "",                        // empty
+    };
+    int nProbes = sizeof(probes) / sizeof(probes[0]);
+
+    ojson::Value root = ojson::Value::Obj();
+    ojson::Value cases = ojson::Value::Arr();
+    for (int i = 0; i < nProbes; i++) {
+        CString str(probes[i]);
+        CEmotionOpts emOpts;
+        GetEmotionsFromString(str, emOpts);
+
+        ojson::Value entry = ojson::Value::Obj();
+        entry.Set("text", ojson::Value::Str(probes[i]));
+        ojson::Value optsArr = ojson::Value::Arr();
+        for (int j = 0; j < emOpts.m_nOpts; j++) {
+            ojson::Value opt = ojson::Value::Obj();
+            // Emit emotion as a double (the emotion-wheel values are floats;
+            // the special emotions are 1001/1002/1003). ojson doesn't have a
+            // double emitter, so we emit via Str with full precision.
+            char buf[64];
+            sprintf(buf, "%.17g", (double)emOpts.m_emotions[j].m_emotion);
+            opt.Set("emotion", ojson::Value::Str(buf));
+            sprintf(buf, "%.17g", (double)emOpts.m_emotions[j].m_intensity);
+            opt.Set("intensity", ojson::Value::Str(buf));
+            opt.Set("priority", ojson::Value::Int(emOpts.m_priorities[j]));
+            optsArr.Push(opt);
+        }
+        entry.Set("opts", optsArr);
+        cases.Push(entry);
+    }
+    root.Set("probes", cases);
     return root;
 }
 
@@ -646,6 +726,27 @@ int main(int argc, char** argv) {
         fwrite(out.c_str(), 1, out.size(), f);
         fclose(f);
         printf("glyphs written to %s\n", argv[2]);
+        return 0;
+    }
+
+    // Textpose capture mode (Tier-1 #1 dump for the TS port's golden)
+    if (strcmp(argv[1], "--textpose") == 0) {
+        if (argc < 3) {
+            fprintf(stderr, "usage: OracleHarness.exe --textpose <textpose.json>\n");
+            return 2;
+        }
+        AfxWinInit(GetModuleHandle(NULL), NULL, ::GetCommandLine(), SW_HIDE);
+        // Textpose doesn't need a DC, but InitializeEmotionRules calls
+        // LoadString which needs the resource instance (AfxWinInit handles it).
+        LoadEmotionStrings();
+        InitializeEmotionRules();
+        ojson::Value tp = CaptureTextpose();
+        FILE* f = fopen(argv[2], "wb");
+        if (!f) { fprintf(stderr, "cannot write %s\n", argv[2]); return 1; }
+        std::string out = tp.EmitToString();
+        fwrite(out.c_str(), 1, out.size(), f);
+        fclose(f);
+        printf("textpose written to %s\n", argv[2]);
         return 0;
     }
 

@@ -63,6 +63,26 @@ jobs:
           echo "Glyphs captured."
           type ..\oracle\glyphs\glyphs.json
 
+      - name: Capture textpose (Tier-1 #1 dump)
+        shell: cmd
+        run: |
+          if not exist oracle\textpose mkdir oracle\textpose
+          cd v2.5-beta-1-modern
+          Release\OracleHarness.exe --textpose ..\oracle\textpose\textpose.json
+          if errorlevel 1 exit /b 1
+          echo "Textpose captured."
+          type ..\oracle\textpose\textpose.json
+          if exist ..\oracle\textpose\textpose.golden.json (
+            node ..\oracle\scripts\diff-dumps.mjs ..\oracle\textpose\textpose.golden.json ..\oracle\textpose\textpose.json
+            if errorlevel 1 (
+              echo TEXTPOSE GOLDEN MISMATCH
+              exit /b 1
+            )
+            echo "Textpose golden match."
+          ) else (
+            echo "No textpose golden yet - freeze by committing as textpose.golden.json"
+          )
+
       - name: Judge validation - determinism (two identical runs)
         shell: cmd
         run: |
@@ -120,6 +140,8 @@ jobs:
           name: oracle-artifacts-${{ github.sha }}
           path: |
             oracle/glyphs/glyphs.json
+            oracle/textpose/textpose.json
+            oracle/textpose/textpose.golden.json
             oracle/corpus/*/expected.json
             oracle/corpus/*/actual.json
             oracle/corpus/*/run_a.json

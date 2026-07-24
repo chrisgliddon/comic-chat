@@ -10,6 +10,7 @@
 | 0. Determinism | DONE | PASSED — two runs byte-identical (CI run 30126575092) |
 | 1. C++ harness | DONE | PASSED — builds, runs, all 10 corpus cases produce dumps |
 | 2. Corpus | DONE | PASSED — 10 cases frozen as goldens; golden comparison green on every push |
+| 3. Rulebook | DONE | PASSED — rulebook + 3-file shakedown port; two-agent check 67/67 bezpts match |
 
 Judge validation §6: all three gates PASSED.
 - (a) same seed → byte-identical (CI 30126575092 determinism step)
@@ -74,6 +75,13 @@ Judge validation §6: all three gates PASSED.
 - 2026-07-24: **Removed verbose crash-debugging logging** (FetchSpeaker rec
   dump, LayoutAvatars granular stepping, SetNeutral rec dump). CI stayed
   green (run 30127357571).
+- 2026-07-24: **Phase 3 — Rulebook + shakedown port COMPLETE.** Wrote
+  `docs/porting/RULEBOOK.md` (the MFC/GDI→TS/PixiJS idiom map). Ported
+  `vector2d`/`bbox`/`spline`+`splinutl` to `port/` (ESM TS + Vitest, 75/75
+  tests, typecheck clean). Two-agent check PASSED: 67/67 CBeta bezpts match
+  `oracle/corpus/001/expected.json` byte-exact. Discovered the load-bearing
+  `ROUND` semantics: MSVC `((int)(fp+0.5))` behaves as `floor(fp+0.5)` (not
+  `trunc`) — pinned in `port/src/core/numeric.ts` and RULEBOOK §1.
 
 ## CI runs of record
 
@@ -90,14 +98,46 @@ Judge validation §6: all three gates PASSED.
 
 ## Remaining / next-phase work
 
-Phases 0-2 are complete. Per the plan doc, the next phases are:
+Phases 0-3 are complete. Per the plan doc, the next phases are:
 
-- **Phase 3 — Rulebook** (Goal): MFC/GDI→TS/PixiJS idiom map; 3-file shakedown port.
 - **Phase 4 — Port loops** (Loop): port modules in dependency order; corpus read-only.
+  Start with `textpose.cpp` (text→emotion rules), then `avatario`/`avatar`,
+  then `balloon`/`panel`, then `histent`/`chatdoc`, then `pageview`, then
+  `avbfile`/`dib`, then `protsupp`/`ircsock` codecs. Each module should add a
+  per-module golden test of the same form as `port/test/engine/spline.test.ts`
+  (load corpus `expected.json`, reproduce the dumped struct, assert exact
+  equality) so every module gets its own two-agent check.
 - **Phase 5 — Differential** (Loop): both runners over full corpus; drive diff to zero.
 - **Phase 6 — Idiomize + web shell**: PixiJS rendering, WebSocket IRC bridge, UI.
 
-Outstanding oracle-side TODOs (not blocking Phase 3, but improve coverage):
+### Phase 3 outcomes (2026-07-24)
+
+- **Rulebook:** `docs/porting/RULEBOOK.md` — the MFC/GDI→TS/PixiJS idiom map.
+  Resolves handoff open question #4 (rulebook location: `docs/porting/`).
+  Covers ROUND, value types, overloaded-function suffixes, RNG (LCG),
+  glyph-table consumption, geometry/TWIPs, cache policy, integer-width
+  semantics, diagnostics, doc model, and the deferred items.
+- **Shakedown port:** `port/` (ESM TypeScript + Vitest). Ports `vector2d.cpp`,
+  `bbox.cpp`, `spline.cpp`+`splinutl.cpp` — the three purest modules
+  (version-identical pure math, no GDI). 75/75 tests pass; `npm run typecheck`
+  clean.
+- **Two-agent check (PASSED):** the C++ oracle (agent A) and TS port (agent B)
+  translated `CBeta::ComputeBezpts` independently. All 67 Bézier control
+  points of the corpus-001 first balloon match byte-exact. The check caught
+  one rulebook ambiguity — the `ROUND` semantics — which is the single most
+  important finding: the MSVC `ROUND` macro behaves as `Math.floor(fp + 0.5)`
+  (round-half-up), NOT `Math.trunc(fp + 0.5)` as the C source reads. With
+  `trunc`, 0/67 bezpts match; with `floor`, 67/67 match. The oracle is the
+  referee. See RULEBOOK §1.
+- **Bugs pinned (bug-for-bug, plan doc §7):**
+  - `bbox.cpp:76` `bbox_within_bbox` reads `bbox2.bottom` (should be
+    `bbox1.bottom`) — reproduced in `port/src/engine/bbox.ts`, marked
+    `BUG(port)`, tested.
+  - `splinutl.cpp:204` `int_bezier_nearest_point` uses `(int)` truncation
+    (not `ROUND`) despite the `// should round` comment — reproduced as
+    `Math.trunc`, marked `BUG(port)`.
+
+Outstanding oracle-side TODOs (not blocking Phase 4, but improve coverage):
 
 - Tier-2 (`.avb` manifests + decoded-pixel CRCs) subcommand not yet implemented.
 - Tier-1 unit-level dumps (GetEmotionsFromString table, emotion quantization)
@@ -112,3 +152,8 @@ Outstanding oracle-side TODOs (not blocking Phase 3, but improve coverage):
 
 `oracle/phase-0` is ready to merge to `main` (no PR needed per user). The
 branch contains all Phase 0-2 work + frozen goldens + CI that guards them.
+
+Phase 3 work (rulebook + `port/` shakedown) is uncommitted on `main` as of
+this LEDGER update. It is TS-only (no C++ engine or golden changes) so no CI
+round is required to validate it; `npm test` and `npm run typecheck` in
+`port/` are the verification commands. Commit when ready.

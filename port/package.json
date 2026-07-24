@@ -1,0 +1,21 @@
+{
+  "name": "comic-chat-port",
+  "version": "0.0.0-phase3",
+  "private": true,
+  "type": "module",
+  "description": "TypeScript/PixiJS port of the Comic Chat engine (v1.0-pre reference, v2.5-beta-1 oracle). Phase 3: rulebook + shakedown.",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "lint": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}
