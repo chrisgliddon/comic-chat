@@ -484,6 +484,11 @@ static void InitHarness(const char* treeDir) {
     }
     fprintf(stderr, "ORACLE: DC created\n");
 
+    // Pin panel dimensions BEFORE SetFonts (UpdateTitleFonts depends on m_unitWidth)
+    CUnitPanelPage::SetUnitPanelsPerRow(2);
+    CUnitPanelPage::SetUnitPanelWidth(4860);  // pin world width
+    CUnitPanelPage::SetUnitPanelHeight(4860);
+
     // Initialize fonts directly (replicates chat.cpp:495 + InitializeComicsFonts)
     // Pin: Comic Sans MS, 12pt -> twips
     int fontHeight = PointsToTwips(12);
@@ -630,10 +635,8 @@ int main(int argc, char** argv) {
     InitHarness(treeDir);
     fprintf(stderr, "ORACLE: InitHarness complete\n");
 
-    // Pin panel columns
-    CUnitPanelPage::SetUnitPanelsPerRow(panelsWide);
-    CUnitPanelPage::SetUnitPanelWidth(4860);  // pin world width
-    CUnitPanelPage::SetUnitPanelHeight(4860);
+    // Panel dimensions already set in InitHarness (before SetFonts)
+    CUnitPanelPage::SetUnitPanelsPerRow(panelsWide);  // override from inputs
 
     // Activate the oracle determinism layer
     OracleSeedActivate(seed, tickBase);
