@@ -769,8 +769,14 @@ int main(int argc, char** argv) {
             // Process the line through the engine
             fprintf(stderr, "ORACLE: ProcessLine(avID=%d, text='%s', mode=%d)\n", avatarID, text, mode);
             fflush(stderr);
-            doc->ProcessLine(avatarID, text, (USHORT)mode, (BYTE)bbCooked, NULL);
-            fprintf(stderr, "ORACLE: ProcessLine done\n");
+            BOOL plResult = TRUE;
+            __try {
+                doc->ProcessLine(avatarID, text, (USHORT)mode, (BYTE)bbCooked, NULL);
+            } __except(EXCEPTION_EXECUTE_HANDLER) {
+                fprintf(stderr, "ORACLE: SEH exception in ProcessLine (msg %d)\n", (int)i);
+                plResult = FALSE;
+            }
+            fprintf(stderr, "ORACLE: ProcessLine done (result=%d)\n", plResult);
             fflush(stderr);
 
             // Dump state after this message
