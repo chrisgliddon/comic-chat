@@ -322,14 +322,23 @@ export function GetEmotionsFromString(str: string, emOpts: CEmotionOpts): void {
   }
 
   // check sentences (CheckStart / CheckStart*) — at the start of each sentence
+  // BUG(port): textpose.cpp:300-313 — the loop computes `lptr = lower + (bptr - buff)`
+  // and iterates `bptr = GetNextSentenceStart(bptr)`, but the StartCompare2 calls
+  // use `buff`/`lower` (the WHOLE STRING start) instead of `bptr`/`lptr`. So
+  // `lptr` is dead code, and every iteration re-checks the start of the entire
+  // string, not the current sentence start. This means only the first
+  // sentence's beginning is ever effectively tested (re-tested per iteration).
+  // We reproduce bug-for-bug: pass `buff`/`lower`, not `bptr`/`lptr`.
   let bptr = 0;
   while (bptr < buff.length && isSpace(buff.charCodeAt(bptr))) bptr++; // prune leading ws
   while (bptr >= 0 && bptr < buff.length) {
     for (const unit of sentenceRules) {
       if (unit.caseSensitive) {
-        if (StartCompare2(buff.slice(bptr), unit.arg, unit.length))
+        // C: StartCompare2(buff, ...) — whole-string start, NOT bptr
+        if (StartCompare2(buff, unit.arg, unit.length))
           emOpts.Add(unit.emotion, 1.0, unit.strength);
-      } else if (StartCompare2(lower.slice(bptr), unit.arg, unit.length)) {
+      } else if (StartCompare2(lower, unit.arg, unit.length)) {
+        // C: StartCompare2(lower, ...) — whole lower string start, NOT lptr
         emOpts.Add(unit.emotion, 1.0, unit.strength);
       }
     }

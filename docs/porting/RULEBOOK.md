@@ -92,6 +92,33 @@ is plain truncation toward zero — used in `vector2d.cpp:100`
 **Pinning tests:** `port/test/core/numeric.test.ts`,
 `port/test/engine/spline.test.ts` (67/67 golden).
 
+### 1.1 Float-cast (`(float)`) → `Math.fround`
+
+The C engine casts double→float32 in several `#define`s (notably the `EM_*`
+emotion constants, `avatar.h:254-261`: `((float)(k * 2 * PI / 8))`). JS
+numbers are doubles; to match the float32 bit pattern the oracle emits, use
+`Math.fround(x)`. This was caught by the textpose oracle golden: the
+emotion values (4.7123889923095703 for SHOUT, 3.1415927410125732 for SAD,
+etc.) only match when (a) PI is the v2.5 full-precision value (see §1.2)
+AND (b) the result is fround'd. Without fround, the TS produces
+4.712384999999999 (the double) which is a different bit pattern.
+
+### 1.2 PI is tree-dependent
+
+**v1.0-pre-modern** `vector2d.h:39`: `#define PI 3.14159` (low precision).
+**v2.5-beta-1-modern** `vector2d.h:54`: `#define PI 3.14159265358979323846`
+(full precision).
+
+The oracle goldens come from v2.5. The emotion constants use the v2.5 PI
+(and fround). The spline/bbox/vector2d pure-math ports used the v1.0-pre PI
+(3.14159) for the angle routines (`degrees_to_rads`, `value_to_angle`, etc.)
+and got 67/67 bezpt match — because the spline code never touches PI. The
+two PI values coexist in the port: `port/src/core/numeric.ts` exports the
+v1.0-pre `PI = 3.14159` for the vector2d angle routines; `port/src/core/
+emotion.ts` uses its own full-precision `PI_V25` for the emotion constants.
+When porting a module that uses `PI`, check which tree's `vector2d.h` it's
+compiled against (the oracle tree is v2.5) and use the matching constant.
+
 ---
 
 ## 2. Value types: CString / CPtrList / arrays / structs
@@ -292,6 +319,14 @@ When `balloon.cpp` is ported, its test must reproduce corpus-001's
   both `dist` and `found.x/y` — `Math.trunc`, NOT `ROUND`. The comment in the
   C even says `// should round`. We reproduce bug-for-bug (plan doc §7):
   `BUG(port): splinutl.cpp:204 uses (int) truncation, not ROUND`.
+- **`textpose.cpp:300-313` sentence-start loop** — `BUG(port): lptr is dead
+  code; StartCompare2 uses buff/lower (whole-string start) not bptr/lptr`.
+  The loop iterates sentences via `bptr = GetNextSentenceStart(bptr)` and
+  computes `lptr = lower + (bptr - buff)`, but the `StartCompare2` calls pass
+  `buff`/`lower` (the whole string), not `bptr`/`lptr`. So only the first
+  sentence's beginning is ever effectively checked (re-tested per iteration).
+  "Well. Hello there" does NOT fire WAVE because "Well" ≠ "Hello" at the
+  whole-string start. The oracle textpose golden pins this.
 
 ---
 

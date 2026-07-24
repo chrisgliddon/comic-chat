@@ -11,6 +11,7 @@
 | 1. C++ harness | DONE | PASSED — builds, runs, all 10 corpus cases produce dumps |
 | 2. Corpus | DONE | PASSED — 10 cases frozen as goldens; golden comparison green on every push |
 | 3. Rulebook | DONE | PASSED — rulebook + 3-file shakedown port; two-agent check 67/67 bezpts match |
+| 4. Port loops | IN PROGRESS | textpose ported + oracle-golden verified (32/32 probes match) |
 
 Judge validation §6: all three gates PASSED.
 - (a) same seed → byte-identical (CI 30126575092 determinism step)
@@ -82,6 +83,24 @@ Judge validation §6: all three gates PASSED.
   `oracle/corpus/001/expected.json` byte-exact. Discovered the load-bearing
   `ROUND` semantics: MSVC `((int)(fp+0.5))` behaves as `floor(fp+0.5)` (not
   `trunc`) — pinned in `port/src/core/numeric.ts` and RULEBOOK §1.
+- 2026-07-24: **Phase 4 — textpose ported + oracle-golden verified.** Ported
+  `textpose.cpp` (GetEmotionsFromString + rule compiler) with the v2.5 frozen
+  rule strings inlined. Added `--textpose` dump mode to the C++ harness
+  (Tier-1 #1) with a 32-probe battery; froze `oracle/textpose/textpose.golden.json`
+  from CI run 30129560316. The TS port matches the oracle 32/32 probes
+  byte-exact (121/121 total tests pass). The oracle golden exposed two
+  rulebook issues, both fixed: (1) the `EM_*` emotion constants use the v2.5
+  full-precision PI + `Math.fround` float-cast (not the v1.0-pre 3.14159);
+  (2) a C engine bug at textpose.cpp:300-313 where the sentence-start loop
+  uses `buff`/`lower` (whole-string start) instead of `bptr`/`lptr` —
+  reproduced bug-for-bug (`BUG(port)`).
+- 2026-07-24: **Fixed oracle harness: link chat.res.** The harness exe was
+  NOT linking the compiled resource segment, so `LoadString(ID_RULE_*)`
+  returned empty strings and `InitializeEmotionRules` registered zero rules.
+  The `--textpose` dump exposed this (all probes returned empty opts). Added
+  `chat.res` compilation + link to `oracle.mak`. The corpus goldens did NOT
+  diverge (the loaded rules don't change the captured dumps for the existing
+  corpus messages). CI run 30129560316 confirms all gates green.
 
 ## CI runs of record
 
@@ -95,6 +114,7 @@ Judge validation §6: all three gates PASSED.
 | 2026-07-24 | 30126575092 | Golden comparison + .gitattributes | All 10 GOLDEN MATCH ✓ |
 | 2026-07-24 | 30127051147 | Judge validation §6b (mutated) | Corpus RED (divergence at balloon bbox) ✓ |
 | 2026-07-24 | 30127357571 | After removing verbose logging | All green ✓ |
+| 2026-07-24 | 30129560316 | After chat.res link fix + --textpose dump mode | All green ✓ textpose captured with real emotions ✓ corpus goldens still match ✓ |
 
 ## Remaining / next-phase work
 

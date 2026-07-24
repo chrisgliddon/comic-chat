@@ -1,0 +1,319 @@
+{
+  "probes": [
+    {
+      "text": "HELLO",
+      "opts": [
+        {
+          "emotion": "4.7123889923095703",
+          "intensity": "1",
+          "priority": 9
+        },
+        {
+          "emotion": "1001",
+          "intensity": "1",
+          "priority": 5
+        }
+      ]
+    },
+    {
+      "text": "what!!!",
+      "opts": [
+        {
+          "emotion": "4.7123889923095703",
+          "intensity": "1",
+          "priority": 9
+        }
+      ]
+    },
+    {
+      "text": "hello",
+      "opts": [
+        {
+          "emotion": "1001",
+          "intensity": "1",
+          "priority": 5
+        }
+      ]
+    },
+    {
+      "text": "that is LOL",
+      "opts": [
+        {
+          "emotion": "5.4977869987487793",
+          "intensity": "1",
+          "priority": 11
+        }
+      ]
+    },
+    {
+      "text": "that is lol",
+      "opts": [
+        {
+          "emotion": "5.4977869987487793",
+          "intensity": "1",
+          "priority": 11
+        }
+      ]
+    },
+    {
+      "text": "ROTFL",
+      "opts": [
+        {
+          "emotion": "4.7123889923095703",
+          "intensity": "1",
+          "priority": 9
+        },
+        {
+          "emotion": "5.4977869987487793",
+          "intensity": "1",
+          "priority": 11
+        }
+      ]
+    },
+    {
+      "text": "hehe that's great",
+      "opts": [
+        {
+          "emotion": "5.4977869987487793",
+          "intensity": "1",
+          "priority": 11
+        }
+      ]
+    },
+    {
+      "text": "xLOL",
+      "opts": []
+    },
+    {
+      "text": "hi :)",
+      "opts": [
+        {
+          "emotion": "0",
+          "intensity": "1",
+          "priority": 10
+        },
+        {
+          "emotion": "1001",
+          "intensity": "1",
+          "priority": 2
+        }
+      ]
+    },
+    {
+      "text": ":-) nice",
+      "opts": [
+        {
+          "emotion": "0",
+          "intensity": "1",
+          "priority": 10
+        }
+      ]
+    },
+    {
+      "text": "oh :( sad",
+      "opts": [
+        {
+          "emotion": "3.1415927410125732",
+          "intensity": "1",
+          "priority": 10
+        }
+      ]
+    },
+    {
+      "text": ":-( bummer",
+      "opts": [
+        {
+          "emotion": "3.1415927410125732",
+          "intensity": "1",
+          "priority": 10
+        }
+      ]
+    },
+    {
+      "text": ";-) maybe",
+      "opts": [
+        {
+          "emotion": "0.78539818525314331",
+          "intensity": "1",
+          "priority": 10
+        }
+      ]
+    },
+    {
+      "text": ";) sure",
+      "opts": [
+        {
+          "emotion": "0.78539818525314331",
+          "intensity": "1",
+          "priority": 10
+        }
+      ]
+    },
+    {
+      "text": "Hello there",
+      "opts": [
+        {
+          "emotion": "1001",
+          "intensity": "1",
+          "priority": 5
+        }
+      ]
+    },
+    {
+      "text": "Hi",
+      "opts": [
+        {
+          "emotion": "1001",
+          "intensity": "1",
+          "priority": 2
+        }
+      ]
+    },
+    {
+      "text": "Howdy partner",
+      "opts": [
+        {
+          "emotion": "1001",
+          "intensity": "1",
+          "priority": 5
+        }
+      ]
+    },
+    {
+      "text": "Bye now",
+      "opts": [
+        {
+          "emotion": "1001",
+          "intensity": "1",
+          "priority": 3
+        }
+      ]
+    },
+    {
+      "text": "Welcome",
+      "opts": [
+        {
+          "emotion": "1001",
+          "intensity": "1",
+          "priority": 5
+        }
+      ]
+    },
+    {
+      "text": "hello there",
+      "opts": [
+        {
+          "emotion": "1001",
+          "intensity": "1",
+          "priority": 5
+        }
+      ]
+    },
+    {
+      "text": "Hellothere",
+      "opts": []
+    },
+    {
+      "text": "Well. Hello there",
+      "opts": []
+    },
+    {
+      "text": "I think so",
+      "opts": [
+        {
+          "emotion": "1003",
+          "intensity": "1",
+          "priority": 3
+        }
+      ]
+    },
+    {
+      "text": "I'm going",
+      "opts": [
+        {
+          "emotion": "1003",
+          "intensity": "1",
+          "priority": 7
+        }
+      ]
+    },
+    {
+      "text": "i am here",
+      "opts": [
+        {
+          "emotion": "1003",
+          "intensity": "1",
+          "priority": 7
+        }
+      ]
+    },
+    {
+      "text": "You are nice",
+      "opts": [
+        {
+          "emotion": "1002",
+          "intensity": "1",
+          "priority": 4
+        }
+      ]
+    },
+    {
+      "text": "how are you",
+      "opts": [
+        {
+          "emotion": "1002",
+          "intensity": "1",
+          "priority": 8
+        }
+      ]
+    },
+    {
+      "text": "will you go",
+      "opts": [
+        {
+          "emotion": "1002",
+          "intensity": "1",
+          "priority": 8
+        }
+      ]
+    },
+    {
+      "text": "Hello LOL :)",
+      "opts": [
+        {
+          "emotion": "0",
+          "intensity": "1",
+          "priority": 10
+        },
+        {
+          "emotion": "5.4977869987487793",
+          "intensity": "1",
+          "priority": 11
+        },
+        {
+          "emotion": "1001",
+          "intensity": "1",
+          "priority": 5
+        }
+      ]
+    },
+    {
+      "text": "I'm sure",
+      "opts": [
+        {
+          "emotion": "1003",
+          "intensity": "1",
+          "priority": 7
+        }
+      ]
+    },
+    {
+      "text": "the quick brown fox jumps",
+      "opts": []
+    },
+    {
+      "text": "",
+      "opts": []
+    }
+  ]
+}

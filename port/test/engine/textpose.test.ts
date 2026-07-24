@@ -222,9 +222,14 @@ describe("GetEmotionsFromString — WAVE (sentence-start, case-insensitive)", ()
     GetEmotionsFromString("Hellothere", opts);
     expect(findEmotion(opts, EM_WAVE)).toBeNull();
   });
-  it("WAVE fires at the start of EACH sentence, not just the first", () => {
+  it("WAVE does NOT fire at the second sentence (BUG(port): textpose.cpp:308 uses buff not bptr)", () => {
+    // The C engine has a bug: the sentence-start loop computes the per-sentence
+    // pointer but passes the WHOLE-STRING start to StartCompare2. So only the
+    // first sentence's beginning is effectively checked. "Well. Hello there"
+    // does NOT fire WAVE because "Well" != "Hello" at the whole-string start,
+    // even though "Hello" begins the second sentence. Pinned bug-for-bug.
     GetEmotionsFromString("Well. Hello there", opts);
-    expect(findEmotion(opts, EM_WAVE)).not.toBeNull();
+    expect(findEmotion(opts, EM_WAVE)).toBeNull();
   });
 });
 
