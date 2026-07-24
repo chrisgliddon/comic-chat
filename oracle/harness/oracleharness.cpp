@@ -65,6 +65,11 @@ extern CAvatarX *LoadAvatar(const char *avName);
 extern CAvatarX *GetAvatar(USHORT avatarID);
 extern double randfloat();
 extern void GetEmotionsFromString(CString &str, CEmotionOpts &emOpts);
+// avatario.cpp: EmotionToBytes/BytesToEmotion are forward-declared locally
+// in avatario.cpp:66-67 (NOT in avatario.h) — repeat them here for the
+// CaptureAvatario dump.
+extern void EmotionToBytes(CEmotion &em, BYTE &emotion, BYTE &intensity);
+extern void BytesToEmotion(CEmotion &em, BYTE emIndex, BYTE inIndex);
 
 // CChatDoc has a protected ctor + DECLARE_DYNCREATE; we need to construct
 // it. The MFC runtime class is accessible via the doc template machinery,
@@ -291,7 +296,14 @@ static ojson::Value CaptureTextpose() {
 //   - emVal                          — the table index picked by EmotionToBytes
 //   - encoded.{emotion, intensity}   — the wire bytes (IndexToByte outputs)
 //   - decoded.{emotion, intensity}   — the floats recovered by BytesToEmotion
+//
+// NOTE on emFloatsCount: avatario.h declares `extern float emFloats[]` (no
+// size) so `sizeof(emFloats)` is illegal from this translation unit. The
+// table currently has 18 entries (avatario.cpp:45-64); we hardcode the
+// count here. If the table grows, update this constant and the corresponding
+// port/src/engine/avatario.ts emFloats[] literal together.
 // ---------------------------------------------------------------------------
+static const int kEmFloatsCount = 18;
 static ojson::Value CaptureAvatario() {
     // Probe battery. KEEP IN SYNC with port/src/engine/avatario_dump.ts
     // PROBES[] — both must contain the same inputs in the same order so
@@ -330,7 +342,7 @@ static ojson::Value CaptureAvatario() {
     ojson::Value root = ojson::Value::Obj();
 
     // Dump the emFloats[] table itself for oracle comparison.
-    int nFloats = sizeof(emFloats) / sizeof(float);
+    int nFloats = kEmFloatsCount;
     ojson::Value emFloatsArr = ojson::Value::Arr();
     for (int i = 0; i < nFloats; i++) {
         char buf[64];
