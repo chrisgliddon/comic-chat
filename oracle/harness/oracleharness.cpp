@@ -731,11 +731,15 @@ int main(int argc, char** argv) {
     if (nSpeakers > 0) {
         doc->m_myAvatarID = speakerMap[0].avatarID;
     }
+    fprintf(stderr, "ORACLE: myAvatarID = %d, nSpeakers = %d\n", doc->m_myAvatarID, nSpeakers);
+    fflush(stderr);
 
     // Replay messages
     ojson::Value* messages = inputs.Find("messages");
     ojson::Value dumpRoot = ojson::Value::Obj();
     ojson::Value perMessageDumps = ojson::Value::Arr();
+    fprintf(stderr, "ORACLE: messages = %p, type = %d, count = %d\n", (void*)messages, messages ? messages->type : -1, messages ? (int)messages->arr.size() : 0);
+    fflush(stderr);
 
     // Mode constants (from protsupp.h / chatprot.h)
     // BM_SAY=0, BM_WHISPER=1, BM_THINK=2, BM_ACTION=4
@@ -763,7 +767,11 @@ int main(int argc, char** argv) {
             }
 
             // Process the line through the engine
+            fprintf(stderr, "ORACLE: ProcessLine(avID=%d, text='%s', mode=%d)\n", avatarID, text, mode);
+            fflush(stderr);
             doc->ProcessLine(avatarID, text, (USHORT)mode, (BYTE)bbCooked, NULL);
+            fprintf(stderr, "ORACLE: ProcessLine done\n");
+            fflush(stderr);
 
             // Dump state after this message
             ojson::Value msgDump = ojson::Value::Obj();
