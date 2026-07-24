@@ -973,7 +973,7 @@ double randfloat();
 void CAvatarComplex::SetSequential(void *p, int n) {
 	UINT seed;
 #ifdef ORACLE_HARNESS
-	#include "../oracle/harness/oracleseed.h"
+	#include "oracleseed.h"
 	seed = OracleTickSeed((UINT)GetTickCount());
 #else
 	seed = (UINT) GetTickCount();
