@@ -1072,7 +1072,9 @@ BOOL CUnitPanelPage::AddLine(UINT uID, const char *szWords, USHORT uModes, CDWor
 {
 	BOOL	bReplaceLast;
 	CPanel	*pNewP, *pOldP;
-//	void AddSemantics(CPanel *, const char *), PostSemantics(CPanel *, const char *);
+#ifdef ORACLE_HARNESS
+	fprintf(stderr, "ORACLE: AddLine(uID=%d, words='%s', modes=%d)\n", uID, szWords, uModes);
+#endif
 
 	if (uModes == BM_ACTION)
 		StartNewPanel();			// start new panel for boxes
@@ -1089,37 +1091,61 @@ BOOL CUnitPanelPage::AddLine(UINT uID, const char *szWords, USHORT uModes, CDWor
 	g_bNewedPanel = FALSE;
 
 	pOldP = (CUnitPanel*) m_panels.GetTail();
+#ifdef ORACLE_HARNESS
+	fprintf(stderr, "ORACLE: AddLine - pOldP=%p, count=%d\n", (void*)pOldP, pOldP->m_elements.GetCount());
+#endif
 	if (m_newPanel || pOldP->m_elements.GetCount() >= 5 || m_panels.GetCount() < 2 || pOldP->AvatarInPanel(uID))
 	{
 		pNewP = new CUnitPanel;
 		m_newPanel = FALSE;
 		bReplaceLast = FALSE;
 		g_bNewedPanel = TRUE;
+#ifdef ORACLE_HARNESS
+		fprintf(stderr, "ORACLE: AddLine - new panel created\n");
+#endif
 	}
 	else
 	{
 		pNewP = pOldP->Clone();
 		bReplaceLast = TRUE;
+#ifdef ORACLE_HARNESS
+		fprintf(stderr, "ORACLE: AddLine - panel cloned\n");
+#endif
 	}
 
 	// AddSemantics(newP, words);
 
 	// make a new balloon
+#ifdef ORACLE_HARNESS
+	fprintf(stderr, "ORACLE: AddLine - calling MakeBalloon\n");
+#endif
 	CBalloon *newBalloon = MakeBalloon(szWords, uModes, prgdwFormatting, szURLStart);
 	if (!newBalloon)
 		return FALSE;
+#ifdef ORACLE_HARNESS
+	fprintf(stderr, "ORACLE: AddLine - MakeBalloon done, calling FetchSpeaker\n");
+#endif
 	newBalloon->m_speaker = pNewP->FetchSpeaker(uID);
 	
 	pNewP->m_elements.AddTail(newBalloon);	// add balloon to panel
 
 	// if char was in panel, for now, sub body
+#ifdef ORACLE_HARNESS
+	fprintf(stderr, "ORACLE: AddLine - calling ReplaceBody\n");
+#endif
 	pNewP->ReplaceBody(uID);
 
+#ifdef ORACLE_HARNESS
+	fprintf(stderr, "ORACLE: AddLine - calling LayoutAvatars\n");
+#endif
 	pNewP->LayoutAvatars();					// make a best guess as to avatars & positioning
 
 	char		*szLeftOverString = NULL, *szURLStartInLeftOver = NULL;
 	CDWordArray	*prgdwLeftOverFormatting = NULL;
 
+#ifdef ORACLE_HARNESS
+	fprintf(stderr, "ORACLE: AddLine - calling LayoutBalloons\n");
+#endif
 	if (!pNewP->LayoutBalloons(&szLeftOverString, &prgdwLeftOverFormatting, &szURLStartInLeftOver))
 	{
 		// if (pNewP->m_elements.GetCount() <= 1) return TRUE;  // Ignore utterance for now -- won't fit in panel
