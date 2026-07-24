@@ -1032,7 +1032,10 @@ void CUnitPanelPage::RefreshPanelN(int nPanels) {	// nPanels starts at 0
 	d.m_g.bottom = d.m_g.top - m_unitHeight;
 	d.m_g.right = d.m_g.left + m_unitWidth;
 
-	UpdateViewsX(m_doc->m_view, 0L, &d);
+#ifdef ORACLE_HARNESS
+	if (m_doc && m_doc->m_view)
+#endif
+		UpdateViewsX(m_doc->m_view, 0L, &d);
 }
 	
 
