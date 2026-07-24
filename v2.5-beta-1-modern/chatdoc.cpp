@@ -213,15 +213,25 @@ void CChatDoc::InitMyDocument() {
 	srand(m_seed);
 #ifdef ORACLE_HARNESS
 	OracleRecordSeed("CChatDoc.InitMyDocument.srand", (long)m_seed);
+	fprintf(stderr, "ORACLE: InitMyDocument - srand done\n");
 #endif
 	// Set up art dir to be default (unless overridden later)
 	void SetArtDir(const char *);
 	SetArtDir(theApp.m_strDefaultArtDir);
+#ifdef ORACLE_HARNESS
+	fprintf(stderr, "ORACLE: InitMyDocument - SetArtDir done\n");
+#endif
 
 	if (!m_bComicView) return;		// only has to do with Comics mode
 
 	ASSERT(m_pages.IsEmpty());
+#ifdef ORACLE_HARNESS
+	fprintf(stderr, "ORACLE: InitMyDocument - calling AddNewPage\n");
+#endif
 	AddNewPage();
+#ifdef ORACLE_HARNESS
+	fprintf(stderr, "ORACLE: InitMyDocument - AddNewPage done\n");
+#endif
 
 	// Add title panel -- make sure to do this in proper document context!
 	//   Could this be done instead from the StartHistoryEntry (more efficiently?)
@@ -230,9 +240,14 @@ void CChatDoc::InitMyDocument() {
 		oldDoc = GetChatDoc();
 		LoadDocData();
 	}
-
+#ifdef ORACLE_HARNESS
+	fprintf(stderr, "ORACLE: InitMyDocument - calling GetComicsTitle\n");
+#endif
 	CPage *firstPage = (CPage *) (m_pages.GetHead());
 	firstPage->AddTitle(GetComicsTitle());		// give it a title
+#ifdef ORACLE_HARNESS
+	fprintf(stderr, "ORACLE: InitMyDocument - AddTitle done\n");
+#endif
 
 	if (oldDoc) oldDoc->LoadDocData();  // restore old state
 }
