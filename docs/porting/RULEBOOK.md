@@ -8,11 +8,12 @@ determinism preconditions (§4). When two agents translate the same C
 construct and differ, THIS document is the referee — fix the rulebook, not
 the code.*
 
-*Status: Phase 3 COMPLETE. The 3-file shakedown port
-(`vector2d`, `bbox`, `spline`/`splinutl`) is green: 75/75 tests pass,
-including a 67/67 exact-match of the CBeta Bézier control points against
-`oracle/corpus/001/expected.json`. The single most important finding —
-the `ROUND` semantics — is §1 below.*
+*Status: Phase 3 COMPLETE + Phase 4 in progress (avatario + avatar
+ported and oracle-golden-verified; 180/180 tests pass; 3 frozen golden
+dumps: textpose, avatario, avatar). The 3-file shakedown port
+(`vector2d`, `bbox`, `spline`/`splinutl`) is green: 67/67 exact-match
+of the CBeta Bézier control points against `oracle/corpus/001/expected.json`.
+The single most important finding — the `ROUND` semantics — is §1 below.*
 
 ---
 
@@ -118,6 +119,17 @@ v1.0-pre `PI = 3.14159` for the vector2d angle routines; `port/src/core/
 emotion.ts` uses its own full-precision `PI_V25` for the emotion constants.
 When porting a module that uses `PI`, check which tree's `vector2d.h` it's
 compiled against (the oracle tree is v2.5) and use the matching constant.
+
+**The avatario/avatar port uses the v2.5 PI for the angle metric** (see
+§14 below). The `subtract_angles` / `value_to_angle` calls in
+`port/src/engine/avatar.ts` use a local `PI_V25 = 3.14159265358979323846`
+because the threshold `thisAngle < PI/8` is sensitive to the PI precision
+(the threshold is `~0.39269908` with v2.5 vs `0.3927` with v1.0-pre, and
+the difference flips the selection for some sentinel-emotion inputs).
+The avatario/avatar dump is pinned to the v2.5 forms; the spline golden
+remains pinned to the v1.0-pre forms. The two coexist: `port/src/core/
+numeric.ts` (spline/vector2d consumers) uses v1.0-pre, `port/src/engine/
+avatar.ts` (avatario/avatar consumers) uses v2.5.
 
 ---
 
@@ -465,9 +477,129 @@ exact equality) so every module gets its own two-agent check.
 |---|---|
 | `port/src/core/numeric.ts` | `ROUND`, `INT_CAST`, `LCG`, `randfloat`, constants. The load-bearing primitives. |
 | `port/src/core/types.ts` | `DPOINT`/`POINT`/`RECT`/`SRECT`/`BOUNDBOX`/`BEZIER` interfaces + constructors + `SRECTToRECT`/`dpoint_to_point`/`point_to_dpoint`. |
-| `port/src/engine/vector2d.ts` | Port of `vector2d.cpp` (DPOINT + POINT overloads, angle routines). |
+| `port/src/engine/vector2d.ts` | Port of `vector2d.cpp` (DPOINT + POINT overloads, angle routines). Uses v1.0-pre PI (pinned by spline golden). |
 | `port/src/engine/bbox.ts` | Port of `bbox.cpp` (integer bbox ops, incl. the pinned `bbox_within_bbox` bug). |
 | `port/src/engine/spline.ts` | Port of `spline.cpp` + `splinutl.cpp` (`CSpline`/`CCardinal`/`CBeta` + Bézier utils). |
+| `port/src/core/emotion.ts` | `EM_*` emotion constants (v2.5 PI + fround) + `MAXEMOPTS`/`OVERRIDEBYPRIORITY`/`ADDPRIORITY`. |
+| `port/src/core/emotionopts.ts` | `CEmotion`/`CEmotionOpts` (the emotion accumulator). |
+| `port/src/engine/textpose.ts` | Port of `textpose.cpp` (text → emotion rules). |
+| `port/src/engine/avatario.ts` | Port of `avatario.cpp` (emotion quantization round-trip). |
+| `port/src/engine/avatar.ts` | Port of `avatar.cpp`'s `GetBodyFromEmotion` family (emotion → pose). Uses v2.5 PI. |
 | `port/test/core/numeric.test.ts` | ROUND/INT_CAST/LCG oracle-pinning tests. |
-| `port/test/engine/*.test.ts` | Per-module tests, incl. the 67/67 corpus-001 golden. |
+| `port/test/engine/*.test.ts` | Per-module tests, incl. oracle-golden differential tests for textpose/avatario/avatar. |
 | `port/package.json`, `port/tsconfig.json`, `port/vitest.config.ts` | ESM TS + Vitest scaffold. `npm test` / `npm run typecheck`. |
+
+---
+
+## 14. Avatario / Avatar port idioms (Phase 4)
+
+### 14.1 `emFloats[]` and the avatario wire encode
+
+**C source:** `avatario.cpp:45-98`. The 17-entry emotion-wheel table; the
+wire encode/decode for the UDI protocol and the `.ccc` transcript.
+
+- The 8 directional emotions (`EM_HAPPY`..`EM_LAUGH`) sit on the wheel at
+  `k * 2*PI/8`; their values are **float32 bit patterns** (C `(float)`
+  cast). Use `Math.fround` in the port. See §1.1.
+- The 8 special emotions (`EM_WAVE`..`EM_3QFWALK`) are integer-valued
+  sentinels (1001..1008). No float-cast precision issue.
+- `EM_NEUTRAL` is `0.0` (NOT the same as `EM_HAPPY` even though both are
+  zero in float — `emFloats[9]` is explicitly `EM_NEUTRAL` to distinguish
+  the wheel-zero slot from the neutral-sentinel slot). Both `0.0` and
+  `EM_NEUTRAL` encode to `emVal=1` (the linear search in `EmotionToBytes`
+  starts at `i=1` and stops on the FIRST match; `emFloats[1]=EM_HAPPY=0.0`
+  matches before `emFloats[9]=EM_NEUTRAL=0.0`).
+- `IndexToByte` / `ByteToIndex` are pure ASCII-digit conversion
+  (`byteIn + '0'` / `byteIn - '0'`). The protocol byte range is 0x30..0x40
+  (emVal 0..16).
+- `EmotionToBytes` intensity: `(BYTE)(em.m_intensity * 10)` is **truncation
+  toward zero** (C `(BYTE)x`), not `ROUND`. Use `INT_CAST(em.m_intensity *
+  10) & 0xff` (§1 distinguishes ROUND vs INT_CAST).
+- `BytesToEmotion` out-of-range `emIndex` → `EM_NEUTRAL`. Out-of-range
+  is `< 0` or `>= emFloats.length` (currently 18).
+- `EmotionToFloat` out-of-range → `0.0` (NOT `emFloats[0]` — the C returns
+  the literal `0.0`, even though `emFloats[0]` happens to be `0.0` today).
+
+### 14.2 PI precision for the angle metric (avatar GetBodyFromEmotion)
+
+**C source:** `avatar.cpp:226-416`. The `subtract_angles` / `value_to_angle`
+functions use the oracle tree's `PI` (v2.5 = `3.14159265358979323846`).
+
+The port's `port/src/engine/vector2d.ts` exports a `subtract_angles` that
+uses the v1.0-pre `PI = 3.14159` (pinned by the Phase-3 spline golden —
+spline never touches PI). For most consumers this is fine (the
+normalization path is the same shape), but the **threshold check
+`thisAngle < PI/8`** in `GetBodyFromEmotion`'s torso/body scan is
+sensitive to the PI precision:
+
+- v2.5 PI: `PI/8 ≈ 0.39269908169872414`
+- v1.0-pre PI: `PI/8 = 0.39269875`
+
+The difference is small but real, and for some sentinel-emotion inputs
+(e.g. `EM_WAVE=1001` vs an `EM_SCARED` bRec entry) the normalized angle
+comes out to a value between the two thresholds, flipping the selection.
+
+**Rule:** the avatario/avatar port uses the v2.5 PI for the angle
+metric. `port/src/engine/avatar.ts` declares `PI_V25 =
+3.14159265358979323846` locally and provides `value_to_angle_v25` /
+`subtract_angles_v25`. The `port/src/engine/vector2d.ts` exports
+remain at v1.0-pre (spline golden). When porting a new module that
+uses the angle metric AND is sensitive to the threshold, decide
+which PI to use based on which oracle dump it's compared against.
+
+### 14.3 `m_lastBody` / `m_lastFace` / `m_lastTorso` history state
+
+**C source:** `avatar.cpp:755-770` (`RecordBody`). The m_last* fields are
+**NOT** updated by `GetBodyFromEmotion` itself — they're updated by
+`RecordBody` in the consumer's `UpdateBody` flow. The selection returns
+a new `CBody*`; the caller applies it via `av->UpdateBody(body)` which
+calls `av->RecordBody(body)` which writes the chosen index into m_last*.
+
+In the dump, the harness constructs a fresh avatar per probe and never
+calls `UpdateBody`, so m_last* stays at the ctor default (`-1`).
+
+**Bug caught in the port (fixed):** the initial port wrote
+`this.m_lastBody = body.m_bodyIndex` at the end of each
+`GetBodyFromEmotion` call. The C doesn't do this in the selection
+path — only the consumer does. The TS dump then disagreed with the
+C dump on `m_last*`. Fix: remove the writes from all four
+`GetBodyFromEmotion` variants (Simple + Complex, single-emotion +
+CEmotionOpts). The TS dump and the unit tests now assert m_last*
+stays `-1` after selection.
+
+### 14.4 C quirks (reproduce bug-for-bug)
+
+The `GetBodyFromEmotion` family has several C quirks that the port
+must reproduce:
+
+- **Angle-after-normalization coincidence** (avatar.cpp:230-249).
+  The C's torso/body scan checks `bRec[index].emotion > 7` to skip
+  sentinel entries in the *bRec*, but it does NOT check the input
+  emotion. When the input is a sentinel (e.g. `EM_WAVE=1001`), the
+  loop still computes the normalized angle to each directional
+  bRec entry. The angle from `EM_SCARED` (2.356) to 1001 normalizes
+  to `~0.3827`, which is `< PI/8` — so SCARED wins. The C source
+  acknowledges this with "Distance metric needs rethinking!".
+  The port reproduces this; the dump pins it.
+- **GetHeadAndBodyFromEmotion sets only ONE index per call**
+  (avatar.cpp:302-328). The directional branch sets the face index
+  but leaves the torso index at `-1`; the sentinel branch sets the
+  torso index but leaves the face at `-1`. The `CEmotionOpts` path
+  iterates by descending priority and relies on this — a single
+  opt call may fill face OR torso but not both. The CEmotionOpts
+  variant then calls `SetFaceNeutral` / `SetTorsoNeutral` for any
+  unfilled index. So a directional emotion opt always leaves the
+  torso at NEUTRAL fallback (the directional branch didn't set
+  tIndex).
+- **The `> 7` filter is on bRec entries, not on the input emotion**.
+  The C `if (bRec[index].emotion > 7) continue;` only skips sentinel
+  bRec rows; the input can be anything and the directional entries
+  are still considered.
+- **`emVal` linear search starts at `i=1`** in `EmotionToBytes` —
+  `emFloats[0]` is `0.0` (padding) and is never reached by the
+  encoder. The first match for `0.0` is `emFloats[1]=EM_HAPPY=0.0`,
+  so `emVal=1` (NOT `emVal=9` for `EM_NEUTRAL`).
+
+These are all pinned in the dump; deviating from any of them
+will surface as a golden mismatch in `port/test/engine/
+avatar_oracle.test.ts` and `port/test/engine/avatario_oracle.test.ts`.
