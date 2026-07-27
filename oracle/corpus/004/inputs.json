@@ -33,32 +33,32 @@
     {
       "speakerId": 1,
       "text": "One speaker so far.",
-      "mode": 0
+      "mode": 1
     },
     {
       "speakerId": 2,
       "text": "Now two speakers.",
-      "mode": 0
+      "mode": 1
     },
     {
       "speakerId": 3,
       "text": "Three speakers in the room.",
-      "mode": 0
+      "mode": 1
     },
     {
       "speakerId": 4,
       "text": "Four speakers now.",
-      "mode": 0
+      "mode": 1
     },
     {
       "speakerId": 5,
       "text": "Five speakers chatting.",
-      "mode": 0
+      "mode": 1
     },
     {
       "speakerId": 6,
       "text": "Six speakers - full panel!",
-      "mode": 0
+      "mode": 1
     }
   ]
 }

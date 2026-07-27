@@ -28,32 +28,32 @@
     {
       "speakerId": 1,
       "text": "a",
-      "mode": 0
+      "mode": 1
     },
     {
       "speakerId": 2,
       "text": "b",
-      "mode": 0
+      "mode": 1
     },
     {
       "speakerId": 3,
       "text": "c",
-      "mode": 0
+      "mode": 1
     },
     {
       "speakerId": 4,
       "text": "d",
-      "mode": 0
+      "mode": 1
     },
     {
       "speakerId": 1,
       "text": "e",
-      "mode": 0
+      "mode": 1
     },
     {
       "speakerId": 2,
       "text": "f",
-      "mode": 0
+      "mode": 1
     }
   ]
 }

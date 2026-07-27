@@ -18,55 +18,55 @@
     {
       "speakerId": 1,
       "text": "hi there everyone",
-      "mode": 0,
+      "mode": 1,
       "bbCooked": 0
     },
     {
       "speakerId": 2,
       "text": "HELLO BOLO",
-      "mode": 0,
+      "mode": 1,
       "bbCooked": 0
     },
     {
       "speakerId": 1,
       "text": "I think you are wrong about that",
-      "mode": 0,
+      "mode": 1,
       "bbCooked": 0
     },
     {
       "speakerId": 2,
       "text": "LOL",
-      "mode": 0,
+      "mode": 1,
       "bbCooked": 0
     },
     {
       "speakerId": 1,
       "text": "that is not funny!!!",
-      "mode": 0,
+      "mode": 1,
       "bbCooked": 0
     },
     {
       "speakerId": 2,
       "text": "sorry :)",
-      "mode": 0,
+      "mode": 1,
       "bbCooked": 0
     },
     {
       "speakerId": 1,
       "text": "hmmm :(",
-      "mode": 0,
+      "mode": 1,
       "bbCooked": 0
     },
     {
       "speakerId": 2,
       "text": "ROTFL you are too much",
-      "mode": 0,
+      "mode": 1,
       "bbCooked": 0
     },
     {
       "speakerId": 1,
       "text": "bye",
-      "mode": 0,
+      "mode": 1,
       "bbCooked": 0
     }
   ]

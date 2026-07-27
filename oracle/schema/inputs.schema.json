@@ -72,14 +72,17 @@
           },
           "mode": {
             "type": "integer",
-            "description": "Speech mode: 0=say, 1=whisper, 2=think, 4=action",
+            "description": "BM_ balloon-mode bit flags, passed straight through to CUnitPanelPage::MakeBalloon (panel.cpp:1075) - CChatDoc::ProcessLine does NOT run SM2BM, so these are BM_ values from defines.h:63, not the sequential SM_ values (SM_SAY=1..SM_ACTION=5). 1=BM_SAY (CBWoodringNormal), 2=BM_WHISPER, 4=BM_THINK, 8=BM_ACTION (CBWoodringBox - and the only value that trips the `uModes == BM_ACTION` new-panel driver in AddLine), 10=BM_ACTION|BM_WHISPER (dashed box, does NOT break the panel since that test is an exact equality). 0 is not a mode: it falls through MakeBalloon's `default:` \"should never happen\" branch, which ASSERTs in a debug build.",
             "enum": [
-              0,
               1,
               2,
-              4
+              4,
+              8,
+              9,
+              10,
+              12
             ],
-            "default": 0
+            "default": 1
           },
           "bbCooked": {
             "type": "integer",

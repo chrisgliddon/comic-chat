@@ -5,21 +5,74 @@
   "panelsWide": 3,
   "treeDir": ".",
   "avatars": [
-    { "name": "anna", "speakerId": 1 },
-    { "name": "cro", "speakerId": 2 },
-    { "name": "connor", "speakerId": 3 }
+    {
+      "name": "anna",
+      "speakerId": 1
+    },
+    {
+      "name": "cro",
+      "speakerId": 2
+    },
+    {
+      "name": "connor",
+      "speakerId": 3
+    }
   ],
   "messages": [
-    { "speakerId": 1, "text": "one", "mode": 0 },
-    { "speakerId": 2, "text": "two", "mode": 0 },
-    { "speakerId": 3, "text": "three", "mode": 0 },
-    { "speakerId": 1, "text": "four", "mode": 0 },
-    { "speakerId": 2, "text": "five", "mode": 0 },
-    { "speakerId": 3, "text": "six pushes past the five-balloon limit", "mode": 0 },
-    { "speakerId": 1, "text": "seven from a speaker already in the panel", "mode": 0 },
-    { "speakerId": 1, "text": "eight from that same speaker again", "mode": 0 },
-    { "speakerId": 2, "text": "before the break<Brk>after the break", "mode": 0 },
-    { "speakerId": 3, "text": "waves at the room", "mode": 4 },
-    { "speakerId": 1, "text": "back to normal", "mode": 0 }
+    {
+      "speakerId": 1,
+      "text": "one",
+      "mode": 1
+    },
+    {
+      "speakerId": 2,
+      "text": "two",
+      "mode": 1
+    },
+    {
+      "speakerId": 3,
+      "text": "three",
+      "mode": 1
+    },
+    {
+      "speakerId": 1,
+      "text": "four",
+      "mode": 1
+    },
+    {
+      "speakerId": 2,
+      "text": "five",
+      "mode": 1
+    },
+    {
+      "speakerId": 3,
+      "text": "six pushes past the five-balloon limit",
+      "mode": 1
+    },
+    {
+      "speakerId": 1,
+      "text": "seven from a speaker already in the panel",
+      "mode": 1
+    },
+    {
+      "speakerId": 1,
+      "text": "eight from that same speaker again",
+      "mode": 1
+    },
+    {
+      "speakerId": 2,
+      "text": "before the break<Brk>after the break",
+      "mode": 1
+    },
+    {
+      "speakerId": 3,
+      "text": "waves at the room",
+      "mode": 8
+    },
+    {
+      "speakerId": 1,
+      "text": "back to normal",
+      "mode": 1
+    }
   ]
 }

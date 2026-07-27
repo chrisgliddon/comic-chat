@@ -17,37 +17,37 @@
     {
       "speakerId": 1,
       "text": "First message in panel.",
-      "mode": 0
+      "mode": 1
     },
     {
       "speakerId": 2,
       "text": "Second message.",
-      "mode": 0
+      "mode": 1
     },
     {
       "speakerId": 1,
       "text": "Third message.",
-      "mode": 0
+      "mode": 1
     },
     {
       "speakerId": 2,
       "text": "Fourth message.",
-      "mode": 0
+      "mode": 1
     },
     {
       "speakerId": 1,
       "text": "Fifth message - should trigger new panel (>=5 balloons).",
-      "mode": 0
+      "mode": 1
     },
     {
       "speakerId": 2,
       "text": "<Brk>",
-      "mode": 0
+      "mode": 1
     },
     {
       "speakerId": 1,
       "text": "After break - new panel.",
-      "mode": 0
+      "mode": 1
     }
   ]
 }

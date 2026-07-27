@@ -17,22 +17,22 @@
     {
       "speakerId": 1,
       "text": "I have something to say.",
-      "mode": 0
+      "mode": 1
     },
     {
       "speakerId": 2,
       "text": "Go ahead.",
-      "mode": 0
+      "mode": 1
     },
     {
       "speakerId": 1,
       "text": "Well, first of all...",
-      "mode": 0
+      "mode": 1
     },
     {
       "speakerId": 1,
       "text": "I already spoke so this should be in a new panel.",
-      "mode": 0
+      "mode": 1
     }
   ]
 }

@@ -17,27 +17,27 @@
     {
       "speakerId": 1,
       "text": "This is a normal said message.",
-      "mode": 0
+      "mode": 1
     },
     {
       "speakerId": 2,
       "text": "This is a whispered message.",
-      "mode": 1
+      "mode": 2
     },
     {
       "speakerId": 1,
       "text": "This is a thought message.",
-      "mode": 2
+      "mode": 4
     },
     {
       "speakerId": 2,
       "text": "waves hello to everyone",
-      "mode": 4
+      "mode": 8
     },
     {
       "speakerId": 1,
       "text": "Back to normal speech.",
-      "mode": 0
+      "mode": 1
     }
   ]
 }

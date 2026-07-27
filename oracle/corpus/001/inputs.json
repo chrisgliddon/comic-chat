@@ -4,12 +4,30 @@
   "panelsWide": 2,
   "treeDir": ".",
   "avatars": [
-    {"name": "bolo", "speakerId": 1},
-    {"name": "anna", "speakerId": 2}
+    {
+      "name": "bolo",
+      "speakerId": 1
+    },
+    {
+      "name": "anna",
+      "speakerId": 2
+    }
   ],
   "messages": [
-    {"speakerId": 1, "text": "Hello there! How are you?", "mode": 0},
-    {"speakerId": 2, "text": "I'm doing great, thanks for asking!", "mode": 0},
-    {"speakerId": 1, "text": "That's wonderful to hear.", "mode": 0}
+    {
+      "speakerId": 1,
+      "text": "Hello there! How are you?",
+      "mode": 1
+    },
+    {
+      "speakerId": 2,
+      "text": "I'm doing great, thanks for asking!",
+      "mode": 1
+    },
+    {
+      "speakerId": 1,
+      "text": "That's wonderful to hear.",
+      "mode": 1
+    }
   ]
 }

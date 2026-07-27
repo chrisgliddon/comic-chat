@@ -1,0 +1,19 @@
+{
+  "description": "Box balloons (CBWoodringBox). No case had ever sent BM_ACTION, because the corpus modes were written as 0/1/2/4 - values that match neither BM_ (1/2/4/8, what ProcessLine actually forwards) nor SM_ (1..5). So the box balloon was never instantiated: measurably, no traj segment in any golden was a 'line', while CBWoodringBox::SetBalloonTraj builds its outline from four CLines instead of a spline plus two tail arcs. This case sends BM_ACTION (8) and BM_ACTION|BM_WHISPER (10, the dashed box). It also pins a distinction that is easy to port wrong: AddLine tests `uModes == BM_ACTION` by exact equality, so 8 starts a new panel and 10 does not.",
+  "seed": 4711,
+  "tickSeedBase": 1000,
+  "panelsWide": 2,
+  "treeDir": ".",
+  "avatars": [
+    { "name": "bolo", "speakerId": 1 },
+    { "name": "veronica", "speakerId": 2 }
+  ],
+  "messages": [
+    { "speakerId": 1, "text": "setting the scene first", "mode": 1 },
+    { "speakerId": 2, "text": "waves at the room", "mode": 8 },
+    { "speakerId": 1, "text": "a plain reply after the box", "mode": 1 },
+    { "speakerId": 2, "text": "whispers an aside to nobody", "mode": 10 },
+    { "speakerId": 1, "text": "and one more after the dashed box", "mode": 1 },
+    { "speakerId": 2, "text": "thinks it over", "mode": 4 }
+  ]
+}

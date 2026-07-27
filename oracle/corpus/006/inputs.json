@@ -17,32 +17,32 @@
     {
       "speakerId": 1,
       "text": "HI THERE!!! I'M SO HAPPY TO SEE YOU!!!",
-      "mode": 0
+      "mode": 1
     },
     {
       "speakerId": 2,
       "text": "lol that's funny :)",
-      "mode": 0
+      "mode": 1
     },
     {
       "speakerId": 1,
       "text": "ROTFL you are killing me",
-      "mode": 0
+      "mode": 1
     },
     {
       "speakerId": 2,
       "text": "Hi everyone, welcome to the chat!",
-      "mode": 0
+      "mode": 1
     },
     {
       "speakerId": 1,
       "text": "I think you should go left.",
-      "mode": 0
+      "mode": 1
     },
     {
       "speakerId": 2,
       "text": "You are absolutely right.",
-      "mode": 0
+      "mode": 1
     }
   ]
 }
