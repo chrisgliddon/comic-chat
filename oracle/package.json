@@ -1,0 +1,17 @@
+{
+  "name": "comic-chat-oracle",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Tooling for the Comic Chat oracle: corpus schema validation (validate.mjs), dump diffing (diff-dumps.mjs), coverage critique (critic.mjs). Separate from port/ so the Windows oracle job installs only ajv, not vitest.",
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@10.34.5",
+  "scripts": {
+    "validate": "node scripts/validate.mjs --corpus corpus"
+  },
+  "devDependencies": {
+    "ajv": "^8.17.1"
+  }
+}

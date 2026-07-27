@@ -29,6 +29,23 @@ try {
   // ajv not installed — fall back to basic structural checks
 }
 
+// The structural fallback is much weaker than the schemas, and both paths
+// print "VALID", so a failed install would quietly downgrade the gate. ajv is
+// a pinned devDependency of oracle/package.json, so in CI its absence means
+// the install step didn't run or didn't resolve — that is a broken gate, not
+// a degraded one.
+if (!Ajv) {
+  if (process.env.CI) {
+    console.error(
+      "ajv unavailable in CI: expected it from oracle/package.json " +
+        "(pnpm install --frozen-lockfile in oracle/). Refusing to fall back " +
+        "to structural validation, which would report VALID either way.",
+    );
+    process.exit(1);
+  }
+  console.error("warning: ajv unavailable — using the weaker structural fallback");
+}
+
 function loadSchema(name) {
   const schemaDir = path.join(__dirname, "..", "schema");
   return JSON.parse(fs.readFileSync(path.join(schemaDir, name), "utf8"));
@@ -113,7 +130,7 @@ function main() {
   }
 
   if (allValid) {
-    console.log("VALID");
+    console.log(Ajv ? "VALID (ajv schema validation)" : "VALID (structural fallback)");
     process.exit(0);
   }
   process.exit(1);

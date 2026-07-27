@@ -7,6 +7,7 @@
   "engines": {
     "node": ">=20"
   },
+  "packageManager": "pnpm@10.34.5",
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
@@ -17,5 +18,10 @@
     "@types/node": "^26.1.1",
     "typescript": "^5.6.0",
     "vitest": "^2.1.0"
+  },
+  "pnpm": {
+    "//": "No dependency needs a postinstall here — vitest gets its esbuild binary from a platform optionalDependency, and the full suite passes with scripts blocked. Keeping the allow-list empty means no third-party install script runs, and silences pnpm's approve-builds prompt in CI.",
+    "onlyBuiltDependencies": [],
+    "ignoredBuiltDependencies": ["esbuild"]
   }
 }

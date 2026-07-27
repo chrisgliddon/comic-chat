@@ -487,7 +487,7 @@ exact equality) so every module gets its own two-agent check.
 | `port/src/engine/avatar.ts` | Port of `avatar.cpp`'s `GetBodyFromEmotion` family (emotion → pose). Uses v2.5 PI. |
 | `port/test/core/numeric.test.ts` | ROUND/INT_CAST/LCG oracle-pinning tests. |
 | `port/test/engine/*.test.ts` | Per-module tests, incl. oracle-golden differential tests for textpose/avatario/avatar. |
-| `port/package.json`, `port/tsconfig.json`, `port/vitest.config.ts` | ESM TS + Vitest scaffold. `npm test` / `npm run typecheck`. |
+| `port/package.json`, `port/tsconfig.json`, `port/vitest.config.ts` | ESM TS + Vitest scaffold. `pnpm test` / `pnpm run typecheck`. |
 
 ---
 

@@ -196,7 +196,7 @@ Phases 0-3 are complete. Per the plan doc, the next phases are:
   semantics, diagnostics, doc model, and the deferred items.
 - **Shakedown port:** `port/` (ESM TypeScript + Vitest). Ports `vector2d.cpp`,
   `bbox.cpp`, `spline.cpp`+`splinutl.cpp` — the three purest modules
-  (version-identical pure math, no GDI). 75/75 tests pass; `npm run typecheck`
+  (version-identical pure math, no GDI). 75/75 tests pass; `pnpm run typecheck`
   clean.
 - **Two-agent check (PASSED):** the C++ oracle (agent A) and TS port (agent B)
   translated `CBeta::ComputeBezpts` independently. All 67 Bézier control
@@ -238,5 +238,5 @@ branch contains all Phase 0-2 work + frozen goldens + CI that guards them.
 
 Phase 3 work (rulebook + `port/` shakedown) is uncommitted on `main` as of
 this LEDGER update. It is TS-only (no C++ engine or golden changes) so no CI
-round is required to validate it; `npm test` and `npm run typecheck` in
+round is required to validate it; `pnpm test` and `pnpm run typecheck` in
 `port/` are the verification commands. Commit when ready.

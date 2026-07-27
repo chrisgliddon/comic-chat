@@ -33,10 +33,19 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v5
 
+      # pnpm/action-setup must precede setup-node so that `cache: pnpm` can
+      # locate the pnpm store. Version comes from oracle/package.json.
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          package_json_file: oracle/package.json
+
       - name: Set up Node.js
         uses: actions/setup-node@v5
         with:
           node-version: '22'
+          cache: pnpm
+          cache-dependency-path: oracle/pnpm-lock.yaml
 
       - name: Build the oracle harness
         shell: cmd
@@ -188,11 +197,20 @@ jobs:
             }
           }
 
+      # ajv comes from oracle/package.json (pinned + lockfile) rather than an
+      # unpinned ad-hoc install. node resolves it from oracle/node_modules
+      # because validate.mjs lives in oracle/scripts/, so the validator can be
+      # invoked from the repo root as before. CI=true makes validate.mjs fail
+      # rather than silently degrade to structural checks if ajv is missing.
       - name: Validate corpus against schemas
         shell: pwsh
         run: |
-          npm install ajv --no-save
+          pnpm install --frozen-lockfile --dir oracle
+          if ($LASTEXITCODE -ne 0) { exit 1 }
           node oracle/scripts/validate.mjs --corpus oracle/corpus
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+        env:
+          CI: "true"
 
       - name: Upload oracle artifacts
         if: always()
