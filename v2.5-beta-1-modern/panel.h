@@ -24,6 +24,18 @@ public:
 	BOOL			m_hasBorder;
 	CBackDrop		m_backDrop;
 
+#ifdef ORACLE_HARNESS
+	// Tier-3 #3 observability. zoomFactor is a local in
+	// CUnitPanel::LayoutAvatars and Establishing() reads view state, so
+	// neither survives layout for the oracle to read afterwards. Recorded at
+	// the decision site (panel.cpp) and initialised in both constructors, so
+	// a panel that never laid out still dumps deterministically rather than
+	// leaking uninitialised memory into a golden.
+	double			m_oracleZoomFactor;		// factor handed to AdjustArtToCoord
+	double			m_oracleReduction;		// shrink factor when avatars overflow
+	BOOL			m_oracleEstablishing;	// Establishing() at the zoom branch
+#endif
+
 	CPanel();
 	CPanel(const CPanel &);
 	virtual ~CPanel();

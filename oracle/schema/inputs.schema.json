@@ -4,8 +4,15 @@
   "title": "Oracle Inputs",
   "description": "Scripted message sequence for the Comic Chat oracle harness (plan doc Tier 4)",
   "type": "object",
-  "required": ["seed", "messages"],
+  "required": [
+    "seed",
+    "messages"
+  ],
   "properties": {
+    "description": {
+      "type": "string",
+      "description": "Human-readable note on what this case is for and why it exists. Optional; cases 001-010 predate it."
+    },
     "seed": {
       "type": "integer",
       "description": "Initial PRNG seed (pins the CRT rand() stream)"
@@ -29,7 +36,10 @@
       "description": "Avatar assignments for speakers",
       "items": {
         "type": "object",
-        "required": ["name", "speakerId"],
+        "required": [
+          "name",
+          "speakerId"
+        ],
         "properties": {
           "name": {
             "type": "string",
@@ -47,7 +57,10 @@
       "description": "Scripted messages to replay through the engine",
       "items": {
         "type": "object",
-        "required": ["speakerId", "text"],
+        "required": [
+          "speakerId",
+          "text"
+        ],
         "properties": {
           "speakerId": {
             "type": "integer",
@@ -60,7 +73,12 @@
           "mode": {
             "type": "integer",
             "description": "Speech mode: 0=say, 1=whisper, 2=think, 4=action",
-            "enum": [0, 1, 2, 4],
+            "enum": [
+              0,
+              1,
+              2,
+              4
+            ],
             "default": 0
           },
           "bbCooked": {

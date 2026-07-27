@@ -1,0 +1,49 @@
+{
+  "description": "Text edge cases, deliberately the highest-numbered case: the corpus runner aborts on the first harness crash, so if any of these does crash the engine, 011 and 012 have already run and can still be frozen. Covers the empty message, a single character, a ~520-char message (the plan calls for 500+), a 78-char unbroken word that forces the mid-word split documented in the bug-for-bug ledger, and Latin-1 high bytes via \\u escapes (ojson caps escapes at 0xFF by design - the corpus is byte-oriented and the CJK path is out of scope).",
+  "seed": 99991,
+  "tickSeedBase": 1000,
+  "panelsWide": 2,
+  "treeDir": ".",
+  "avatars": [
+    {
+      "name": "lynnea",
+      "speakerId": 1
+    },
+    {
+      "name": "armando",
+      "speakerId": 2
+    }
+  ],
+  "messages": [
+    {
+      "speakerId": 1,
+      "text": "",
+      "mode": 0
+    },
+    {
+      "speakerId": 2,
+      "text": "a",
+      "mode": 0
+    },
+    {
+      "speakerId": 1,
+      "text": "Lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua Ut enim ad minim veniam quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur Excepteur sint occaecat cupidatat non proident sunt in culpa qui officia deserunt mollit anim id est laborum et dolorum fuga et harum quidem rerum facilis est et expedita distinctio nam",
+      "mode": 0
+    },
+    {
+      "speakerId": 2,
+      "text": "pneumonoultramicroscopicsilicovolcanoconiosisandthensomeextracharacterstopushit",
+      "mode": 0
+    },
+    {
+      "speakerId": 1,
+      "text": "caf\u00e9 na\u00efve r\u00e9sum\u00e9 \u00fcber",
+      "mode": 0
+    },
+    {
+      "speakerId": 2,
+      "text": "back to plain ascii",
+      "mode": 0
+    }
+  ]
+}

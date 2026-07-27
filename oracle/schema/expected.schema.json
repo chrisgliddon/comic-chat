@@ -4,17 +4,32 @@
   "title": "Oracle Expected Dump",
   "description": "Tier-3 engine state dump from the oracle harness (plan doc Tier 3)",
   "type": "object",
-  "required": ["seed", "messages"],
+  "required": [
+    "seed",
+    "messages"
+  ],
   "properties": {
-    "seed": { "type": "integer" },
-    "tickSeedBase": { "type": "integer" },
-    "panelsWide": { "type": "integer" },
+    "seed": {
+      "type": "integer"
+    },
+    "tickSeedBase": {
+      "type": "integer"
+    },
+    "panelsWide": {
+      "type": "integer"
+    },
     "fontConfig": {
       "type": "object",
       "properties": {
-        "faceName": { "type": "string" },
-        "lfHeight": { "type": "integer" },
-        "charSet": { "type": "integer" }
+        "faceName": {
+          "type": "string"
+        },
+        "lfHeight": {
+          "type": "integer"
+        },
+        "charSet": {
+          "type": "integer"
+        }
       }
     },
     "seedLedger": {
@@ -23,8 +38,12 @@
       "items": {
         "type": "object",
         "properties": {
-          "site": { "type": "string" },
-          "value": { "type": "integer" }
+          "site": {
+            "type": "string"
+          },
+          "value": {
+            "type": "integer"
+          }
         }
       }
     },
@@ -32,20 +51,38 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["messageIndex", "speakerId", "text"],
+        "required": [
+          "messageIndex",
+          "speakerId",
+          "text"
+        ],
         "properties": {
-          "messageIndex": { "type": "integer" },
-          "speakerId": { "type": "integer" },
-          "text": { "type": "string" },
-          "mode": { "type": "integer" },
-          "page": { "$ref": "#/$defs/page" },
+          "messageIndex": {
+            "type": "integer"
+          },
+          "speakerId": {
+            "type": "integer"
+          },
+          "text": {
+            "type": "string"
+          },
+          "mode": {
+            "type": "integer"
+          },
+          "page": {
+            "$ref": "#/$defs/page"
+          },
           "allPages": {
             "type": "array",
-            "items": { "$ref": "#/$defs/page" }
+            "items": {
+              "$ref": "#/$defs/page"
+            }
           },
           "avatarStates": {
             "type": "object",
-            "additionalProperties": { "$ref": "#/$defs/avatarState" }
+            "additionalProperties": {
+              "$ref": "#/$defs/avatarState"
+            }
           }
         }
       }
@@ -55,119 +92,264 @@
     "page": {
       "type": "object",
       "properties": {
-        "newPanel": { "type": "boolean" },
-        "bbox": { "$ref": "#/$defs/rect" },
+        "newPanel": {
+          "type": "boolean"
+        },
+        "bbox": {
+          "$ref": "#/$defs/rect"
+        },
         "panels": {
           "type": "array",
-          "items": { "$ref": "#/$defs/panel" }
+          "items": {
+            "$ref": "#/$defs/panel"
+          }
         }
       }
     },
     "panel": {
       "type": "object",
       "properties": {
-        "seed": { "type": "integer" },
-        "hasBorder": { "type": "boolean" },
+        "seed": {
+          "type": "integer"
+        },
+        "hasBorder": {
+          "type": "boolean"
+        },
         "balloons": {
           "type": "array",
-          "items": { "$ref": "#/$defs/balloon" }
+          "items": {
+            "$ref": "#/$defs/balloon"
+          }
         },
         "bodies": {
           "type": "array",
-          "items": { "$ref": "#/$defs/body" }
+          "items": {
+            "$ref": "#/$defs/body"
+          }
+        },
+        "zoomFactor": {
+          "type": "number",
+          "description": "Factor handed to AdjustArtToCoord (Tier-3 #3). Recorded at the decision site in CUnitPanel::LayoutAvatars, since it is a local there."
+        },
+        "reduction": {
+          "type": "number",
+          "description": "Shrink factor applied when the avatars overflow the panel width; 1.0 when that branch was not taken."
+        },
+        "establishing": {
+          "type": "boolean",
+          "description": "Establishing() at the zoom branch. Gates the zoom-in path (panel.cpp:795)."
+        },
+        "backDropMode": {
+          "type": "integer",
+          "description": "CBackDrop::m_mode. BF_NOZOOM forces AdjustArtToCoord's factor to 1.0, so zoomFactor alone does not explain art placement."
+        },
+        "backDropID": {
+          "type": "integer"
         }
       }
     },
     "balloon": {
       "type": "object",
       "properties": {
-        "bbox": { "$ref": "#/$defs/rect" },
-        "trueBox": { "$ref": "#/$defs/srect" },
-        "routeRgn": { "$ref": "#/$defs/srect" },
-        "type": { "type": "integer" },
-        "speakerAvatarID": { "type": "integer" },
-        "speakerFlip": { "type": "integer" },
-        "formatInfo": { "$ref": "#/$defs/formatInfo" },
-        "spline": { "$ref": "#/$defs/spline" }
+        "bbox": {
+          "$ref": "#/$defs/rect"
+        },
+        "trueBox": {
+          "$ref": "#/$defs/srect"
+        },
+        "routeRgn": {
+          "$ref": "#/$defs/srect"
+        },
+        "type": {
+          "type": "integer"
+        },
+        "speakerAvatarID": {
+          "type": "integer"
+        },
+        "speakerFlip": {
+          "type": "integer"
+        },
+        "formatInfo": {
+          "$ref": "#/$defs/formatInfo"
+        },
+        "spline": {
+          "$ref": "#/$defs/spline"
+        },
+        "traj": {
+          "$ref": "#/$defs/traj"
+        }
       }
     },
     "formatInfo": {
       "type": "object",
       "properties": {
-        "nLines": { "type": "integer" },
-        "maxWidth": { "type": "integer" },
-        "rgiLengths": { "type": "array", "items": { "type": "integer" } },
-        "rgiWidths": { "type": "array", "items": { "type": "integer" } },
-        "rgiLeftX": { "type": "array", "items": { "type": "integer" } },
-        "rgiStartOffsets": { "type": "array", "items": { "type": "integer" } },
-        "bbox": { "$ref": "#/$defs/srect" }
+        "nLines": {
+          "type": "integer"
+        },
+        "maxWidth": {
+          "type": "integer"
+        },
+        "rgiLengths": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "rgiWidths": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "rgiLeftX": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "rgiStartOffsets": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "bbox": {
+          "$ref": "#/$defs/srect"
+        }
       }
     },
     "spline": {
       "type": "object",
       "properties": {
-        "nCps": { "type": "integer" },
-        "closed": { "type": "boolean" },
+        "nCps": {
+          "type": "integer"
+        },
+        "closed": {
+          "type": "boolean"
+        },
         "cps": {
           "type": "array",
           "items": {
             "type": "object",
-            "properties": { "x": { "type": "integer" }, "y": { "type": "integer" } }
+            "properties": {
+              "x": {
+                "type": "integer"
+              },
+              "y": {
+                "type": "integer"
+              }
+            }
           }
         },
         "bezpts": {
           "type": "array",
           "items": {
             "type": "object",
-            "properties": { "x": { "type": "integer" }, "y": { "type": "integer" } }
+            "properties": {
+              "x": {
+                "type": "integer"
+              },
+              "y": {
+                "type": "integer"
+              }
+            }
           }
         },
-        "bezierCount": { "type": "integer" }
+        "bezierCount": {
+          "type": "integer"
+        },
+        "knotCount": {
+          "type": "integer"
+        }
       }
     },
     "body": {
       "type": "object",
       "properties": {
-        "avatarID": { "type": "integer" },
-        "flip": { "type": "integer" },
-        "requested": { "type": "integer" },
-        "bbox": { "$ref": "#/$defs/srect" },
-        "arrowX": { "type": "integer" },
-        "class": { "type": "integer" }
+        "avatarID": {
+          "type": "integer"
+        },
+        "flip": {
+          "type": "integer"
+        },
+        "requested": {
+          "type": "integer"
+        },
+        "bbox": {
+          "$ref": "#/$defs/srect"
+        },
+        "arrowX": {
+          "type": "integer"
+        },
+        "class": {
+          "type": "integer"
+        }
       }
     },
     "avatarState": {
       "type": "object",
       "properties": {
-        "exists": { "type": "boolean" },
-        "name": { "type": "string" },
-        "lastDir": { "type": "integer" },
-        "lastRight": { "type": "integer" },
-        "lastLeft": { "type": "integer" },
-        "nSends": { "type": "integer" },
+        "exists": {
+          "type": "boolean"
+        },
+        "name": {
+          "type": "string"
+        },
+        "lastDir": {
+          "type": "integer"
+        },
+        "lastRight": {
+          "type": "integer"
+        },
+        "lastLeft": {
+          "type": "integer"
+        },
+        "nSends": {
+          "type": "integer"
+        },
         "body": {
           "type": "object",
           "properties": {
-            "class": { "type": "integer" },
-            "flip": { "type": "integer" },
-            "bbox": { "$ref": "#/$defs/srect" },
+            "class": {
+              "type": "integer"
+            },
+            "flip": {
+              "type": "integer"
+            },
+            "bbox": {
+              "$ref": "#/$defs/srect"
+            },
             "faceEmotion": {
               "type": "object",
               "properties": {
-                "emotion": { "type": "number" },
-                "intensity": { "type": "number" }
+                "emotion": {
+                  "type": "number"
+                },
+                "intensity": {
+                  "type": "number"
+                }
               }
             },
             "torsoEmotion": {
               "type": "object",
               "properties": {
-                "emotion": { "type": "number" },
-                "intensity": { "type": "number" }
+                "emotion": {
+                  "type": "number"
+                },
+                "intensity": {
+                  "type": "number"
+                }
               }
             },
-            "faceIndex": { "type": "integer" },
-            "torsoIndex": { "type": "integer" },
-            "bbRequested": { "type": "integer" }
+            "faceIndex": {
+              "type": "integer"
+            },
+            "torsoIndex": {
+              "type": "integer"
+            },
+            "bbRequested": {
+              "type": "integer"
+            }
           }
         }
       }
@@ -175,19 +357,95 @@
     "rect": {
       "type": "object",
       "properties": {
-        "left": { "type": "integer" },
-        "top": { "type": "integer" },
-        "right": { "type": "integer" },
-        "bottom": { "type": "integer" }
+        "left": {
+          "type": "integer"
+        },
+        "top": {
+          "type": "integer"
+        },
+        "right": {
+          "type": "integer"
+        },
+        "bottom": {
+          "type": "integer"
+        }
       }
     },
     "srect": {
       "type": "object",
       "properties": {
-        "left": { "type": "integer" },
-        "top": { "type": "integer" },
-        "right": { "type": "integer" },
-        "bottom": { "type": "integer" }
+        "left": {
+          "type": "integer"
+        },
+        "top": {
+          "type": "integer"
+        },
+        "right": {
+          "type": "integer"
+        },
+        "bottom": {
+          "type": "integer"
+        }
+      }
+    },
+    "point": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "integer"
+        },
+        "y": {
+          "type": "integer"
+        }
+      }
+    },
+    "trajSeg": {
+      "type": "object",
+      "description": "One CTraj segment. Heterogeneous by design: SetBalloonTraj adds the cloned outline spline, AddArrow appends two CArc tail strokes, and CBWoodringBox uses four CLines instead.",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "arc",
+            "line",
+            "spline",
+            "unknown"
+          ]
+        },
+        "lo": {
+          "$ref": "#/$defs/point"
+        },
+        "hi": {
+          "$ref": "#/$defs/point"
+        },
+        "altitude": {
+          "type": "integer",
+          "description": "Arc bulge; sign flips between the two tail strokes."
+        },
+        "nCps": {
+          "type": "integer"
+        },
+        "cps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/point"
+          }
+        }
+      }
+    },
+    "traj": {
+      "type": "object",
+      "description": "Balloon tail/arrow geometry (Tier-3 #5). Built on demand by the harness: the app only calls SetBalloonTraj at draw time, so a headless dump saw nothing.",
+      "properties": {
+        "closed": {
+          "type": "boolean"
+        },
+        "segs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/trajSeg"
+          }
+        }
       }
     }
   }

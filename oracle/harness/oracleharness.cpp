@@ -575,6 +575,16 @@ static ojson::Value DumpRECT(const RECT& r) {
 }
 
 // ---------------------------------------------------------------------------
+// Dump a POINT as a JSON object (spline cps, traj segment endpoints)
+// ---------------------------------------------------------------------------
+static ojson::Value DumpPOINT(const POINT& p) {
+    ojson::Value v = ojson::Value::Obj();
+    v.Set("x", ojson::Value::Int(p.x));
+    v.Set("y", ojson::Value::Int(p.y));
+    return v;
+}
+
+// ---------------------------------------------------------------------------
 // Dump CFormatInfo (Tier-3 #4: line-break output)
 // ---------------------------------------------------------------------------
 static ojson::Value DumpFormatInfo(const CFormatInfo& fi) {
@@ -662,14 +672,71 @@ static ojson::Value DumpBalloon(CBalloon* balloon) {
         v.Set("spline", spline);
     }
 
-    // Arrow/tail points (CArrow on the balloon)
-    // The arrow is stored in the balloon's spline AddArrow, which sets
-    // m_traj. The traj has the tail points.
+    // Tail/arrow geometry (Tier-3 #5). m_traj is NULL after layout: the app
+    // only builds it at draw time (balloon.cpp:1788 calls SetBalloonTraj from
+    // Draw), so a headless dump saw nothing and the tail went unpinned. Build
+    // it here explicitly. SetBalloonTraj clones m_spline and runs AddArrow
+    // over the clone, so the balloon's own spline - already dumped above - is
+    // not disturbed; m_traj is draw-only state that Draw would rebuild anyway.
+    //
+    // Segments are heterogeneous: SetBalloonTraj adds the cloned CSpline, then
+    // AddArrow appends the two CArc tail strokes (balloon.cpp:1527-1529);
+    // CBWoodringBox instead adds four CLines. All derive from CSeg, which is
+    // polymorphic, so dynamic_cast is the discriminator.
+    // SetBalloonTraj is declared on CBWoodringNormal, not CBalloon, and in a
+    // release build the ASSERTs inside it compile away - so m_spline/m_fInfo
+    // must be checked here or a partially built balloon would deref NULL.
+    // CBWoodringNormal::AddArrow also reads m_speaker->m_arrowX; the Box
+    // override doesn't, so only the non-Box path requires a speaker. When a
+    // balloon can't be built, say so rather than silently omitting the field.
+    CBWoodringNormal* bn = dynamic_cast<CBWoodringNormal*>(balloon);
+    bool isBox = dynamic_cast<CBWoodringBox*>(balloon) != NULL;
+    if (!bn) {
+        v.Set("trajSkipped", ojson::Value::Str("not a CBWoodringNormal"));
+    } else if (!balloon->m_spline || !balloon->m_fInfo) {
+        v.Set("trajSkipped", ojson::Value::Str("no spline or formatInfo"));
+    } else if (!isBox && !balloon->m_speaker) {
+        v.Set("trajSkipped", ojson::Value::Str("no speaker for arrow"));
+    } else {
+        bn->SetBalloonTraj();
+    }
+
     if (balloon->m_traj) {
         CTraj* traj = balloon->m_traj;
         ojson::Value tj = ojson::Value::Obj();
-        // CTraj stores the arrow points; dump what we can access
-        // traj.h defines the structure
+        tj.Set("closed", ojson::Value::Bool(traj->m_closed ? true : false));
+
+        ojson::Value segs = ojson::Value::Arr();
+        POSITION spos = traj->m_segs.GetHeadPosition();
+        while (spos) {
+            CSeg* seg = (CSeg*)traj->m_segs.GetNext(spos);
+            ojson::Value s = ojson::Value::Obj();
+            if (CArc* arc = dynamic_cast<CArc*>(seg)) {
+                s.Set("type", ojson::Value::Str("arc"));
+                s.Set("lo", DumpPOINT(arc->m_lo));
+                s.Set("hi", DumpPOINT(arc->m_hi));
+                s.Set("altitude", ojson::Value::Int(arc->m_altitude));
+            } else if (CLine* line = dynamic_cast<CLine*>(seg)) {
+                s.Set("type", ojson::Value::Str("line"));
+                s.Set("lo", DumpPOINT(line->m_lo));
+                s.Set("hi", DumpPOINT(line->m_hi));
+            } else if (CSpline* sp = dynamic_cast<CSpline*>(seg)) {
+                // The arrow-broken outline: AddArrow calls BreakSpline on this
+                // clone, so its cps differ from the balloon's own spline. That
+                // difference is the whole point of pinning it.
+                s.Set("type", ojson::Value::Str("spline"));
+                s.Set("nCps", ojson::Value::Int(sp->nCps));
+                ojson::Value cps = ojson::Value::Arr();
+                for (int i = 0; i < sp->nCps; i++) {
+                    cps.Push(DumpPOINT(sp->cps[i]));
+                }
+                s.Set("cps", cps);
+            } else {
+                s.Set("type", ojson::Value::Str("unknown"));
+            }
+            segs.Push(s);
+        }
+        tj.Set("segs", segs);
         v.Set("traj", tj);
     }
 
@@ -693,6 +760,17 @@ static ojson::Value DumpPanel(CPanel* panel) {
 
     v.Set("seed", ojson::Value::Int((long)panel->m_seed));
     v.Set("hasBorder", ojson::Value::Bool(panel->m_hasBorder ? true : false));
+
+    // Tier-3 #3: the zoom decision. zoomFactor is a local in LayoutAvatars and
+    // Establishing() reads view state, so panel.cpp records both at the
+    // decision site under ORACLE_HARNESS. backDropMode matters because
+    // AdjustArtToCoord forces the factor to 1.0 when the backdrop is
+    // BF_NOZOOM, so the factor alone doesn't explain the art placement.
+    v.Set("zoomFactor", ojson::Value::Dbl(panel->m_oracleZoomFactor));
+    v.Set("reduction", ojson::Value::Dbl(panel->m_oracleReduction));
+    v.Set("establishing", ojson::Value::Bool(panel->m_oracleEstablishing ? true : false));
+    v.Set("backDropMode", ojson::Value::Int(panel->m_backDrop.m_mode));
+    v.Set("backDropID", ojson::Value::Int(panel->m_backDrop.m_backID));
 
     // Balloons (m_elements)
     ojson::Value balloons = ojson::Value::Arr();

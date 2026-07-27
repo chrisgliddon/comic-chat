@@ -560,6 +560,9 @@ CPanel::CPanel()
 	m_seed = rand();
 #ifdef ORACLE_HARNESS
 	OracleRecordSeed("CPanel.ctor.m_seed", (long)m_seed);
+	m_oracleZoomFactor = 1.0;
+	m_oracleReduction = 1.0;
+	m_oracleEstablishing = FALSE;
 #endif
 	m_hasBorder = TRUE;
 	m_backDrop.m_backID = GetChatDoc() ? GetChatDoc()->GetBackDropID() : 0;
@@ -570,6 +573,13 @@ CPanel::CPanel(const CPanel &p) {
 	m_seed = p.m_seed;
 	m_hasBorder = p.m_hasBorder;
 	m_backDrop.m_backID = p.m_backDrop.m_backID;
+#ifdef ORACLE_HARNESS
+	// Clone() is used during pagination, so a cloned panel must carry these
+	// forward or its dump would read uninitialised memory.
+	m_oracleZoomFactor = p.m_oracleZoomFactor;
+	m_oracleReduction = p.m_oracleReduction;
+	m_oracleEstablishing = p.m_oracleEstablishing;
+#endif
 
 	// copy avatars
 	POSITION pos = p.m_bodies.GetHeadPosition();
@@ -780,6 +790,13 @@ void CUnitPanel::LayoutAvatars() {
 
 	sumWidth = bdyWidth + (bdyCount+1) * minMargin;
 
+#ifdef ORACLE_HARNESS
+	// Establishing() is a pure read of the first page's panel count plus a
+	// global flag (pageview.cpp:832), so evaluating it here for the record
+	// cannot perturb the layout. Only the harness build pays the extra call -
+	// the shipped path keeps its short-circuit in the else-if below intact.
+	m_oracleEstablishing = Establishing();
+#endif
 	double zoomFactor = 1.0;
 	if (sumWidth > CUnitPanelPage::m_unitWidth) {
 		// must reduce the size of the avatars
@@ -792,6 +809,9 @@ void CUnitPanel::LayoutAvatars() {
 			bdyWidth += width[i];
 		}
 		AdjustArtToCoord(0, 1.0);
+#ifdef ORACLE_HARNESS
+		m_oracleReduction = reduction;
+#endif
 	} else if (bZoomIn && !Establishing()) {
 		// increase size of avatars
 		zoomFactor = (double) CUnitPanelPage::m_unitWidth / sumWidth;
@@ -810,6 +830,12 @@ void CUnitPanel::LayoutAvatars() {
 		}
 	} 
 	AdjustArtToCoord(-CUnitPanelPage::m_unitHeight + maxBodyHeight, zoomFactor);
+#ifdef ORACLE_HARNESS
+	// The factor as handed to AdjustArtToCoord. Note that function itself
+	// forces 1.0 when the backdrop is BF_NOZOOM, so the dump also carries
+	// backDropMode - the port needs both to reproduce the art placement.
+	m_oracleZoomFactor = zoomFactor;
+#endif
 
 	int margin = (CUnitPanelPage::m_unitWidth - bdyWidth) / (bdyCount+1); // margins also between avs and borders
 	int xOffset = margin;
