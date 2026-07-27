@@ -453,3 +453,4 @@ oracle/avatar/avatar.json
 oracle/corpus/*/actual.json
 oracle/corpus/*/run_a.json
 oracle/corpus/*/run_b.json
+oracle/codecs/codecs.json

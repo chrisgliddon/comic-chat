@@ -25,6 +25,7 @@ on:
       - "oracle/textpose/**"
       - "oracle/avatario/**"
       - "oracle/avatar/**"
+      - "oracle/codecs/**"
       - "oracle/package.json"
       - "oracle/pnpm-lock.yaml"
       # oracle.mak links essentially the whole v2.5 tree (avatario.obj,
@@ -165,6 +166,27 @@ jobs:
             Write-Host "No avatar golden yet - freeze by committing as avatar.golden.json"
           }
 
+      # Tier-1 stateless codecs: mode maps (#9), formatting codec (#7), IRC
+      # line parse (#6), URL detection (#8, aimed at the live
+      # CUrlRec::HrIdentifyUrls rather than the dead urlfind.cpp), and the
+      # CDosKey ring buffer (#12).
+      - name: Capture codecs (Tier-1 #6/#7/#8/#9/#12)
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path oracle\codecs | Out-Null
+          Set-Location v2.5-beta-1-modern
+          & Release\OracleHarness.exe --codecs ..\oracle\codecs\codecs.json
+          if ($LASTEXITCODE -ne 0) { Write-Host "CODECS CAPTURE FAILED (exit $LASTEXITCODE)"; exit 1 }
+          Write-Host "Codecs captured."
+          $golden = "..\oracle\codecs\codecs.golden.json"
+          if (Test-Path $golden) {
+            & node ..\oracle\scripts\diff-dumps.mjs $golden ..\oracle\codecs\codecs.json
+            if ($LASTEXITCODE -ne 0) { Write-Host "CODECS GOLDEN MISMATCH"; exit 1 }
+            Write-Host "Codecs golden match."
+          } else {
+            Write-Host "No codecs golden yet - freeze by committing as codecs.golden.json"
+          }
+
       - name: Judge validation - determinism (two identical runs)
         shell: cmd
         run: |
@@ -264,6 +286,8 @@ jobs:
             oracle/avatario/avatario.golden.json
             oracle/avatar/avatar.json
             oracle/avatar/avatar.golden.json
+            oracle/codecs/codecs.json
+            oracle/codecs/codecs.golden.json
             oracle/corpus/*/expected.json
             oracle/corpus/*/actual.json
             oracle/corpus/*/run_a.json

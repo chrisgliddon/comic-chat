@@ -10,6 +10,7 @@
 //
 // Usage: OracleHarness.exe <inputs.json> <expected.json>
 //        OracleHarness.exe --glyphs <glyphs.json>
+//        OracleHarness.exe --codecs <codecs.json>
 //
 // See oracle/harness/README.md for the linkage design decision.
 
@@ -39,6 +40,12 @@
 #include "binddoc.h"
 #include "chatdoc.h"
 #include "histent.h"
+// Tier-1 codec dumps (--codecs): mode maps live in protsupp.h, the formatting
+// codec in artifacts/inc/format.h (already included above), ParseIt/FreeParse
+// in ircsock.h, CDosKey in doskey.h, and CUrlRec in artifacts/inc/urlutil.h.
+#include "ircsock.h"
+#include "doskey.h"
+#include "urlutil.h"
 
 #include "ojson.h"
 #include "oracleseed.h"
@@ -70,6 +77,9 @@ extern void GetEmotionsFromString(CString &str, CEmotionOpts &emOpts);
 // CaptureAvatario dump.
 extern void EmotionToBytes(CEmotion &em, BYTE &emotion, BYTE &intensity);
 extern void BytesToEmotion(CEmotion &em, BYTE emIndex, BYTE inIndex);
+// format.cpp:20 owns the single CUrlRec instance; the --codecs dump drives the
+// live URL detector through it (Tier-1 #8).
+extern CUrlRec g_urlRec;
 
 // CChatDoc has a protected ctor + DECLARE_DYNCREATE; we need to construct
 // it. The MFC runtime class is accessible via the doc template machinery,
@@ -546,6 +556,322 @@ static ojson::Value CaptureAvatarPose() {
         delete body; // GetBodyFromEmotion does `new CBodyDouble`
     }
     root.Set("complex", complexArr);
+
+    return root;
+}
+
+// ---------------------------------------------------------------------------
+// Tier-1 stateless codecs (--codecs): #9 mode maps, #7 formatting codec,
+// #6 IRC line parse, #12 CDosKey ring buffer, #8 URL detection.
+//
+// These share one dump because they share a shape: pure function in, bytes
+// out, no document or avatar state. Nothing here allocates that the process
+// needs back - the harness is one-shot, so returned buffers are left for exit
+// to reclaim rather than guessing at each function's ownership contract.
+//
+// #8 is aimed at CUrlRec::HrIdentifyUrls, NOT at the plan's FIsURL/
+// IHexToInteger: urlfind.cpp is absent from both chat.mak and oracle.mak, so
+// that code is dead in the shipped client and its ||-vs-&& bug must not be
+// reproduced. The live path is artifacts-modern/core/urlutil.cpp via the
+// v2.5-beta-1-modern/urlutil.cpp shim, called from IdentifyURLs
+// (format.cpp:1221).
+// ---------------------------------------------------------------------------
+
+// Escape a byte string for the dump. Control characters are the *point* of the
+// formatting codec, so they must survive the round trip legibly; ojson emits
+// bytes < 0x20 as \u00xx and rejects escapes above 0xFF on parse, which suits a
+// byte-oriented corpus.
+static ojson::Value CodecStr(const char* s) {
+    return ojson::Value::Str(s ? s : "");
+}
+
+static ojson::Value DumpFormattingArray(CDWordArray& rgdw) {
+    // Element layout per format.cpp:305 - HIWORD is the offset of the first
+    // character, LOWORD the format word (effects | fg | bg).
+    ojson::Value arr = ojson::Value::Arr();
+    for (int i = 0; i < rgdw.GetSize(); i++) {
+        DWORD dw = rgdw[i];
+        ojson::Value e = ojson::Value::Obj();
+        e.Set("raw", ojson::Value::Int((long)dw));
+        e.Set("offset", ojson::Value::Int((long)HIWORD(dw)));
+        e.Set("format", ojson::Value::Int((long)LOWORD(dw)));
+        arr.Push(e);
+    }
+    return arr;
+}
+
+static ojson::Value CaptureCodecs() {
+    ojson::Value root = ojson::Value::Obj();
+
+    // --- Tier-1 #9: mode maps -------------------------------------------
+    // Every byte for the index maps; the documented mode values plus the
+    // combinations MakeBalloon accepts for SM2BM/BM2SM. BM2SM's argument is a
+    // bit set, so the combined ACTION forms matter.
+    {
+        ojson::Value mm = ojson::Value::Obj();
+        ojson::Value i2b = ojson::Value::Arr(), b2i = ojson::Value::Arr();
+        for (int i = 0; i < 256; i++) {
+            i2b.Push(ojson::Value::Int((long)IndexToByte((BYTE)i)));
+            b2i.Push(ojson::Value::Int((long)ByteToIndex((BYTE)i)));
+        }
+        mm.Set("indexToByte", i2b);
+        mm.Set("byteToIndex", b2i);
+
+        ojson::Value sm2bm = ojson::Value::Arr();
+        for (int sm = 0; sm <= 8; sm++) {
+            ojson::Value e = ojson::Value::Obj();
+            e.Set("in", ojson::Value::Int((long)sm));
+            e.Set("out", ojson::Value::Int((long)SM2BM((BYTE)sm)));
+            sm2bm.Push(e);
+        }
+        mm.Set("sm2bm", sm2bm);
+
+        static const USHORT kBmProbes[] = {
+            0, BM_SAY, BM_WHISPER, BM_THINK, BM_ACTION,
+            BM_ACTION | BM_SAY, BM_ACTION | BM_WHISPER, BM_ACTION | BM_THINK,
+            BM_SOUND, BM_AWAY, BM_HERESINFO, BM_NOFORMAT, BM_EXCHAN,
+            BM_SAY | BM_THINK
+        };
+        ojson::Value bm2sm = ojson::Value::Arr();
+        for (int i = 0; i < (int)(sizeof(kBmProbes) / sizeof(kBmProbes[0])); i++) {
+            ojson::Value e = ojson::Value::Obj();
+            e.Set("in", ojson::Value::Int((long)kBmProbes[i]));
+            e.Set("out", ojson::Value::Int((long)BM2SM(kBmProbes[i])));
+            bm2sm.Push(e);
+        }
+        mm.Set("bm2sm", bm2sm);
+        root.Set("modeMaps", mm);
+    }
+
+    // --- Tier-1 #7: formatting codec ------------------------------------
+    {
+        ojson::Value fmt = ojson::Value::Obj();
+
+        // nFillFormatting: every effect toggle in isolation, then the colour
+        // paths. chFirstFormattedChar being a digit triggers the documented
+        // ^k33 -> ^k0133 hack (format.cpp:502-508), so probe both sides of it.
+        struct FillProbe { WORD cur; WORD next; char first; const char* note; };
+        static const FillProbe kFill[] = {
+            { 0,        0,          'a', "no change" },
+            { 0,        wBold,      'a', "bold on" },
+            { wBold,    0,          'a', "bold off" },
+            { 0,        wItalic,    'a', "italic on" },
+            { 0,        wUnderline, 'a', "underline on" },
+            { 0,        wFixedPitch,'a', "fixed pitch on" },
+            { 0,        wSymbol,    'a', "symbol on" },
+            { 0,        (WORD)(wBold | wItalic | wUnderline), 'a', "three at once" },
+            { 0x0033,   0,          '3', "colour off, digit follows - ^k33 hack" },
+            { 0x0033,   0,          'x', "colour off, non-digit follows" },
+            { 0,        0x0033,     '3', "colour on, digit follows" },
+            { 0x0011,   0x0022,     'z', "colour change" }
+        };
+        ojson::Value fillArr = ojson::Value::Arr();
+        for (int i = 0; i < (int)(sizeof(kFill) / sizeof(kFill[0])); i++) {
+            char buf[128];
+            memset(buf, 0, sizeof(buf));
+            short n = nFillFormatting(buf, kFill[i].cur, kFill[i].next, kFill[i].first);
+            ojson::Value e = ojson::Value::Obj();
+            e.Set("note", ojson::Value::Str(kFill[i].note));
+            e.Set("curFormat", ojson::Value::Int((long)kFill[i].cur));
+            e.Set("nextFormat", ojson::Value::Int((long)kFill[i].next));
+            e.Set("firstFormattedChar", ojson::Value::Int((long)(BYTE)kFill[i].first));
+            e.Set("returned", ojson::Value::Int((long)n));
+            e.Set("bytes", CodecStr(buf));
+            ojson::Value raw = ojson::Value::Arr();
+            for (short b = 0; b < n; b++) raw.Push(ojson::Value::Int((long)(BYTE)buf[b]));
+            e.Set("byteValues", raw);
+            fillArr.Push(e);
+        }
+        fmt.Set("nFillFormatting", fillArr);
+
+        // SzControlLess: strips control codes out of the text and reports the
+        // formatting runs it found. Input must be mutable.
+        static const char* kLessProbes[] = {
+            "plain text",
+            "\x02" "bold then plain\x02 tail",
+            "\x16" "italic\x16",
+            "\x1F" "underline\x1F",
+            "\x03" "04red text\x03",
+            "mixed \x02" "bold \x16" "and italic\x16\x02 done",
+            "\x11" "fixed\x11 \x12symbol\x12",
+            "\x03" "33colour with two digits\x03"
+        };
+        ojson::Value lessArr = ojson::Value::Arr();
+        for (int i = 0; i < (int)(sizeof(kLessProbes) / sizeof(kLessProbes[0])); i++) {
+            char mutableIn[512];
+            strncpy(mutableIn, kLessProbes[i], sizeof(mutableIn) - 1);
+            mutableIn[sizeof(mutableIn) - 1] = 0;
+            CDWordArray rgdw;
+            char* out = SzControlLess(mutableIn, &rgdw);
+            ojson::Value e = ojson::Value::Obj();
+            e.Set("input", CodecStr(kLessProbes[i]));
+            e.Set("output", CodecStr(out));
+            e.Set("formatting", DumpFormattingArray(rgdw));
+            lessArr.Push(e);
+        }
+        fmt.Set("szControlLess", lessArr);
+
+        // SzControlFull: the inverse - re-inserts control codes from a
+        // formatting array. ASSERTs on a NULL array, so always pass one.
+        struct FullProbe { const char* text; int nRuns; DWORD runs[4]; };
+        static const FullProbe kFull[] = {
+            { "no formatting", 0, { 0, 0, 0, 0 } },
+            { "bold from start", 1, { (DWORD)MAKELONG(wBold, 0), 0, 0, 0 } },
+            { "half bold here", 2, { (DWORD)MAKELONG(wBold, 0), (DWORD)MAKELONG(0, 4), 0, 0 } },
+            { "colour run", 1, { (DWORD)MAKELONG(0x0033, 0), 0, 0, 0 } },
+            { "three runs total", 3, { (DWORD)MAKELONG(wBold, 0), (DWORD)MAKELONG(wItalic, 5), (DWORD)MAKELONG(0, 11), 0 } }
+        };
+        ojson::Value fullArr = ojson::Value::Arr();
+        for (int i = 0; i < (int)(sizeof(kFull) / sizeof(kFull[0])); i++) {
+            CDWordArray rgdw;
+            for (int r = 0; r < kFull[i].nRuns; r++) rgdw.Add(kFull[i].runs[r]);
+            char* out = SzControlFull(kFull[i].text, &rgdw);
+            ojson::Value e = ojson::Value::Obj();
+            e.Set("input", CodecStr(kFull[i].text));
+            e.Set("formatting", DumpFormattingArray(rgdw));
+            e.Set("output", CodecStr(out));
+            fullArr.Push(e);
+        }
+        fmt.Set("szControlFull", fullArr);
+        root.Set("formatting", fmt);
+    }
+
+    // --- Tier-1 #6: IRC line parse --------------------------------------
+    {
+        static const char* kIrcProbes[] = {
+            ":nick!user@machine PRIVMSG #room :hello there",
+            "PING :server.example.com",
+            ":server 001 mynick :Welcome to the network",
+            ":nick!user@machine JOIN #room",
+            ":nick!user@machine JOIN :#room",
+            "NOTICE AUTH :*** Looking up your hostname",
+            ":n!u@m PRIVMSG #r :a b c d e f g h i j k l m n o p",
+            ":n!u@m MODE #room +o someone",
+            "",
+            ":only.a.prefix",
+            ":n!u@m QUIT :Client exited \"with quotes\""
+        };
+        ojson::Value arr = ojson::Value::Arr();
+        for (int i = 0; i < (int)(sizeof(kIrcProbes) / sizeof(kIrcProbes[0])); i++) {
+            IRCPARSE parse;
+            memset(&parse, 0, sizeof(parse));
+            ParseIt(kIrcProbes[i], &parse);
+            ojson::Value e = ojson::Value::Obj();
+            e.Set("line", CodecStr(kIrcProbes[i]));
+            e.Set("bHasPrefix", ojson::Value::Bool(parse.bHasPrefix ? true : false));
+            e.Set("nick", CodecStr(parse.nick));
+            e.Set("user", CodecStr(parse.user));
+            e.Set("machine", CodecStr(parse.machine));
+            e.Set("uCode", ojson::Value::Int((long)parse.uCode));
+            e.Set("nArgs", ojson::Value::Int((long)parse.nArgs));
+            ojson::Value args = ojson::Value::Arr(), offs = ojson::Value::Arr();
+            for (int a = 0; a < parse.nArgs && a < MAXARGS; a++) {
+                args.Push(CodecStr(parse.args[a]));
+                offs.Push(ojson::Value::Int((long)parse.nOffsets[a]));
+            }
+            e.Set("args", args);
+            e.Set("nOffsets", offs);
+            arr.Push(e);
+            FreeParse(&parse);
+        }
+        root.Set("ircParse", arr);
+    }
+
+    // --- Tier-1 #8: URL detection (live path) ---------------------------
+    {
+        static const char* kUrlProbes[] = {
+            "no url here at all",
+            "visit http://www.example.com now",
+            "https://secure.example.com/path?q=1&r=2",
+            "www.example.com without a scheme",
+            "mic://chat.example.com/room is the Comic Chat scheme",
+            "irc://irc.example.com/room too",
+            "trailing punctuation http://example.com.",
+            "in parens (http://example.com) here",
+            "two http://a.example.com and http://b.example.com urls",
+            "mailto:someone@example.com address",
+            "ftp://files.example.com/pub/file.txt",
+            "percent escapes http://example.com/%41%42 here"
+        };
+        ojson::Value arr = ojson::Value::Arr();
+        for (int i = 0; i < (int)(sizeof(kUrlProbes) / sizeof(kUrlProbes[0])); i++) {
+            int bounds[MAX_URL_INTEXT * 2];
+            memset(bounds, 0, sizeof(bounds));
+            int nUrls = MAX_URL_INTEXT;
+            HRESULT hr = g_urlRec.HrIdentifyUrls(kUrlProbes[i], bounds, &nUrls);
+            ojson::Value e = ojson::Value::Obj();
+            e.Set("text", CodecStr(kUrlProbes[i]));
+            e.Set("hr", ojson::Value::Int((long)hr));
+            e.Set("nUrlNum", ojson::Value::Int((long)nUrls));
+            ojson::Value bb = ojson::Value::Arr();
+            ojson::Value found = ojson::Value::Arr();
+            for (int u = 0; u < nUrls && u < MAX_URL_INTEXT; u++) {
+                ojson::Value pair = ojson::Value::Obj();
+                pair.Set("start", ojson::Value::Int((long)bounds[u * 2]));
+                pair.Set("end", ojson::Value::Int((long)bounds[u * 2 + 1]));
+                bb.Push(pair);
+                // The substring the bounds select, so a divergence is readable
+                // without cross-referencing offsets by hand.
+                int s = bounds[u * 2], e2 = bounds[u * 2 + 1];
+                if (s >= 0 && e2 >= s && e2 <= (int)strlen(kUrlProbes[i])) {
+                    std::string sub(kUrlProbes[i] + s, (size_t)(e2 - s));
+                    found.Push(ojson::Value::Str(sub));
+                }
+            }
+            e.Set("bounds", bb);
+            e.Set("substrings", found);
+            arr.Push(e);
+        }
+        root.Set("urls", arr);
+    }
+
+    // --- Tier-1 #12: CDosKey ring buffer --------------------------------
+    // The interesting behaviour is wraparound: append past the cap and walk
+    // backwards, which exercises the modulo arithmetic over m_iStartIndex /
+    // m_iEndIndex / m_iCurIndex.
+    {
+        ojson::Value dk = ojson::Value::Obj();
+        const UINT kMax = 4;
+        CDosKey key;
+        key.SetMaxSize(kMax);
+        dk.Set("maxSize", ojson::Value::Int((long)kMax));
+
+        ojson::Value appended = ojson::Value::Arr();
+        static const char* kEntries[] = { "one", "two", "three", "four", "five", "six" };
+        for (int i = 0; i < (int)(sizeof(kEntries) / sizeof(kEntries[0])); i++) {
+            BOOL ok = key.bAppendEntry(CString(kEntries[i]), NULL);
+            ojson::Value e = ojson::Value::Obj();
+            e.Set("entry", ojson::Value::Str(kEntries[i]));
+            e.Set("accepted", ojson::Value::Bool(ok ? true : false));
+            appended.Push(e);
+        }
+        dk.Set("appended", appended);
+
+        // Walk backwards past the end, then forwards again. Six appends into a
+        // four-slot ring means the first two should be gone.
+        key.SeekToEnd();
+        ojson::Value prev = ojson::Value::Arr();
+        for (int i = 0; i < 6; i++) {
+            CDWordArray* fmt = NULL;
+            CString s = key.StrGetPrevEntry(&fmt);
+            prev.Push(CodecStr((const char*)s));
+        }
+        dk.Set("walkPrev", prev);
+
+        ojson::Value next = ojson::Value::Arr();
+        for (int i = 0; i < 6; i++) {
+            CDWordArray* fmt = NULL;
+            CString s = key.StrGetNextEntry(&fmt);
+            next.Push(CodecStr((const char*)s));
+        }
+        dk.Set("walkNext", next);
+
+        // And an empty ring, since ResetContent is its own path.
+        key.ResetContent();
+        CDWordArray* fmt = NULL;
+        dk.Set("afterResetPrev", CodecStr((const char*)key.StrGetPrevEntry(&fmt)));
+        root.Set("doskey", dk);
+    }
 
     return root;
 }
@@ -1091,6 +1417,7 @@ int main(int argc, char** argv) {
     if (argc < 2) {
         fprintf(stderr, "usage: OracleHarness.exe <inputs.json> <expected.json>\n");
         fprintf(stderr, "       OracleHarness.exe --glyphs <glyphs.json>\n");
+        fprintf(stderr, "       OracleHarness.exe --codecs <codecs.json>\n");
         return 2;
     }
 
@@ -1192,6 +1519,24 @@ int main(int argc, char** argv) {
         fwrite(out.c_str(), 1, out.size(), f);
         fclose(f);
         printf("avatar-pose written to %s\n", argv[2]);
+        return 0;
+    }
+
+    // Stateless codec capture (Tier-1 #6, #7, #8, #9, #12). Needs AfxWinInit
+    // for CString/CDWordArray/CStringArray, but no DC, avatars, or document.
+    if (strcmp(argv[1], "--codecs") == 0) {
+        if (argc < 3) {
+            fprintf(stderr, "usage: OracleHarness.exe --codecs <codecs.json>\n");
+            return 2;
+        }
+        AfxWinInit(GetModuleHandle(NULL), NULL, ::GetCommandLine(), SW_HIDE);
+        ojson::Value cx = CaptureCodecs();
+        FILE* f = fopen(argv[2], "wb");
+        if (!f) { fprintf(stderr, "cannot write %s\n", argv[2]); return 1; }
+        std::string out = cx.EmitToString();
+        fwrite(out.c_str(), 1, out.size(), f);
+        fclose(f);
+        printf("codecs written to %s\n", argv[2]);
         return 0;
     }
 
