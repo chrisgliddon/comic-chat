@@ -784,6 +784,12 @@ static ojson::Value CaptureCodecs() {
             }
             e.Set("args", args);
             e.Set("nOffsets", offs);
+            // lastString is where the trailing ":..." payload lands - the
+            // message text itself for PRIVMSG, and everything past MAXARGS when
+            // a line spills. Dumping args without it would pin the envelope and
+            // drop the letter.
+            e.Set("lastString", CodecStr(parse.lastString));
+            e.Set("hasLastString", ojson::Value::Bool(parse.lastString ? true : false));
             arr.Push(e);
             FreeParse(&parse);
         }
