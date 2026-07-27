@@ -703,10 +703,18 @@ static ojson::Value DumpBalloon(CBalloon* balloon) {
     // balloon can't be built, say so rather than silently omitting the field.
     CBWoodringNormal* bn = dynamic_cast<CBWoodringNormal*>(balloon);
     bool isBox = dynamic_cast<CBWoodringBox*>(balloon) != NULL;
+    // A box balloon has no m_spline at all: CBWoodringBox::SetBalloonTraj draws
+    // four CLines straight off m_fInfo->m_bbox and never touches a spline or a
+    // speaker. Requiring m_spline for every balloon skipped all 8 box balloons
+    // in case 015 (they reported trajSkipped "no spline or formatInfo"), which
+    // is why the traj census still showed zero line segments after BM_ACTION
+    // was finally being sent. m_fInfo is the only universal requirement.
     if (!bn) {
         v.Set("trajSkipped", ojson::Value::Str("not a CBWoodringNormal"));
-    } else if (!balloon->m_spline || !balloon->m_fInfo) {
-        v.Set("trajSkipped", ojson::Value::Str("no spline or formatInfo"));
+    } else if (!balloon->m_fInfo) {
+        v.Set("trajSkipped", ojson::Value::Str("no formatInfo"));
+    } else if (!isBox && !balloon->m_spline) {
+        v.Set("trajSkipped", ojson::Value::Str("no spline to clone for the outline"));
     } else if (!isBox && !balloon->m_speaker) {
         v.Set("trajSkipped", ojson::Value::Str("no speaker for arrow"));
     } else {
