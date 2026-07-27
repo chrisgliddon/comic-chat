@@ -1,22 +1,22 @@
 name: Oracle harness
 
+# Branch model: dev is the default branch and runs nothing - it is deliberately
+# absent from every trigger below, so day-to-day work on dev never spends CI.
+# Promoting dev -> staging is what gates the work; production is gated the same
+# way. Nothing here keys off pull_request: this repo promotes by pushing, not by
+# opening PRs.
 on:
   workflow_dispatch:
   push:
     branches:
-      - main
+      - staging
+      - production
     paths:
       - ".github/workflows/oracle.yml"
       - "oracle/**"
       # oracle.mak links essentially the whole v2.5 tree (avatario.obj,
       # textpose.obj, panel.obj, ...), so any engine source can move a
       # golden. Watch the tree, not a hand-picked file list.
-      - "v2.5-beta-1-modern/**"
-      - "artifacts/inc/**"
-  pull_request:
-    paths:
-      - ".github/workflows/oracle.yml"
-      - "oracle/**"
       - "v2.5-beta-1-modern/**"
       - "artifacts/inc/**"
 

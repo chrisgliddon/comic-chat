@@ -231,12 +231,28 @@ Outstanding oracle-side TODOs (not blocking Phase 4, but improve coverage):
   give the avatar port a real corpus golden (open question #4 from the
   handoff).
 
-## Merging
+## Branches (as of 2026-07-27)
 
-`oracle/phase-0` is ready to merge to `main` (no PR needed per user). The
-branch contains all Phase 0-2 work + frozen goldens + CI that guards them.
+`main` was renamed to `staging`, and the model is now three branches:
 
-Phase 3 work (rulebook + `port/` shakedown) is uncommitted on `main` as of
-this LEDGER update. It is TS-only (no C++ engine or golden changes) so no CI
-round is required to validate it; `pnpm test` and `pnpm run typecheck` in
-`port/` are the verification commands. Commit when ready.
+| Branch | Default | CI | Role |
+| --- | --- | --- | --- |
+| `dev` | yes | **none** | Day-to-day work. Absent from every workflow trigger, so pushes here never spend CI. No PRs. |
+| `staging` | no | oracle + build + port tests on push | Promotion target. This is where the goldens actually get gated. |
+| `production` | no | same three workflows on push | Release branch. |
+
+The workflow files *are* present on `dev` — they simply don't name it in their
+`push:` branch filters. Deleting them on `dev` instead would mean every
+`dev -> staging` merge also deleted staging's CI, which is why it wasn't done
+that way.
+
+Because `dev` runs nothing, the local commands are the only feedback while
+working there:
+
+    cd port   && pnpm install --frozen-lockfile && pnpm run typecheck && CI=true pnpm test
+    cd oracle && pnpm install --frozen-lockfile   # then: node scripts/validate.mjs --corpus corpus
+
+The C++ oracle harness itself needs Windows + MSVC, so its goldens can only be
+re-verified by pushing to `staging` (or dispatching the workflow manually).
+That is the one gap the no-CI-on-dev rule leaves: a change to
+`v2.5-beta-1-modern/**` is unverified until it reaches `staging`.

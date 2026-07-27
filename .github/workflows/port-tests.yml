@@ -6,24 +6,23 @@ name: Port tests
 # workflow existed: the Windows oracle job only builds and dumps the C++ side.
 # This job needs no MSVC, so it runs on Linux in seconds.
 
+# See the branch-model note in oracle.yml: dev is the default branch and is
+# absent from every trigger, so it never spends CI. staging and production are
+# the gated branches.
+#
+# This job is ~20s, so if the no-CI-on-dev rule ever chafes, this is the one
+# worth reconsidering: `pnpm test` in port/ reproduces it exactly.
 on:
   workflow_dispatch:
   push:
     branches:
-      - main
+      - staging
+      - production
     paths:
       - ".github/workflows/port-tests.yml"
       - "port/**"
       # The differential tests read the frozen dumps, so a golden re-freeze
       # must re-run them.
-      - "oracle/textpose/*.json"
-      - "oracle/avatario/*.json"
-      - "oracle/avatar/*.json"
-      - "oracle/glyphs/*.json"
-  pull_request:
-    paths:
-      - ".github/workflows/port-tests.yml"
-      - "port/**"
       - "oracle/textpose/*.json"
       - "oracle/avatario/*.json"
       - "oracle/avatar/*.json"

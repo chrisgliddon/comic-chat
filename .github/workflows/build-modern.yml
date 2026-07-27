@@ -1,18 +1,14 @@
 name: Build unofficial modern clients
 
+# See the branch-model note in oracle.yml: dev is the default branch and is
+# absent from every trigger, so it never spends CI. staging and production are
+# the gated branches.
 on:
   workflow_dispatch:
   push:
     branches:
-      - main
-    paths:
-      - ".github/workflows/build-modern.yml"
-      - "scripts/**"
-      - "v1.0-pre-modern/**"
-      - "v2.5-beta-1-modern/**"
-      - "artifacts/inc/**"
-      - "artifacts/lib/i386/zlib.lib"
-  pull_request:
+      - staging
+      - production
     paths:
       - ".github/workflows/build-modern.yml"
       - "scripts/**"
