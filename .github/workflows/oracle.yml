@@ -26,6 +26,7 @@ on:
       - "oracle/avatario/**"
       - "oracle/avatar/**"
       - "oracle/codecs/**"
+      - "oracle/ccc/**"
       - "oracle/package.json"
       - "oracle/pnpm-lock.yaml"
       # oracle.mak links essentially the whole v2.5 tree (avatario.obj,
@@ -203,6 +204,26 @@ jobs:
           )
           echo "Determinism check passed: two runs are byte-identical."
 
+      # Tier-1 #10: the .ccc transcript codec. Byte-exact WriteSelf goldens for
+      # all nine entry keywords plus parse-then-serialise identity. Passes the
+      # tree dir because the parse constructors need a CChatDoc.
+      - name: Capture ccc transcript codec (Tier-1 #10)
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path oracle\ccc | Out-Null
+          Set-Location v2.5-beta-1-modern
+          & Release\OracleHarness.exe --ccc ..\oracle\ccc\ccc.json .
+          if ($LASTEXITCODE -ne 0) { Write-Host "CCC CAPTURE FAILED (exit $LASTEXITCODE)"; exit 1 }
+          Write-Host "Ccc captured."
+          $golden = "..\oracle\ccc\ccc.golden.json"
+          if (Test-Path $golden) {
+            & node ..\oracle\scripts\diff-dumps.mjs $golden ..\oracle\ccc\ccc.json
+            if ($LASTEXITCODE -ne 0) { Write-Host "CCC GOLDEN MISMATCH"; exit 1 }
+            Write-Host "Ccc golden match."
+          } else {
+            Write-Host "No ccc golden yet - freeze by committing as ccc.golden.json"
+          }
+
       # Runs BEFORE the corpus comparison on purpose: it used to follow it, so a
       # red corpus round skipped schema validation entirely - exactly the round
       # whose dumps you are about to freeze from. It needs no harness output.
@@ -288,6 +309,8 @@ jobs:
             oracle/avatar/avatar.golden.json
             oracle/codecs/codecs.json
             oracle/codecs/codecs.golden.json
+            oracle/ccc/ccc.json
+            oracle/ccc/ccc.golden.json
             oracle/corpus/*/expected.json
             oracle/corpus/*/actual.json
             oracle/corpus/*/run_a.json

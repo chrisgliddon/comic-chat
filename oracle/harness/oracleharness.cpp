@@ -11,6 +11,7 @@
 // Usage: OracleHarness.exe <inputs.json> <expected.json>
 //        OracleHarness.exe --glyphs <glyphs.json>
 //        OracleHarness.exe --codecs <codecs.json>
+//        OracleHarness.exe --ccc <ccc.json> [treeDir]
 //
 // See oracle/harness/README.md for the linkage design decision.
 
@@ -937,6 +938,183 @@ static ojson::Value CaptureCodecs() {
 }
 
 // ---------------------------------------------------------------------------
+// Tier-1 #10: the .ccc transcript codec (histent.cpp).
+//
+// The plan asks for byte-exact WriteSelf goldens plus parse-then-serialize
+// identity across all nine entry keywords. Rather than hand-writing .ccc lines
+// (and risking pinning my transcription instead of the format), each entry is
+// built with its live constructor, serialised, re-parsed through the
+// CString constructor, and serialised again. Identity between the two
+// serialisations is the round-trip proof, and the first serialisation is the
+// byte golden.
+//
+// A CChatDoc is required: SayEntry's parse ctor calls LookupPui(nick, doc) and
+// fabricates a CUserInfo through CIUserJoin when the nick is unknown ("got a
+// say without a join -- fake it").
+// ---------------------------------------------------------------------------
+
+// Serialise one entry through a CArchive over a CMemFile. The archive must be
+// closed before the file is read back or the tail sits in the archive buffer.
+static std::string WriteEntryBytes(HistoryEntry* entry) {
+    CMemFile mf;
+    {
+        CArchive ar(&mf, CArchive::store);
+        entry->WriteSelf(ar);
+        ar.Close();
+    }
+    UINT len = (UINT)mf.GetLength();
+    mf.SeekToBegin();
+    std::string out;
+    if (len) {
+        out.resize(len);
+        mf.Read(&out[0], len);
+    }
+    return out;
+}
+
+static ojson::Value DumpBytes(const std::string& s) {
+    ojson::Value v = ojson::Value::Obj();
+    v.Set("text", ojson::Value::Str(s));
+    v.Set("length", ojson::Value::Int((long)s.size()));
+    // Hex too: the format is tab and CRLF delimited, and those are exactly the
+    // bytes a diff of escaped text is easiest to misread.
+    std::string hex;
+    static const char* kHexDigits = "0123456789abcdef";
+    for (size_t i = 0; i < s.size(); i++) {
+        unsigned char c = (unsigned char)s[i];
+        if (i) hex += ' ';
+        hex += kHexDigits[(c >> 4) & 0x0F];
+        hex += kHexDigits[c & 0x0F];
+    }
+    v.Set("hex", ojson::Value::Str(hex));
+    return v;
+}
+
+// Serialise, re-parse via the supplied parser, serialise again, and report
+// whether the two byte strings agree.
+typedef HistoryEntry* (*CccParser)(CString& line, CChatDoc* doc);
+
+static ojson::Value RoundTripEntry(const char* keyword, HistoryEntry* live,
+                                   CccParser parse, CChatDoc* doc) {
+    ojson::Value e = ojson::Value::Obj();
+    e.Set("keyword", ojson::Value::Str(keyword));
+
+    fprintf(stderr, "ORACLE: ccc - %s serialise\n", keyword); fflush(stderr);
+    std::string first = WriteEntryBytes(live);
+    e.Set("written", DumpBytes(first));
+
+    if (!parse) {
+        e.Set("reparsed", ojson::Value::Str("(no CString parser exercised)"));
+        return e;
+    }
+
+    fprintf(stderr, "ORACLE: ccc - %s reparse\n", keyword); fflush(stderr);
+    CString line(first.c_str());
+    HistoryEntry* again = parse(line, doc);
+    if (!again) {
+        e.Set("reparseFailed", ojson::Value::Bool(true));
+        return e;
+    }
+    std::string second = WriteEntryBytes(again);
+    e.Set("rewritten", DumpBytes(second));
+    e.Set("roundTrips", ojson::Value::Bool(first == second));
+    delete again;
+    return e;
+}
+
+// One thunk per keyword, because the parse constructors do not share a
+// signature (SayEntry wants the doc, JoinEntry a highlight type, the rest just
+// the line).
+static HistoryEntry* ParseSay(CString& l, CChatDoc* d) { return new SayEntry(l, d, (char)-1); }
+static HistoryEntry* ParseJoin(CString& l, CChatDoc*) { return new JoinEntry(l, (char)-1); }
+static HistoryEntry* ParsePart(CString& l, CChatDoc*) { return new PartEntry(l); }
+static HistoryEntry* ParseChangeAvatar(CString& l, CChatDoc*) { return new ChangeAvatarEntry(l); }
+static HistoryEntry* ParseGetInfo(CString& l, CChatDoc*) { return new GetInfoEntry(l); }
+static HistoryEntry* ParseComicCharacter(CString& l, CChatDoc*) { return new ComicCharacterEntry(l); }
+static HistoryEntry* ParseStartHistory(CString& l, CChatDoc*) { return new StartHistoryEntry(l); }
+static HistoryEntry* ParseChangeBackDrop(CString& l, CChatDoc*) { return new ChangeBackDropEntry(l); }
+static HistoryEntry* ParseNick(CString& l, CChatDoc*) { return new NickEntry(l); }
+
+static ojson::Value CaptureCcc(CChatDoc* doc) {
+    ojson::Value root = ojson::Value::Obj();
+    ojson::Value entries = ojson::Value::Arr();
+
+    // A user info to hang the speaker-bearing entries off. The parse path
+    // builds one exactly this way when a say arrives without a join.
+    CUserInfo* pui = new CUserInfo(CString("oraclenick"));
+
+    // say, plain
+    {
+        SayEntry* e = new SayEntry(pui, "hello transcript", NULL, (char)-1);
+        entries.Push(RoundTripEntry("say", e, ParseSay, doc));
+        delete e;
+    }
+    // say, with formatting - WriteSelf runs the text back through
+    // SzControlFull, so this is where #7 and #10 meet.
+    {
+        CDWordArray* fmt = new CDWordArray;
+        fmt->Add((DWORD)MAKELONG(wBold, 0));
+        fmt->Add((DWORD)MAKELONG(0, 5));
+        SayEntry* e = new SayEntry(pui, "bold start then plain", fmt, (char)-1);
+        entries.Push(RoundTripEntry("say+formatting", e, ParseSay, doc));
+        delete e;
+    }
+    // say, with an embedded newline: WriteSelf calls QuoteReturns, since a
+    // transcript line cannot contain a raw CRLF.
+    {
+        SayEntry* e = new SayEntry(pui, "first line\r\nsecond line", NULL, (char)-1);
+        entries.Push(RoundTripEntry("say+returns", e, ParseSay, doc));
+        delete e;
+    }
+    {
+        JoinEntry* e = new JoinEntry(pui, TRUE, (char)-1);
+        entries.Push(RoundTripEntry("join", e, ParseJoin, doc));
+        delete e;
+    }
+    {
+        PartEntry* e = new PartEntry("oraclenick", (char)-1);
+        entries.Push(RoundTripEntry("part", e, ParsePart, doc));
+        delete e;
+    }
+    {
+        ChangeAvatarEntry* e = new ChangeAvatarEntry(pui, "bolo", "http://example.com/bolo.avb");
+        entries.Push(RoundTripEntry("changeavatar", e, ParseChangeAvatar, doc));
+        delete e;
+    }
+    {
+        GetInfoEntry* e = new GetInfoEntry(pui, (char*)"some info text");
+        entries.Push(RoundTripEntry("getinfo", e, ParseGetInfo, doc));
+        delete e;
+    }
+    {
+        ComicCharacterEntry* e = new ComicCharacterEntry(pui);
+        entries.Push(RoundTripEntry("comiccharacter", e, ParseComicCharacter, doc));
+        delete e;
+    }
+    // StartHistoryEntry carries the PRNG seed. Plan section 4.3 records that
+    // WriteSelf does not persist m_randStart, so a .ccc cannot reproduce a
+    // comic on its own - this golden is the evidence for that claim.
+    {
+        StartHistoryEntry* e = new StartHistoryEntry("Oracle Comic", "bolo", 12345);
+        entries.Push(RoundTripEntry("starthistory", e, ParseStartHistory, doc));
+        delete e;
+    }
+    {
+        ChangeBackDropEntry* e = new ChangeBackDropEntry("cityscape", "http://example.com/city.bgb");
+        entries.Push(RoundTripEntry("changebackdrop", e, ParseChangeBackDrop, doc));
+        delete e;
+    }
+    {
+        NickEntry* e = new NickEntry("oldnick", "newnick");
+        entries.Push(RoundTripEntry("nick", e, ParseNick, doc));
+        delete e;
+    }
+
+    root.Set("entries", entries);
+    return root;
+}
+
+// ---------------------------------------------------------------------------
 // Dump a SRECT as a JSON object
 // ---------------------------------------------------------------------------
 static ojson::Value DumpSRECT(const SRECT& r) {
@@ -1478,6 +1656,7 @@ int main(int argc, char** argv) {
         fprintf(stderr, "usage: OracleHarness.exe <inputs.json> <expected.json>\n");
         fprintf(stderr, "       OracleHarness.exe --glyphs <glyphs.json>\n");
         fprintf(stderr, "       OracleHarness.exe --codecs <codecs.json>\n");
+        fprintf(stderr, "       OracleHarness.exe --ccc <ccc.json> [treeDir]\n");
         return 2;
     }
 
@@ -1597,6 +1776,38 @@ int main(int argc, char** argv) {
         fwrite(out.c_str(), 1, out.size(), f);
         fclose(f);
         printf("codecs written to %s\n", argv[2]);
+        return 0;
+    }
+
+    // .ccc transcript codec capture (Tier-1 #10). Needs more setup than
+    // --codecs: the parse constructors want a CChatDoc for LookupPui. It is a
+    // bare doc though - no InitMyDocument, since pages and panels play no part
+    // in serialising a history entry.
+    if (strcmp(argv[1], "--ccc") == 0) {
+        if (argc < 3) {
+            fprintf(stderr, "usage: OracleHarness.exe --ccc <ccc.json> [treeDir]\n");
+            return 2;
+        }
+        char treeDir[MAX_PATH] = ".";
+        if (argc >= 4) {
+            strncpy(treeDir, argv[3], MAX_PATH - 1);
+            treeDir[MAX_PATH - 1] = 0;
+        }
+        InitHarness(treeDir);
+        COracleChatDoc* doc = new COracleChatDoc();
+        cui.m_pvChatDoc = doc;
+        doc->m_view = NULL;
+        doc->m_bComicView = TRUE;
+        doc->SetComicsTitle("Oracle Comic");
+        fprintf(stderr, "ORACLE: ccc - bare doc ready\n"); fflush(stderr);
+
+        ojson::Value cc = CaptureCcc(doc);
+        FILE* f = fopen(argv[2], "wb");
+        if (!f) { fprintf(stderr, "cannot write %s\n", argv[2]); return 1; }
+        std::string out = cc.EmitToString();
+        fwrite(out.c_str(), 1, out.size(), f);
+        fclose(f);
+        printf("ccc written to %s\n", argv[2]);
         return 0;
     }
 
