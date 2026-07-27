@@ -9,7 +9,7 @@
       "messageIndex": 0,
       "speakerId": 1,
       "text": "Page one, panel one.",
-      "mode": 0,
+      "mode": 1,
       "page": {
         "newPanel": false,
         "bbox": {
@@ -1092,7 +1092,7 @@
       "messageIndex": 1,
       "speakerId": 2,
       "text": "Page one, panel two.",
-      "mode": 0,
+      "mode": 1,
       "page": {
         "newPanel": false,
         "bbox": {
@@ -3309,7 +3309,7 @@
       "messageIndex": 2,
       "speakerId": 3,
       "text": "Page one, panel three.",
-      "mode": 0,
+      "mode": 1,
       "page": {
         "newPanel": false,
         "bbox": {
@@ -6208,7 +6208,7 @@
       "messageIndex": 3,
       "speakerId": 1,
       "text": "Page one, panel four.",
-      "mode": 0,
+      "mode": 1,
       "page": {
         "newPanel": false,
         "bbox": {
@@ -10115,7 +10115,7 @@
       "messageIndex": 4,
       "speakerId": 2,
       "text": "Page one, panel five - new page soon.",
-      "mode": 0,
+      "mode": 1,
       "page": {
         "newPanel": false,
         "bbox": {
@@ -15188,7 +15188,7 @@
       "messageIndex": 5,
       "speakerId": 3,
       "text": "This should be on a new page.",
-      "mode": 0,
+      "mode": 1,
       "page": {
         "newPanel": false,
         "bbox": {
@@ -21569,7 +21569,7 @@
       "messageIndex": 6,
       "speakerId": 1,
       "text": "And another page after this.",
-      "mode": 0,
+      "mode": 1,
       "page": {
         "newPanel": false,
         "bbox": {

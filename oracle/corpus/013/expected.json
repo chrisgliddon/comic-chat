@@ -9,7 +9,7 @@
       "messageIndex": 0,
       "speakerId": 1,
       "text": "",
-      "mode": 0,
+      "mode": 1,
       "page": {
         "newPanel": false,
         "bbox": {
@@ -541,7 +541,7 @@
       "messageIndex": 1,
       "speakerId": 2,
       "text": "a",
-      "mode": 0,
+      "mode": 1,
       "page": {
         "newPanel": false,
         "bbox": {
@@ -1487,7 +1487,7 @@
       "messageIndex": 2,
       "speakerId": 1,
       "text": "Lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua Ut enim ad minim veniam quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur Excepteur sint occaecat cupidatat non proident sunt in culpa qui officia deserunt mollit anim id est laborum et dolorum fuga et harum quidem rerum facilis est et expedita distinctio nam",
-      "mode": 0,
+      "mode": 1,
       "page": {
         "newPanel": false,
         "bbox": {
@@ -9905,7 +9905,7 @@
       "messageIndex": 3,
       "speakerId": 2,
       "text": "pneumonoultramicroscopicsilicovolcanoconiosisandthensomeextracharacterstopushit",
-      "mode": 0,
+      "mode": 1,
       "page": {
         "newPanel": false,
         "bbox": {
@@ -20059,7 +20059,7 @@
       "messageIndex": 4,
       "speakerId": 1,
       "text": "caf\u00e9 na\u00efve r\u00e9sum\u00e9 \u00fcber",
-      "mode": 0,
+      "mode": 1,
       "page": {
         "newPanel": false,
         "bbox": {
@@ -31139,7 +31139,7 @@
       "messageIndex": 5,
       "speakerId": 2,
       "text": "back to plain ascii",
-      "mode": 0,
+      "mode": 1,
       "page": {
         "newPanel": false,
         "bbox": {

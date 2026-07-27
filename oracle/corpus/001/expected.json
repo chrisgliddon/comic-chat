@@ -9,7 +9,7 @@
       "messageIndex": 0,
       "speakerId": 1,
       "text": "Hello there! How are you?",
-      "mode": 0,
+      "mode": 1,
       "page": {
         "newPanel": false,
         "bbox": {
@@ -1269,7 +1269,7 @@
       "messageIndex": 1,
       "speakerId": 2,
       "text": "I'm doing great, thanks for asking!",
-      "mode": 0,
+      "mode": 1,
       "page": {
         "newPanel": false,
         "bbox": {
@@ -3711,7 +3711,7 @@
       "messageIndex": 2,
       "speakerId": 1,
       "text": "That's wonderful to hear.",
-      "mode": 0,
+      "mode": 1,
       "page": {
         "newPanel": false,
         "bbox": {

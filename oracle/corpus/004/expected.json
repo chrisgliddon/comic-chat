@@ -9,7 +9,7 @@
       "messageIndex": 0,
       "speakerId": 1,
       "text": "One speaker so far.",
-      "mode": 0,
+      "mode": 1,
       "page": {
         "newPanel": false,
         "bbox": {
@@ -1161,7 +1161,7 @@
       "messageIndex": 1,
       "speakerId": 2,
       "text": "Now two speakers.",
-      "mode": 0,
+      "mode": 1,
       "page": {
         "newPanel": false,
         "bbox": {
@@ -3367,7 +3367,7 @@
       "messageIndex": 2,
       "speakerId": 3,
       "text": "Three speakers in the room.",
-      "mode": 0,
+      "mode": 1,
       "page": {
         "newPanel": false,
         "bbox": {
@@ -6821,7 +6821,7 @@
       "messageIndex": 3,
       "speakerId": 4,
       "text": "Four speakers now.",
-      "mode": 0,
+      "mode": 1,
       "page": {
         "newPanel": false,
         "bbox": {
@@ -11317,7 +11317,7 @@
       "messageIndex": 4,
       "speakerId": 5,
       "text": "Five speakers chatting.",
-      "mode": 0,
+      "mode": 1,
       "page": {
         "newPanel": false,
         "bbox": {
@@ -16821,7 +16821,7 @@
       "messageIndex": 5,
       "speakerId": 6,
       "text": "Six speakers - full panel!",
-      "mode": 0,
+      "mode": 1,
       "page": {
         "newPanel": false,
         "bbox": {

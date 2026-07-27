@@ -214,8 +214,27 @@ Newly measured gaps (were suspicions, now numbers):
   `panelWidth`/`panelHeight` inputs (floor `MINUNITPANELWIDTH` = 2300, the
   app's own clamp) and case 014 at 2300x4860 - full-height bodies in a narrow
   frame.
-- No `traj` segment is a `line`, so `CBWoodringBox` (four-`CLine` box balloon)
-  is never instantiated by the corpus.
+- ~~No `traj` segment is a `line`, so `CBWoodringBox` is never instantiated.~~
+  **CLOSED 2026-07-27.** Root cause was the corpus `mode` values: written as
+  0/1/2/4, which match neither the `BM_` flags the engine receives
+  (defines.h:63 - SAY 1, WHISPER 2, THINK 4, ACTION 8) nor the sequential
+  `SM_` values (1..5). `ProcessLine` forwards `uModes` to `AddLine`/
+  `MakeBalloon` without `SM2BM`, so `BM_ACTION` was never sent and no box
+  balloon was ever built - and 13 of 14 cases were routing through
+  `MakeBalloon`'s `default:` "should never happen" branch. All cases now use
+  real `BM_` values (verified safe: 12 of 14 diffed only in the echoed `mode`
+  field, engine output byte-identical). Case 015 covers `BM_ACTION` and the
+  dashed `BM_ACTION|BM_WHISPER`, and pins that `AddLine` tests
+  `uModes == BM_ACTION` by exact equality, so 8 breaks the panel and 10 does
+  not. Corpus-wide traj census is now 343 splines / 678 arcs / **48 lines**
+  across 343 normal + 12 box balloons.
+
+  A second bug surfaced underneath: the traj guard required `m_spline` for
+  every balloon, so all 8 box balloons in 015 were skipped even once
+  `BM_ACTION` was flowing (`trajSkipped: "no spline or formatInfo"`).
+  `CBWoodringBox::SetBalloonTraj` needs only `m_fInfo` - it draws four
+  `CLine`s off `m_fInfo->m_bbox`. The `trajSkipped` reason field is what made
+  that a one-round diagnosis instead of guesswork.
 - **`faceEmotion`/`torsoEmotion` dumped `{0,0}` on every body in every case.**
   Root cause, after two wrong diagnoses recorded here (corpus thinness, then a
   dump defect): **`bbCooked`**. It defaults to 1, and
@@ -236,6 +255,26 @@ Newly measured gaps (were suspicions, now numbers):
   `avatarStates` is unchanged and still pins the post-message neutral.
 - Mid-text `<Brk>` (012 msg8) does not set the page's `newPanel` flag while a
   standalone `<Brk>` (003 msg5) does. Now pinned; the port must match.
+
+### Tier-1 #8 (URL detection) targets dead code (found 2026-07-27)
+
+The plan aims #8 at `urlfind.cpp` (`FIsURL`, `IHexToInteger`) and the
+bug-for-bug ledger pins the `||`-vs-`&&` bug at urlfind.cpp:313-326.
+**`urlfind.cpp` is compiled into neither modern tree** - it is absent from both
+`chat.mak` and `oracle.mak`, and `FIsURL`'s only appearance outside itself is a
+vestigial local declaration inside `CChatApp::ProcessShellCommand`
+(chat.cpp:1170) that is never called, which is why the link succeeds without
+it. So that bug must NOT be reproduced: the code never runs.
+
+The live URL path is `CUrlRec::HrIdentifyUrls`, declared in
+`artifacts/inc/urlutil.h:113` and implemented in
+`artifacts-modern/core/urlutil.cpp:294`, reached through the three-line
+`v2.5-beta-1-modern/urlutil.cpp` shim that `#include`s it. `urlutil.obj` *is*
+linked into the harness, and the live caller is `IdentifyURLs`
+(format.cpp:1221). #8 should be re-aimed there. Other files absent from
+`chat.mak` and therefore dead in the shipped client: `bothdlg`, `cache`,
+`cllist`, `dumbwnd`, `guids`, `nmproto`, `script`, `semantic`, `url`,
+`urlfind`, `wmini`.
 
 ### Watch out when porting the balloon tail (found 2026-07-27)
 

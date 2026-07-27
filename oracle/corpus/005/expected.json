@@ -9,7 +9,7 @@
       "messageIndex": 0,
       "speakerId": 1,
       "text": "",
-      "mode": 0,
+      "mode": 1,
       "page": {
         "newPanel": false,
         "bbox": {
@@ -518,7 +518,7 @@
       "messageIndex": 1,
       "speakerId": 1,
       "text": "A",
-      "mode": 0,
+      "mode": 1,
       "page": {
         "newPanel": false,
         "bbox": {
@@ -1467,7 +1467,7 @@
       "messageIndex": 2,
       "speakerId": 1,
       "text": "This is a very long message that should definitely cause line wrapping and possibly overflow into multiple lines within the balloon, testing the GDI GetTextExtent measurement path and the balloon line breaking logic thoroughly and completely yes indeed this is quite long indeed.",
-      "mode": 0,
+      "mode": 1,
       "page": {
         "newPanel": false,
         "bbox": {
@@ -6320,7 +6320,7 @@
       "messageIndex": 3,
       "speakerId": 1,
       "text": "Unicode test: caf\u00e9 r\u00e9sum\u00e9 na\u00efve",
-      "mode": 0,
+      "mode": 1,
       "page": {
         "newPanel": false,
         "bbox": {
@@ -12269,7 +12269,7 @@
       "messageIndex": 4,
       "speakerId": 1,
       "text": "SHOUTING IN CAPS!!! THIS IS IMPORTANT!!!",
-      "mode": 0,
+      "mode": 1,
       "page": {
         "newPanel": false,
         "bbox": {
@@ -19658,7 +19658,7 @@
       "messageIndex": 5,
       "speakerId": 1,
       "text": "I am waving hello :)",
-      "mode": 0,
+      "mode": 1,
       "page": {
         "newPanel": false,
         "bbox": {

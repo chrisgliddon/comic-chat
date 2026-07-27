@@ -9,7 +9,7 @@
       "messageIndex": 0,
       "speakerId": 1,
       "text": "I am using the cro avatar.",
-      "mode": 0,
+      "mode": 1,
       "page": {
         "newPanel": false,
         "bbox": {
@@ -1275,7 +1275,7 @@
       "messageIndex": 1,
       "speakerId": 2,
       "text": "I am using the denise avatar.",
-      "mode": 0,
+      "mode": 1,
       "page": {
         "newPanel": false,
         "bbox": {
@@ -3523,7 +3523,7 @@
       "messageIndex": 2,
       "speakerId": 3,
       "text": "I am using the lynnea avatar.",
-      "mode": 0,
+      "mode": 1,
       "page": {
         "newPanel": false,
         "bbox": {
@@ -7051,7 +7051,7 @@
       "messageIndex": 3,
       "speakerId": 4,
       "text": "I am using the veronica avatar.",
-      "mode": 0,
+      "mode": 1,
       "page": {
         "newPanel": false,
         "bbox": {
