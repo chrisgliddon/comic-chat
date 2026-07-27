@@ -96,7 +96,7 @@ void CCardinal::SetMatrix(double tension) {
 		matrix = (MATRIX *) m;
 		return;
 	}
-	matrix = (MATRIX *) malloc (sizeof MATRIX);
+	matrix = (MATRIX *) malloc (sizeof(MATRIX));
 	(*matrix)[0][1] = 2.0 - tension;
 	(*matrix)[0][2] = tension - 2.0;
 	(*matrix)[1][0] = 2.0 * tension;
@@ -118,7 +118,7 @@ void CBeta::SetMatrix(double tension, double bias) {
 		return;
 	}
 
-	matrix = (MATRIX *) malloc (sizeof MATRIX);
+	matrix = (MATRIX *) malloc (sizeof(MATRIX));
 	double b2 = bias * bias;
 	double b3 = bias * b2;
 	double d = 1.0 / (tension + (2.0 * b3) + (4.0 * (b2 + bias)) + 2.0);

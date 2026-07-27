@@ -461,3 +461,8 @@ oracle/ccc/ccc.json
 # `git add -A` would drop 32 captures in alongside the goldens.
 oracle/avb/*.json
 !oracle/avb/*.golden.json
+
+# Native macOS port build artifacts. native/stage is a symlink farm rebuilt by
+# native/stage.sh; native/build holds object files.
+native/stage/
+native/build/
