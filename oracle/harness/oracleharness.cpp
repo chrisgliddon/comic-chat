@@ -1578,14 +1578,22 @@ static void CrcInit() {
     g_crcTableReady = true;
 }
 
-static unsigned long Crc32(const void* data, size_t len) {
-    CrcInit();
+// Streaming form, so a hash can be accumulated across non-contiguous regions
+// (needed for the row-by-row pixel hash below, which must skip row padding).
+static unsigned long Crc32Begin() { CrcInit(); return 0xFFFFFFFFUL; }
+
+static unsigned long Crc32Update(unsigned long c, const void* data, size_t len) {
     const unsigned char* p = (const unsigned char*)data;
-    unsigned long c = 0xFFFFFFFFUL;
     for (size_t i = 0; i < len; i++) {
         c = g_crcTable[(c ^ p[i]) & 0xFF] ^ (c >> 8);
     }
-    return c ^ 0xFFFFFFFFUL;
+    return c;
+}
+
+static unsigned long Crc32End(unsigned long c) { return c ^ 0xFFFFFFFFUL; }
+
+static unsigned long Crc32(const void* data, size_t len) {
+    return Crc32End(Crc32Update(Crc32Begin(), data, len));
 }
 
 // CRCs go out as "0x........" strings, not numbers: ojson emits integers with
@@ -1838,19 +1846,63 @@ static ojson::Value DumpDibSlot(CAvatarDIB* dib) {
 
     void* bits = dib->GetBitsAddress();
     if (bits == NULL) {
-        v.Set("pixelBytes", ojson::Value::Null());
+        v.Set("allocBytes", ojson::Value::Null());
+        v.Set("pixelRowBytes", ojson::Value::Null());
         v.Set("pixelCrc32", ojson::Value::Null());
         return v;
     }
     long absHeight = h.biHeight < 0 ? -(long)h.biHeight : (long)h.biHeight;
-    size_t len;
-    if (h.biCompression == BI_RGB) {
-        len = (size_t)stride * (size_t)absHeight;
-    } else {
-        len = (size_t)h.biSizeImage;
+
+    if (h.biCompression != BI_RGB) {
+        // No shipped asset reaches here - CAvatarDIB::Load expands RLE before
+        // any caller sees the DIB (avbfile.cpp:462) - but if one ever does,
+        // biSizeImage is the length and there are no rows to walk.
+        size_t len = (size_t)h.biSizeImage;
+        v.Set("allocBytes", ojson::Value::Int((long)len));
+        v.Set("pixelRowBytes", ojson::Value::Null());
+        v.Set("pixelCrc32", len ? CrcStr(Crc32(bits, len)) : ojson::Value::Null());
+        return v;
     }
-    v.Set("pixelBytes", ojson::Value::Int((long)len));
-    v.Set("pixelCrc32", len ? CrcStr(Crc32(bits, len)) : ojson::Value::Null());
+
+    // Hash the PIXELS, not the buffer. Row padding is deliberately excluded, for
+    // two independent reasons:
+    //
+    // 1. It is not reproducible. CPose::ConvertMasksCommon writes only
+    //    srcStride/2 bytes per destination row but strides by the full
+    //    destination stride (avbfile.cpp:1625-1655), so whenever
+    //    srcStride/2 < destStride the tail of every scan line is never written -
+    //    and the ZeroMemory that would cover it sits behind
+    //    #ifdef AVATAR_NOT_CLIENT (avbfile.cpp:1585-1587), which the client build
+    //    does not define. Those bytes are uninitialised malloc memory, so a
+    //    full-stride CRC changes from run to run. Measured: 1-bpp slots with
+    //    biWidth % 32 in 1..16 moved between two CI runs; % 32 == 0 and 17..31
+    //    were stable, exactly as the two stride formulas predict.
+    // 2. It is not portable even if it were stable. A port is free to store rows
+    //    unpadded, or to zero its padding; either would be correct and both would
+    //    fail a full-stride comparison.
+    //
+    // So: per row, hash ceil(width * bpp / 8) bytes and mask the final byte down
+    // to exactly biWidth pixels. DIBs are MSB-first within a byte, so the valid
+    // bits are the HIGH ones - hence 0xFF << (8 - tailBits).
+    long bitsPerRow = (long)h.biWidth * (long)h.biBitCount;
+    long rowBytes = (bitsPerRow + 7) / 8;
+    v.Set("allocBytes", ojson::Value::Int(stride * absHeight));
+    v.Set("pixelRowBytes", ojson::Value::Int(rowBytes));
+    if (rowBytes <= 0 || absHeight <= 0) {
+        v.Set("pixelCrc32", ojson::Value::Null());
+        return v;
+    }
+    int tailBits = (int)(bitsPerRow % 8);
+    unsigned char tailMask = tailBits ? (unsigned char)(0xFF << (8 - tailBits))
+                                      : (unsigned char)0xFF;
+    unsigned long c = Crc32Begin();
+    for (long y = 0; y < absHeight; y++) {
+        const unsigned char* row = (const unsigned char*)bits + (size_t)y * (size_t)stride;
+        if (rowBytes > 1) c = Crc32Update(c, row, (size_t)(rowBytes - 1));
+        unsigned char last = (unsigned char)(row[rowBytes - 1] & tailMask);
+        c = Crc32Update(c, &last, 1);
+    }
+    v.Set("pixelCrc32", CrcStr(Crc32End(c)));
     return v;
 }
 

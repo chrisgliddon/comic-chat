@@ -241,6 +241,30 @@ jobs:
           if ($LASTEXITCODE -ne 0) { Write-Host "AVB CAPTURE FAILED (exit $LASTEXITCODE)"; exit 1 }
           Write-Host "Avb manifests captured."
           $avbDir = Resolve-Path ..\oracle\avb
+
+          # Determinism gate, BEFORE the golden comparison. The pixel CRCs were
+          # briefly hashing whole scan lines including row padding, which
+          # ConvertMasksCommon leaves uninitialised - so 25 of 33 manifests
+          # differed between two runs. That surfaced only when a freeze round came
+          # back red, one wasted round. Two runs diffed catches it immediately,
+          # and it is what the corpus step has always done for case 001.
+          $runB = Join-Path $env:RUNNER_TEMP "avb_runb"
+          New-Item -ItemType Directory -Force -Path $runB | Out-Null
+          & Release\OracleHarness.exe --avb $runB ComicArt
+          if ($LASTEXITCODE -ne 0) { Write-Host "AVB SECOND CAPTURE FAILED (exit $LASTEXITCODE)"; exit 1 }
+          $unstable = @()
+          foreach ($a in (Get-ChildItem -Path $avbDir -Filter *.json | Where-Object { $_.Name -notlike '*.golden.json' })) {
+            $b = Join-Path $runB $a.Name
+            if (-not (Test-Path $b)) { $unstable += ($a.Name + " (missing in run B)"); continue }
+            if ((Get-FileHash $a.FullName).Hash -ne (Get-FileHash $b).Hash) { $unstable += $a.Name }
+          }
+          if ($unstable.Count -gt 0) {
+            Write-Host "AVB DETERMINISM FAILED: $($unstable.Count) manifest(s) differ between two runs"
+            Write-Host "  $($unstable -join ' ')"
+            & node ..\oracle\scripts\diff-dumps.mjs (Join-Path $avbDir $unstable[0]) (Join-Path $runB $unstable[0])
+            exit 1
+          }
+          Write-Host "Avb determinism check passed: two runs are byte-identical."
           # Drive off the captures, not the goldens: iterating goldens would
           # silently pass if the harness stopped emitting an asset entirely.
           $captures = Get-ChildItem -Path $avbDir -Filter *.json |

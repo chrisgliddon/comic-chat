@@ -661,6 +661,27 @@ observability gap noted in oracle/LEDGER.md.
 Note `biHeight` may be negative (top-down DIB) — take the absolute value for the
 byte extent, and keep the sign as row order.
 
+### 15.2b Never hash a DIB's whole pixel buffer — row padding is garbage
+
+`CPose::ConvertMasksCommon` writes `srcStride / 2` bytes per destination row but
+strides by the full destination stride (avbfile.cpp:1625-1655), and the buffers
+come from bare `malloc` — the `ZeroMemory` is behind `#ifdef AVATAR_NOT_CLIENT`
+(avbfile.cpp:1585-1587), which the client build does not define. So whenever
+`DIBStorageWidth(w,2)/2 < DIBStorageWidth(w,1)` — that is, `w % 32` in 1..16 —
+**the tail of every expanded mask scan line is uninitialised heap memory**.
+
+It never shows: those bytes are past the image width and are never blitted.
+
+Two consequences for the port:
+
+- **Do not try to reproduce padding bytes.** They have no defined value. Zero
+  them, or store rows unpadded — both are correct.
+- **The Tier-2 `pixelCrc32` covers pixels only**: per row,
+  `ceil(width * bpp / 8)` bytes with the last byte masked to exactly `width`
+  pixels, MSB-first. Compare like for like; a whole-buffer hash on the port side
+  will not match, and `allocBytes` in the manifest is informational, not the
+  hashed extent.
+
 ### 15.3 `DIBStorageWidth` rounds before it divides
 
     if (nBitCount < 8) nWidth += (8 / nBitCount) - 1;

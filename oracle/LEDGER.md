@@ -485,6 +485,52 @@ Decisions worth knowing:
   length and the stride formula does not apply. Both are recorded so a port that
   picks the wrong one shows up as a length mismatch, not a silent CRC drift.
 
+### The expanded mask buffers have uninitialised row tails
+
+The first freeze round came back with **25 of 33 manifests mismatched** — all 25
+avatars plus `index`, while all 7 backdrops and `glenda` matched. Only
+`pixelCrc32` moved; every dimension, offset, palette and record table was stable.
+
+Diffing by slot metadata gave the signature immediately: **only 1-bpp slots
+changed**, never 4-bpp or 8-bpp, and within 1-bpp only those with
+`biWidth % 32` in **1..16** — `% 32 == 0` and `% 32` in 17..31 were stable.
+
+`CPose::ConvertMasksCommon` (avbfile.cpp:1625-1655) explains it exactly:
+
+    int nWordsPerSrcScanLine = pSrcDIB->StorageWidth () / 2;   // bytes written per row
+    int nDestScanLineSize    = pDIBsOut[0]->StorageWidth ();   // bytes advanced per row
+    ...
+    (pbDestBits[0])[nDestOffset + x] = ...                     // x < nWordsPerSrcScanLine
+    nDestOffset += nDestScanLineSize;
+
+It writes `srcStride / 2` bytes per destination row but strides by the full
+destination stride. With `srcStride = DIBStorageWidth(w, 2)` and
+`destStride = DIBStorageWidth(w, 1)`, the two are equal for `w % 32` of 0 and
+17..31 and differ by 2 bytes for 1..16 — precisely the observed split. And the
+buffers come from bare `malloc`; the `ZeroMemory` that would cover the gap is
+behind `#ifdef AVATAR_NOT_CLIENT` (avbfile.cpp:1585-1587), which the client build
+does not define (avbfile.h:31 leaves it commented out). So in the shipped
+configuration those tail bytes are **uninitialised heap**.
+
+Harmless in the app — the bytes lie past the image width and are never blitted —
+but fatal to a whole-buffer hash.
+
+**Fixed by hashing the pixels rather than the buffer:** per row,
+`ceil(width * bpp / 8)` bytes with the final byte masked down to exactly
+`biWidth` pixels (DIBs are MSB-first, so the valid bits are the high ones). The
+manifest now carries `pixelRowBytes` and `allocBytes` separately so the two are
+never confused.
+
+That is the right observable regardless of the bug, for a second and independent
+reason: **row padding is not portable.** A TS port may store rows unpadded, or
+zero its padding, and either is correct — but both would fail a full-stride
+comparison. The golden has to pin the pixels.
+
+**A determinism gate now runs before the golden comparison** (two captures,
+byte-compared), mirroring what the corpus step has always done for case 001.
+Without it this cost a full CI round to discover, and it would have been silently
+frozen as "working" had all 33 happened to agree once.
+
 ### dib.h declares nine methods that dib.cpp does not define
 
 First `--avb` CI round failed to link with exactly one error:
