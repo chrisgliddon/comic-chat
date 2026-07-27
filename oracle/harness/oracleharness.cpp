@@ -812,7 +812,16 @@ static ojson::Value CaptureCodecs() {
             int bounds[MAX_URL_INTEXT * 2];
             memset(bounds, 0, sizeof(bounds));
             int nUrls = MAX_URL_INTEXT;
-            HRESULT hr = g_urlRec.HrIdentifyUrls(kUrlProbes[i], bounds, &nUrls);
+            // HrIdentifyUrls takes LPCTSTR but writes through it: it stamps a
+            // terminator over the scheme's colon to test the prefix and then
+            // restores it (artifacts-modern/core/urlutil.cpp:311-313). Passing a
+            // string literal therefore faults on read-only memory - which is
+            // exactly how this dump crashed on its first URL probe, while the
+            // no-colon probe before it survived. The buffer must be writable.
+            char mutableUrl[512];
+            strncpy(mutableUrl, kUrlProbes[i], sizeof(mutableUrl) - 1);
+            mutableUrl[sizeof(mutableUrl) - 1] = 0;
+            HRESULT hr = g_urlRec.HrIdentifyUrls(mutableUrl, bounds, &nUrls);
             ojson::Value e = ojson::Value::Obj();
             e.Set("text", CodecStr(kUrlProbes[i]));
             e.Set("hr", ojson::Value::Int((long)hr));
@@ -827,8 +836,8 @@ static ojson::Value CaptureCodecs() {
                 // The substring the bounds select, so a divergence is readable
                 // without cross-referencing offsets by hand.
                 int s = bounds[u * 2], e2 = bounds[u * 2 + 1];
-                if (s >= 0 && e2 >= s && e2 <= (int)strlen(kUrlProbes[i])) {
-                    std::string sub(kUrlProbes[i] + s, (size_t)(e2 - s));
+                if (s >= 0 && e2 >= s && e2 <= (int)strlen(mutableUrl)) {
+                    std::string sub(mutableUrl + s, (size_t)(e2 - s));
                     found.Push(ojson::Value::Str(sub));
                 }
             }
