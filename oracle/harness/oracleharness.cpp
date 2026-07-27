@@ -737,6 +737,30 @@ static ojson::Value CaptureCodecs() {
             fullArr.Push(e);
         }
         fmt.Set("szControlFull", fullArr);
+
+        // The colour map the plan lists under #7. nFillFormatting encodes a
+        // colour as ((format >> 4) & 0x0F) + 16 for the foreground and
+        // (format & 0x0F) + 16 for the background, emitted as two ASCII
+        // digits - so the meaningful code domain is 0..31. Round-tripped
+        // through GetColorCode to show whether the mapping is injective.
+        // (GetRBGColor's name transposes RGB; kept verbatim.)
+        {
+            ojson::Value colours = ojson::Value::Arr();
+            for (int code = 0; code <= 31; code++) {
+                COLORREF cr = GetRBGColor((BYTE)code);
+                BYTE back = GetColorCode(cr);
+                ojson::Value e = ojson::Value::Obj();
+                e.Set("code", ojson::Value::Int((long)code));
+                e.Set("colorref", ojson::Value::Int((long)cr));
+                e.Set("r", ojson::Value::Int((long)GetRValue(cr)));
+                e.Set("g", ojson::Value::Int((long)GetGValue(cr)));
+                e.Set("b", ojson::Value::Int((long)GetBValue(cr)));
+                e.Set("codeRoundTrip", ojson::Value::Int((long)back));
+                e.Set("roundTrips", ojson::Value::Bool(back == (BYTE)code));
+                colours.Push(e);
+            }
+            fmt.Set("colorMap", colours);
+        }
         root.Set("formatting", fmt);
     }
 
@@ -749,6 +773,12 @@ static ojson::Value CaptureCodecs() {
             ":nick!user@machine JOIN #room",
             ":nick!user@machine JOIN :#room",
             "NOTICE AUTH :*** Looking up your hostname",
+            // MAXARGS spill (ircsock.cpp:234 - `goto end` once nArgs hits 10,
+            // dumping the remainder into lastString). The trailing part must NOT
+            // begin with ':' or the whole tail collapses into lastString after
+            // two args and the spill path never runs - which is what the first
+            // version of this probe did.
+            ":n!u@m PRIVMSG a b c d e f g h i j k l m n o p",
             ":n!u@m PRIVMSG #r :a b c d e f g h i j k l m n o p",
             ":n!u@m MODE #room +o someone",
             "",

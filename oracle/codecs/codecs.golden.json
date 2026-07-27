@@ -1,0 +1,1315 @@
+{
+  "modeMaps": {
+    "indexToByte": [
+      48,
+      49,
+      50,
+      51,
+      52,
+      53,
+      54,
+      55,
+      56,
+      57,
+      58,
+      59,
+      60,
+      61,
+      62,
+      63,
+      64,
+      65,
+      66,
+      67,
+      68,
+      69,
+      70,
+      71,
+      72,
+      73,
+      74,
+      75,
+      76,
+      77,
+      78,
+      79,
+      80,
+      81,
+      82,
+      83,
+      84,
+      85,
+      86,
+      87,
+      88,
+      89,
+      90,
+      91,
+      92,
+      93,
+      94,
+      95,
+      96,
+      97,
+      98,
+      99,
+      100,
+      101,
+      102,
+      103,
+      104,
+      105,
+      106,
+      107,
+      108,
+      109,
+      110,
+      111,
+      112,
+      113,
+      114,
+      115,
+      116,
+      117,
+      118,
+      119,
+      120,
+      121,
+      122,
+      123,
+      124,
+      125,
+      126,
+      127,
+      128,
+      129,
+      130,
+      131,
+      132,
+      133,
+      134,
+      135,
+      136,
+      137,
+      138,
+      139,
+      140,
+      141,
+      142,
+      143,
+      144,
+      145,
+      146,
+      147,
+      148,
+      149,
+      150,
+      151,
+      152,
+      153,
+      154,
+      155,
+      156,
+      157,
+      158,
+      159,
+      160,
+      161,
+      162,
+      163,
+      164,
+      165,
+      166,
+      167,
+      168,
+      169,
+      170,
+      171,
+      172,
+      173,
+      174,
+      175,
+      176,
+      177,
+      178,
+      179,
+      180,
+      181,
+      182,
+      183,
+      184,
+      185,
+      186,
+      187,
+      188,
+      189,
+      190,
+      191,
+      192,
+      193,
+      194,
+      195,
+      196,
+      197,
+      198,
+      199,
+      200,
+      201,
+      202,
+      203,
+      204,
+      205,
+      206,
+      207,
+      208,
+      209,
+      210,
+      211,
+      212,
+      213,
+      214,
+      215,
+      216,
+      217,
+      218,
+      219,
+      220,
+      221,
+      222,
+      223,
+      224,
+      225,
+      226,
+      227,
+      228,
+      229,
+      230,
+      231,
+      232,
+      233,
+      234,
+      235,
+      236,
+      237,
+      238,
+      239,
+      240,
+      241,
+      242,
+      243,
+      244,
+      245,
+      246,
+      247,
+      248,
+      249,
+      250,
+      251,
+      252,
+      253,
+      254,
+      255,
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31,
+      32,
+      33,
+      34,
+      35,
+      36,
+      37,
+      38,
+      39,
+      40,
+      41,
+      42,
+      43,
+      44,
+      45,
+      46,
+      47
+    ],
+    "byteToIndex": [
+      208,
+      209,
+      210,
+      211,
+      212,
+      213,
+      214,
+      215,
+      216,
+      217,
+      218,
+      219,
+      220,
+      221,
+      222,
+      223,
+      224,
+      225,
+      226,
+      227,
+      228,
+      229,
+      230,
+      231,
+      232,
+      233,
+      234,
+      235,
+      236,
+      237,
+      238,
+      239,
+      240,
+      241,
+      242,
+      243,
+      244,
+      245,
+      246,
+      247,
+      248,
+      249,
+      250,
+      251,
+      252,
+      253,
+      254,
+      255,
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31,
+      32,
+      33,
+      34,
+      35,
+      36,
+      37,
+      38,
+      39,
+      40,
+      41,
+      42,
+      43,
+      44,
+      45,
+      46,
+      47,
+      48,
+      49,
+      50,
+      51,
+      52,
+      53,
+      54,
+      55,
+      56,
+      57,
+      58,
+      59,
+      60,
+      61,
+      62,
+      63,
+      64,
+      65,
+      66,
+      67,
+      68,
+      69,
+      70,
+      71,
+      72,
+      73,
+      74,
+      75,
+      76,
+      77,
+      78,
+      79,
+      80,
+      81,
+      82,
+      83,
+      84,
+      85,
+      86,
+      87,
+      88,
+      89,
+      90,
+      91,
+      92,
+      93,
+      94,
+      95,
+      96,
+      97,
+      98,
+      99,
+      100,
+      101,
+      102,
+      103,
+      104,
+      105,
+      106,
+      107,
+      108,
+      109,
+      110,
+      111,
+      112,
+      113,
+      114,
+      115,
+      116,
+      117,
+      118,
+      119,
+      120,
+      121,
+      122,
+      123,
+      124,
+      125,
+      126,
+      127,
+      128,
+      129,
+      130,
+      131,
+      132,
+      133,
+      134,
+      135,
+      136,
+      137,
+      138,
+      139,
+      140,
+      141,
+      142,
+      143,
+      144,
+      145,
+      146,
+      147,
+      148,
+      149,
+      150,
+      151,
+      152,
+      153,
+      154,
+      155,
+      156,
+      157,
+      158,
+      159,
+      160,
+      161,
+      162,
+      163,
+      164,
+      165,
+      166,
+      167,
+      168,
+      169,
+      170,
+      171,
+      172,
+      173,
+      174,
+      175,
+      176,
+      177,
+      178,
+      179,
+      180,
+      181,
+      182,
+      183,
+      184,
+      185,
+      186,
+      187,
+      188,
+      189,
+      190,
+      191,
+      192,
+      193,
+      194,
+      195,
+      196,
+      197,
+      198,
+      199,
+      200,
+      201,
+      202,
+      203,
+      204,
+      205,
+      206,
+      207
+    ],
+    "sm2bm": [
+      {
+        "in": 0,
+        "out": 1
+      },
+      {
+        "in": 1,
+        "out": 1
+      },
+      {
+        "in": 2,
+        "out": 2
+      },
+      {
+        "in": 3,
+        "out": 4
+      },
+      {
+        "in": 4,
+        "out": 1
+      },
+      {
+        "in": 5,
+        "out": 8
+      },
+      {
+        "in": 6,
+        "out": 1
+      },
+      {
+        "in": 7,
+        "out": 1
+      },
+      {
+        "in": 8,
+        "out": 1
+      }
+    ],
+    "bm2sm": [
+      {
+        "in": 0,
+        "out": 1
+      },
+      {
+        "in": 1,
+        "out": 1
+      },
+      {
+        "in": 2,
+        "out": 2
+      },
+      {
+        "in": 4,
+        "out": 3
+      },
+      {
+        "in": 8,
+        "out": 5
+      },
+      {
+        "in": 9,
+        "out": 5
+      },
+      {
+        "in": 10,
+        "out": 5
+      },
+      {
+        "in": 12,
+        "out": 5
+      },
+      {
+        "in": 16,
+        "out": 5
+      },
+      {
+        "in": 32,
+        "out": 1
+      },
+      {
+        "in": 64,
+        "out": 1
+      },
+      {
+        "in": 128,
+        "out": 1
+      },
+      {
+        "in": 256,
+        "out": 1
+      },
+      {
+        "in": 5,
+        "out": 3
+      }
+    ]
+  },
+  "formatting": {
+    "nFillFormatting": [
+      {
+        "note": "no change",
+        "curFormat": 0,
+        "nextFormat": 0,
+        "firstFormattedChar": 97,
+        "returned": 0,
+        "bytes": "",
+        "byteValues": []
+      },
+      {
+        "note": "bold on",
+        "curFormat": 0,
+        "nextFormat": 256,
+        "firstFormattedChar": 97,
+        "returned": 1,
+        "bytes": "\u0002",
+        "byteValues": [
+          2
+        ]
+      },
+      {
+        "note": "bold off",
+        "curFormat": 256,
+        "nextFormat": 0,
+        "firstFormattedChar": 97,
+        "returned": 1,
+        "bytes": "\u0002",
+        "byteValues": [
+          2
+        ]
+      },
+      {
+        "note": "italic on",
+        "curFormat": 0,
+        "nextFormat": 512,
+        "firstFormattedChar": 97,
+        "returned": 1,
+        "bytes": "\u0016",
+        "byteValues": [
+          22
+        ]
+      },
+      {
+        "note": "underline on",
+        "curFormat": 0,
+        "nextFormat": 1024,
+        "firstFormattedChar": 97,
+        "returned": 1,
+        "bytes": "\u001f",
+        "byteValues": [
+          31
+        ]
+      },
+      {
+        "note": "fixed pitch on",
+        "curFormat": 0,
+        "nextFormat": 2048,
+        "firstFormattedChar": 97,
+        "returned": 1,
+        "bytes": "\u0011",
+        "byteValues": [
+          17
+        ]
+      },
+      {
+        "note": "symbol on",
+        "curFormat": 0,
+        "nextFormat": 4096,
+        "firstFormattedChar": 97,
+        "returned": 1,
+        "bytes": "\u0012",
+        "byteValues": [
+          18
+        ]
+      },
+      {
+        "note": "three at once",
+        "curFormat": 0,
+        "nextFormat": 1792,
+        "firstFormattedChar": 97,
+        "returned": 3,
+        "bytes": "\u0002\u0016\u001f",
+        "byteValues": [
+          2,
+          22,
+          31
+        ]
+      },
+      {
+        "note": "colour off, digit follows - ^k33 hack",
+        "curFormat": 51,
+        "nextFormat": 0,
+        "firstFormattedChar": 51,
+        "returned": 3,
+        "bytes": "\u000301",
+        "byteValues": [
+          3,
+          48,
+          49
+        ]
+      },
+      {
+        "note": "colour off, non-digit follows",
+        "curFormat": 51,
+        "nextFormat": 0,
+        "firstFormattedChar": 120,
+        "returned": 1,
+        "bytes": "\u0003",
+        "byteValues": [
+          3
+        ]
+      },
+      {
+        "note": "colour on, digit follows",
+        "curFormat": 0,
+        "nextFormat": 51,
+        "firstFormattedChar": 51,
+        "returned": 3,
+        "bytes": "\u000301",
+        "byteValues": [
+          3,
+          48,
+          49
+        ]
+      },
+      {
+        "note": "colour change",
+        "curFormat": 17,
+        "nextFormat": 34,
+        "firstFormattedChar": 122,
+        "returned": 1,
+        "bytes": "\u0003",
+        "byteValues": [
+          3
+        ]
+      }
+    ],
+    "szControlLess": [
+      {
+        "input": "plain text",
+        "output": "plain text",
+        "formatting": []
+      },
+      {
+        "input": "\u0002bold then plain\u0002 tail",
+        "output": "bold then plain tail",
+        "formatting": [
+          {
+            "raw": 256,
+            "offset": 0,
+            "format": 256
+          },
+          {
+            "raw": 983040,
+            "offset": 15,
+            "format": 0
+          }
+        ]
+      },
+      {
+        "input": "\u0016italic\u0016",
+        "output": "italic",
+        "formatting": [
+          {
+            "raw": 512,
+            "offset": 0,
+            "format": 512
+          }
+        ]
+      },
+      {
+        "input": "\u001funderline\u001f",
+        "output": "underline",
+        "formatting": [
+          {
+            "raw": 1024,
+            "offset": 0,
+            "format": 1024
+          }
+        ]
+      },
+      {
+        "input": "\u000304red text\u0003",
+        "output": "red text",
+        "formatting": [
+          {
+            "raw": 8256,
+            "offset": 0,
+            "format": 8256
+          }
+        ]
+      },
+      {
+        "input": "mixed \u0002bold \u0016and italic\u0016\u0002 done",
+        "output": "mixed bold and italic done",
+        "formatting": [
+          {
+            "raw": 393472,
+            "offset": 6,
+            "format": 256
+          },
+          {
+            "raw": 721664,
+            "offset": 11,
+            "format": 768
+          },
+          {
+            "raw": 1376256,
+            "offset": 21,
+            "format": 0
+          }
+        ]
+      },
+      {
+        "input": "\u0011fixed\u0011 \u0012symbol\u0012",
+        "output": "fixed symbol",
+        "formatting": [
+          {
+            "raw": 2048,
+            "offset": 0,
+            "format": 2048
+          },
+          {
+            "raw": 327680,
+            "offset": 5,
+            "format": 0
+          },
+          {
+            "raw": 397312,
+            "offset": 6,
+            "format": 4096
+          }
+        ]
+      },
+      {
+        "input": "\u000333colour with two digits\u0003",
+        "output": "colour with two digits",
+        "formatting": [
+          {
+            "raw": 8208,
+            "offset": 0,
+            "format": 8208
+          }
+        ]
+      }
+    ],
+    "szControlFull": [
+      {
+        "input": "no formatting",
+        "formatting": [],
+        "output": "no formatting"
+      },
+      {
+        "input": "bold from start",
+        "formatting": [
+          {
+            "raw": 256,
+            "offset": 0,
+            "format": 256
+          }
+        ],
+        "output": "\u0002bold from start"
+      },
+      {
+        "input": "half bold here",
+        "formatting": [
+          {
+            "raw": 256,
+            "offset": 0,
+            "format": 256
+          },
+          {
+            "raw": 262144,
+            "offset": 4,
+            "format": 0
+          }
+        ],
+        "output": "\u0002half\u0002 bold here"
+      },
+      {
+        "input": "colour run",
+        "formatting": [
+          {
+            "raw": 51,
+            "offset": 0,
+            "format": 51
+          }
+        ],
+        "output": "\u0003colour run"
+      },
+      {
+        "input": "three runs total",
+        "formatting": [
+          {
+            "raw": 256,
+            "offset": 0,
+            "format": 256
+          },
+          {
+            "raw": 328192,
+            "offset": 5,
+            "format": 512
+          },
+          {
+            "raw": 720896,
+            "offset": 11,
+            "format": 0
+          }
+        ],
+        "output": "\u0002three\u0002\u0016 runs \u0016total"
+      }
+    ]
+  },
+  "ircParse": [
+    {
+      "line": ":nick!user@machine PRIVMSG #room :hello there",
+      "bHasPrefix": true,
+      "nick": "nick",
+      "user": "user",
+      "machine": "machine",
+      "uCode": 0,
+      "nArgs": 2,
+      "args": [
+        "PRIVMSG",
+        "#room"
+      ],
+      "nOffsets": [
+        19,
+        27
+      ],
+      "lastString": "hello there",
+      "hasLastString": true
+    },
+    {
+      "line": "PING :server.example.com",
+      "bHasPrefix": false,
+      "nick": "",
+      "user": "",
+      "machine": "",
+      "uCode": 0,
+      "nArgs": 1,
+      "args": [
+        "PING"
+      ],
+      "nOffsets": [
+        0
+      ],
+      "lastString": "server.example.com",
+      "hasLastString": true
+    },
+    {
+      "line": ":server 001 mynick :Welcome to the network",
+      "bHasPrefix": true,
+      "nick": "server",
+      "user": "",
+      "machine": "",
+      "uCode": 1,
+      "nArgs": 2,
+      "args": [
+        "001",
+        "mynick"
+      ],
+      "nOffsets": [
+        8,
+        12
+      ],
+      "lastString": "Welcome to the network",
+      "hasLastString": true
+    },
+    {
+      "line": ":nick!user@machine JOIN #room",
+      "bHasPrefix": true,
+      "nick": "nick",
+      "user": "user",
+      "machine": "machine",
+      "uCode": 0,
+      "nArgs": 2,
+      "args": [
+        "JOIN",
+        "#room"
+      ],
+      "nOffsets": [
+        19,
+        24
+      ],
+      "lastString": "",
+      "hasLastString": false
+    },
+    {
+      "line": ":nick!user@machine JOIN :#room",
+      "bHasPrefix": true,
+      "nick": "nick",
+      "user": "user",
+      "machine": "machine",
+      "uCode": 0,
+      "nArgs": 1,
+      "args": [
+        "JOIN"
+      ],
+      "nOffsets": [
+        19
+      ],
+      "lastString": "#room",
+      "hasLastString": true
+    },
+    {
+      "line": "NOTICE AUTH :*** Looking up your hostname",
+      "bHasPrefix": false,
+      "nick": "",
+      "user": "",
+      "machine": "",
+      "uCode": 0,
+      "nArgs": 2,
+      "args": [
+        "NOTICE",
+        "AUTH"
+      ],
+      "nOffsets": [
+        0,
+        7
+      ],
+      "lastString": "*** Looking up your hostname",
+      "hasLastString": true
+    },
+    {
+      "line": ":n!u@m PRIVMSG #r :a b c d e f g h i j k l m n o p",
+      "bHasPrefix": true,
+      "nick": "n",
+      "user": "u",
+      "machine": "m",
+      "uCode": 0,
+      "nArgs": 2,
+      "args": [
+        "PRIVMSG",
+        "#r"
+      ],
+      "nOffsets": [
+        7,
+        15
+      ],
+      "lastString": "a b c d e f g h i j k l m n o p",
+      "hasLastString": true
+    },
+    {
+      "line": ":n!u@m MODE #room +o someone",
+      "bHasPrefix": true,
+      "nick": "n",
+      "user": "u",
+      "machine": "m",
+      "uCode": 0,
+      "nArgs": 4,
+      "args": [
+        "MODE",
+        "#room",
+        "+o",
+        "someone"
+      ],
+      "nOffsets": [
+        7,
+        12,
+        18,
+        21
+      ],
+      "lastString": "",
+      "hasLastString": false
+    },
+    {
+      "line": "",
+      "bHasPrefix": false,
+      "nick": "",
+      "user": "",
+      "machine": "",
+      "uCode": 0,
+      "nArgs": 0,
+      "args": [],
+      "nOffsets": [],
+      "lastString": "",
+      "hasLastString": false
+    },
+    {
+      "line": ":n!u@m QUIT :Client exited \"with quotes\"",
+      "bHasPrefix": true,
+      "nick": "n",
+      "user": "u",
+      "machine": "m",
+      "uCode": 0,
+      "nArgs": 1,
+      "args": [
+        "QUIT"
+      ],
+      "nOffsets": [
+        7
+      ],
+      "lastString": "Client exited \"with quotes\"",
+      "hasLastString": true
+    }
+  ],
+  "urls": [
+    {
+      "text": "no url here at all",
+      "hr": 0,
+      "nUrlNum": 0,
+      "bounds": [],
+      "substrings": []
+    },
+    {
+      "text": "visit http://www.example.com now",
+      "hr": 0,
+      "nUrlNum": 1,
+      "bounds": [
+        {
+          "start": 6,
+          "end": 28
+        }
+      ],
+      "substrings": [
+        "http://www.example.com"
+      ]
+    },
+    {
+      "text": "https://secure.example.com/path?q=1&r=2",
+      "hr": 0,
+      "nUrlNum": 1,
+      "bounds": [
+        {
+          "start": 0,
+          "end": 39
+        }
+      ],
+      "substrings": [
+        "https://secure.example.com/path?q=1&r=2"
+      ]
+    },
+    {
+      "text": "www.example.com without a scheme",
+      "hr": 0,
+      "nUrlNum": 0,
+      "bounds": [],
+      "substrings": []
+    },
+    {
+      "text": "mic://chat.example.com/room is the Comic Chat scheme",
+      "hr": 0,
+      "nUrlNum": 1,
+      "bounds": [
+        {
+          "start": 0,
+          "end": 27
+        }
+      ],
+      "substrings": [
+        "mic://chat.example.com/room"
+      ]
+    },
+    {
+      "text": "irc://irc.example.com/room too",
+      "hr": 0,
+      "nUrlNum": 0,
+      "bounds": [],
+      "substrings": []
+    },
+    {
+      "text": "trailing punctuation http://example.com.",
+      "hr": 0,
+      "nUrlNum": 1,
+      "bounds": [
+        {
+          "start": 21,
+          "end": 39
+        }
+      ],
+      "substrings": [
+        "http://example.com"
+      ]
+    },
+    {
+      "text": "in parens (http://example.com) here",
+      "hr": 0,
+      "nUrlNum": 1,
+      "bounds": [
+        {
+          "start": 11,
+          "end": 29
+        }
+      ],
+      "substrings": [
+        "http://example.com"
+      ]
+    },
+    {
+      "text": "two http://a.example.com and http://b.example.com urls",
+      "hr": 0,
+      "nUrlNum": 2,
+      "bounds": [
+        {
+          "start": 4,
+          "end": 24
+        },
+        {
+          "start": 29,
+          "end": 49
+        }
+      ],
+      "substrings": [
+        "http://a.example.com",
+        "http://b.example.com"
+      ]
+    },
+    {
+      "text": "mailto:someone@example.com address",
+      "hr": 0,
+      "nUrlNum": 1,
+      "bounds": [
+        {
+          "start": 0,
+          "end": 26
+        }
+      ],
+      "substrings": [
+        "mailto:someone@example.com"
+      ]
+    },
+    {
+      "text": "ftp://files.example.com/pub/file.txt",
+      "hr": 0,
+      "nUrlNum": 1,
+      "bounds": [
+        {
+          "start": 0,
+          "end": 36
+        }
+      ],
+      "substrings": [
+        "ftp://files.example.com/pub/file.txt"
+      ]
+    },
+    {
+      "text": "percent escapes http://example.com/%41%42 here",
+      "hr": 0,
+      "nUrlNum": 1,
+      "bounds": [
+        {
+          "start": 16,
+          "end": 41
+        }
+      ],
+      "substrings": [
+        "http://example.com/%41%42"
+      ]
+    }
+  ],
+  "doskey": {
+    "maxSize": 4,
+    "appended": [
+      {
+        "entry": "one",
+        "accepted": true
+      },
+      {
+        "entry": "two",
+        "accepted": true
+      },
+      {
+        "entry": "three",
+        "accepted": true
+      },
+      {
+        "entry": "four",
+        "accepted": true
+      },
+      {
+        "entry": "five",
+        "accepted": true
+      },
+      {
+        "entry": "six",
+        "accepted": true
+      }
+    ],
+    "walkPrev": [
+      "six",
+      "five",
+      "four",
+      "three",
+      "three",
+      "three"
+    ],
+    "walkNext": [
+      "four",
+      "five",
+      "six",
+      "",
+      "",
+      ""
+    ],
+    "afterResetPrev": ""
+  }
+}
