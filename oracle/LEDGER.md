@@ -338,6 +338,43 @@ Phases 0-3 are complete. Per the plan doc, the next phases are:
     (not `ROUND`) despite the `// should round` comment — reproduced as
     `Math.trunc`, marked `BUG(port)`.
 
+### Tier-1 stateless codecs DONE (2026-07-27, CI 30285677005)
+
+`--codecs` dumps #6, #7, #8, #9 and #12 into `oracle/codecs/codecs.golden.json`.
+What the goldens pinned, beyond the plain round trips:
+
+- **#9:** `IndexToByte(i) = i + '0'`, `ByteToIndex(b) = b - '0'` - the `value+'0'`
+  encoding the plan predicted for UDI. `SM2BM` shows **`SM_SHOUT` (4) has no BM
+  equivalent** and falls through to `BM_SAY`; `BM2SM` shows `BM_ACTION`
+  dominating every combination containing it.
+- **#7:** the `^k33` -> `^k0133` hack (format.cpp:502) emits
+  `[0x03, '0', '1']` when the next char is a digit and bare `[0x03]` otherwise.
+  **The colour palette is 16 entries, not 32**: `GetRBGColor` returns black for
+  every code 16..31, and `GetColorCode(black) = 1`, so the mapping is not
+  injective. The `+16` in `nFillFormatting` is a *wire* offset that keeps the
+  emitted decimal always two digits - a decoder must subtract 16 before the
+  palette lookup, and a port that forwards the wire value would render
+  everything black.
+- **#6:** `lastString` carries the trailing `":..."` payload (the message text
+  for PRIVMSG) and the remainder once `nArgs` hits `MAXARGS` - the spill keeps
+  the leading space, e.g. `' j k l m n o p'`. Numerics parse into `uCode`
+  (001 -> 1). A prefix with no following space is **outside the contract**:
+  `ParseIt` guards it with `ASSERT` alone (ircsock.cpp:159), which vanishes in
+  release, and the next line does `NULL - szMessage`. Malformed input off the
+  wire reaches this in the shipped client too.
+- **#8:** re-aimed at the live `HrIdentifyUrls`. A trailing period and a closing
+  paren are both excluded from the match; `mic://`, `mailto:` and `ftp://` are
+  recognised; **`www.example.com` with no scheme is not detected at all**, since
+  the scan is colon-driven.
+- **#12:** six appends into a four-slot ring keeps `three`..`six`; walking back
+  past the oldest **clamps** (repeats `three`) rather than wrapping, and walking
+  past the newest yields empty strings.
+
+Two engine habits worth carrying into the RULEBOOK: functions taking `const`
+strings write through them (`HrIdentifyUrls` stamps a terminator over the
+scheme's colon and restores it; `ParseIt` casts away const via `UnConst`), and
+preconditions live in `ASSERT`s that do not exist in the shipped build.
+
 Outstanding oracle-side TODOs (not blocking Phase 4, but improve coverage):
 
 - Tier-2 (`.avb` manifests + decoded-pixel CRCs) subcommand not yet implemented.

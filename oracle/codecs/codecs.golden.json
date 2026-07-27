@@ -926,6 +926,296 @@
         ],
         "output": "\u0002three\u0002\u0016 runs \u0016total"
       }
+    ],
+    "colorMap": [
+      {
+        "code": 0,
+        "colorref": 16777215,
+        "r": 255,
+        "g": 255,
+        "b": 255,
+        "codeRoundTrip": 0,
+        "roundTrips": true
+      },
+      {
+        "code": 1,
+        "colorref": 0,
+        "r": 0,
+        "g": 0,
+        "b": 0,
+        "codeRoundTrip": 1,
+        "roundTrips": true
+      },
+      {
+        "code": 2,
+        "colorref": 8388608,
+        "r": 0,
+        "g": 0,
+        "b": 128,
+        "codeRoundTrip": 2,
+        "roundTrips": true
+      },
+      {
+        "code": 3,
+        "colorref": 32768,
+        "r": 0,
+        "g": 128,
+        "b": 0,
+        "codeRoundTrip": 3,
+        "roundTrips": true
+      },
+      {
+        "code": 4,
+        "colorref": 255,
+        "r": 255,
+        "g": 0,
+        "b": 0,
+        "codeRoundTrip": 4,
+        "roundTrips": true
+      },
+      {
+        "code": 5,
+        "colorref": 128,
+        "r": 128,
+        "g": 0,
+        "b": 0,
+        "codeRoundTrip": 5,
+        "roundTrips": true
+      },
+      {
+        "code": 6,
+        "colorref": 8388736,
+        "r": 128,
+        "g": 0,
+        "b": 128,
+        "codeRoundTrip": 6,
+        "roundTrips": true
+      },
+      {
+        "code": 7,
+        "colorref": 32896,
+        "r": 128,
+        "g": 128,
+        "b": 0,
+        "codeRoundTrip": 7,
+        "roundTrips": true
+      },
+      {
+        "code": 8,
+        "colorref": 65535,
+        "r": 255,
+        "g": 255,
+        "b": 0,
+        "codeRoundTrip": 8,
+        "roundTrips": true
+      },
+      {
+        "code": 9,
+        "colorref": 65280,
+        "r": 0,
+        "g": 255,
+        "b": 0,
+        "codeRoundTrip": 9,
+        "roundTrips": true
+      },
+      {
+        "code": 10,
+        "colorref": 8421376,
+        "r": 0,
+        "g": 128,
+        "b": 128,
+        "codeRoundTrip": 10,
+        "roundTrips": true
+      },
+      {
+        "code": 11,
+        "colorref": 16776960,
+        "r": 0,
+        "g": 255,
+        "b": 255,
+        "codeRoundTrip": 11,
+        "roundTrips": true
+      },
+      {
+        "code": 12,
+        "colorref": 16711680,
+        "r": 0,
+        "g": 0,
+        "b": 255,
+        "codeRoundTrip": 12,
+        "roundTrips": true
+      },
+      {
+        "code": 13,
+        "colorref": 16711935,
+        "r": 255,
+        "g": 0,
+        "b": 255,
+        "codeRoundTrip": 13,
+        "roundTrips": true
+      },
+      {
+        "code": 14,
+        "colorref": 8421504,
+        "r": 128,
+        "g": 128,
+        "b": 128,
+        "codeRoundTrip": 14,
+        "roundTrips": true
+      },
+      {
+        "code": 15,
+        "colorref": 12632256,
+        "r": 192,
+        "g": 192,
+        "b": 192,
+        "codeRoundTrip": 15,
+        "roundTrips": true
+      },
+      {
+        "code": 16,
+        "colorref": 0,
+        "r": 0,
+        "g": 0,
+        "b": 0,
+        "codeRoundTrip": 1,
+        "roundTrips": false
+      },
+      {
+        "code": 17,
+        "colorref": 0,
+        "r": 0,
+        "g": 0,
+        "b": 0,
+        "codeRoundTrip": 1,
+        "roundTrips": false
+      },
+      {
+        "code": 18,
+        "colorref": 0,
+        "r": 0,
+        "g": 0,
+        "b": 0,
+        "codeRoundTrip": 1,
+        "roundTrips": false
+      },
+      {
+        "code": 19,
+        "colorref": 0,
+        "r": 0,
+        "g": 0,
+        "b": 0,
+        "codeRoundTrip": 1,
+        "roundTrips": false
+      },
+      {
+        "code": 20,
+        "colorref": 0,
+        "r": 0,
+        "g": 0,
+        "b": 0,
+        "codeRoundTrip": 1,
+        "roundTrips": false
+      },
+      {
+        "code": 21,
+        "colorref": 0,
+        "r": 0,
+        "g": 0,
+        "b": 0,
+        "codeRoundTrip": 1,
+        "roundTrips": false
+      },
+      {
+        "code": 22,
+        "colorref": 0,
+        "r": 0,
+        "g": 0,
+        "b": 0,
+        "codeRoundTrip": 1,
+        "roundTrips": false
+      },
+      {
+        "code": 23,
+        "colorref": 0,
+        "r": 0,
+        "g": 0,
+        "b": 0,
+        "codeRoundTrip": 1,
+        "roundTrips": false
+      },
+      {
+        "code": 24,
+        "colorref": 0,
+        "r": 0,
+        "g": 0,
+        "b": 0,
+        "codeRoundTrip": 1,
+        "roundTrips": false
+      },
+      {
+        "code": 25,
+        "colorref": 0,
+        "r": 0,
+        "g": 0,
+        "b": 0,
+        "codeRoundTrip": 1,
+        "roundTrips": false
+      },
+      {
+        "code": 26,
+        "colorref": 0,
+        "r": 0,
+        "g": 0,
+        "b": 0,
+        "codeRoundTrip": 1,
+        "roundTrips": false
+      },
+      {
+        "code": 27,
+        "colorref": 0,
+        "r": 0,
+        "g": 0,
+        "b": 0,
+        "codeRoundTrip": 1,
+        "roundTrips": false
+      },
+      {
+        "code": 28,
+        "colorref": 0,
+        "r": 0,
+        "g": 0,
+        "b": 0,
+        "codeRoundTrip": 1,
+        "roundTrips": false
+      },
+      {
+        "code": 29,
+        "colorref": 0,
+        "r": 0,
+        "g": 0,
+        "b": 0,
+        "codeRoundTrip": 1,
+        "roundTrips": false
+      },
+      {
+        "code": 30,
+        "colorref": 0,
+        "r": 0,
+        "g": 0,
+        "b": 0,
+        "codeRoundTrip": 1,
+        "roundTrips": false
+      },
+      {
+        "code": 31,
+        "colorref": 0,
+        "r": 0,
+        "g": 0,
+        "b": 0,
+        "codeRoundTrip": 1,
+        "roundTrips": false
+      }
     ]
   },
   "ircParse": [
@@ -1037,6 +1327,41 @@
         7
       ],
       "lastString": "*** Looking up your hostname",
+      "hasLastString": true
+    },
+    {
+      "line": ":n!u@m PRIVMSG a b c d e f g h i j k l m n o p",
+      "bHasPrefix": true,
+      "nick": "n",
+      "user": "u",
+      "machine": "m",
+      "uCode": 0,
+      "nArgs": 10,
+      "args": [
+        "PRIVMSG",
+        "a",
+        "b",
+        "c",
+        "d",
+        "e",
+        "f",
+        "g",
+        "h",
+        "i"
+      ],
+      "nOffsets": [
+        7,
+        15,
+        17,
+        19,
+        21,
+        23,
+        25,
+        27,
+        29,
+        31
+      ],
+      "lastString": " j k l m n o p",
       "hasLastString": true
     },
     {
