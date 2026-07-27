@@ -225,75 +225,6 @@ jobs:
             Write-Host "No ccc golden yet - freeze by committing as ccc.golden.json"
           }
 
-      # Tier-2: one manifest per ComicArt asset (25 .avb + 7 .bgb), covering the
-      # avbfile.cpp record walk and the dib.cpp image decode. Sharded per asset
-      # rather than one dump, so a mismatch names the asset that moved.
-      #
-      # Loops over every asset before failing, like the corpus step and for the
-      # same reason: adding a field to the manifest invalidates all 32 goldens at
-      # once, and re-freezing that one asset per CI round would be absurd.
-      - name: Capture avb/bgb asset manifests (Tier-2)
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Force -Path oracle\avb | Out-Null
-          Set-Location v2.5-beta-1-modern
-          & Release\OracleHarness.exe --avb ..\oracle\avb ComicArt
-          if ($LASTEXITCODE -ne 0) { Write-Host "AVB CAPTURE FAILED (exit $LASTEXITCODE)"; exit 1 }
-          Write-Host "Avb manifests captured."
-          $avbDir = Resolve-Path ..\oracle\avb
-
-          # Determinism gate, BEFORE the golden comparison. The pixel CRCs were
-          # briefly hashing whole scan lines including row padding, which
-          # ConvertMasksCommon leaves uninitialised - so 25 of 33 manifests
-          # differed between two runs. That surfaced only when a freeze round came
-          # back red, one wasted round. Two runs diffed catches it immediately,
-          # and it is what the corpus step has always done for case 001.
-          $runB = Join-Path $env:RUNNER_TEMP "avb_runb"
-          New-Item -ItemType Directory -Force -Path $runB | Out-Null
-          & Release\OracleHarness.exe --avb $runB ComicArt
-          if ($LASTEXITCODE -ne 0) { Write-Host "AVB SECOND CAPTURE FAILED (exit $LASTEXITCODE)"; exit 1 }
-          $unstable = @()
-          foreach ($a in (Get-ChildItem -Path $avbDir -Filter *.json | Where-Object { $_.Name -notlike '*.golden.json' })) {
-            $b = Join-Path $runB $a.Name
-            if (-not (Test-Path $b)) { $unstable += ($a.Name + " (missing in run B)"); continue }
-            if ((Get-FileHash $a.FullName).Hash -ne (Get-FileHash $b).Hash) { $unstable += $a.Name }
-          }
-          if ($unstable.Count -gt 0) {
-            Write-Host "AVB DETERMINISM FAILED: $($unstable.Count) manifest(s) differ between two runs"
-            Write-Host "  $($unstable -join ' ')"
-            & node ..\oracle\scripts\diff-dumps.mjs (Join-Path $avbDir $unstable[0]) (Join-Path $runB $unstable[0])
-            exit 1
-          }
-          Write-Host "Avb determinism check passed: two runs are byte-identical."
-          # Drive off the captures, not the goldens: iterating goldens would
-          # silently pass if the harness stopped emitting an asset entirely.
-          $captures = Get-ChildItem -Path $avbDir -Filter *.json |
-                      Where-Object { $_.Name -notlike '*.golden.json' } | Sort-Object Name
-          $mismatched = @()
-          $matched = @()
-          $unfrozen = @()
-          foreach ($cap in $captures) {
-            $stem = $cap.Name -replace '\.json$', ''
-            $golden = Join-Path $avbDir "$stem.golden.json"
-            if (Test-Path $golden) {
-              & node ..\oracle\scripts\diff-dumps.mjs $golden $cap.FullName
-              if ($LASTEXITCODE -ne 0) {
-                Write-Host "AVB GOLDEN MISMATCH $stem"
-                $mismatched += $stem
-              } else {
-                $matched += $stem
-              }
-            } else {
-              $unfrozen += $stem
-            }
-          }
-          Write-Host ""
-          Write-Host "=== avb summary ==="
-          Write-Host "matched   : $($matched.Count) [$($matched -join ' ')]"
-          Write-Host "mismatched: $($mismatched.Count) [$($mismatched -join ' ')]"
-          Write-Host "unfrozen  : $($unfrozen.Count) [$($unfrozen -join ' ')]"
-          if ($mismatched.Count -gt 0) { exit 1 }
-
       # Runs BEFORE the corpus comparison on purpose: it used to follow it, so a
       # red corpus round skipped schema validation entirely - exactly the round
       # whose dumps you are about to freeze from. It needs no harness output.
@@ -363,6 +294,80 @@ jobs:
           if ($crashed.Count -gt 0 -or $mismatched.Count -gt 0) { exit 1 }
 
 
+      # Deliberately LAST of the capture steps. It used to sit before the corpus
+      # comparison, and when 33 manifests legitimately mismatched after a field was
+      # added to the dump, the corpus step was skipped entirely - hiding the state
+      # of the 15 cases in exactly the round where the hooks might have perturbed
+      # them. Same reasoning that put schema validation before the corpus.
+      # Tier-2: one manifest per ComicArt asset (25 .avb + 7 .bgb), covering the
+      # avbfile.cpp record walk and the dib.cpp image decode. Sharded per asset
+      # rather than one dump, so a mismatch names the asset that moved.
+      #
+      # Loops over every asset before failing, like the corpus step and for the
+      # same reason: adding a field to the manifest invalidates all 32 goldens at
+      # once, and re-freezing that one asset per CI round would be absurd.
+      - name: Capture avb/bgb asset manifests (Tier-2)
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path oracle\avb | Out-Null
+          Set-Location v2.5-beta-1-modern
+          & Release\OracleHarness.exe --avb ..\oracle\avb ComicArt
+          if ($LASTEXITCODE -ne 0) { Write-Host "AVB CAPTURE FAILED (exit $LASTEXITCODE)"; exit 1 }
+          Write-Host "Avb manifests captured."
+          $avbDir = Resolve-Path ..\oracle\avb
+
+          # Determinism gate, BEFORE the golden comparison. The pixel CRCs were
+          # briefly hashing whole scan lines including row padding, which
+          # ConvertMasksCommon leaves uninitialised - so 25 of 33 manifests
+          # differed between two runs. That surfaced only when a freeze round came
+          # back red, one wasted round. Two runs diffed catches it immediately,
+          # and it is what the corpus step has always done for case 001.
+          $runB = Join-Path $env:RUNNER_TEMP "avb_runb"
+          New-Item -ItemType Directory -Force -Path $runB | Out-Null
+          & Release\OracleHarness.exe --avb $runB ComicArt
+          if ($LASTEXITCODE -ne 0) { Write-Host "AVB SECOND CAPTURE FAILED (exit $LASTEXITCODE)"; exit 1 }
+          $unstable = @()
+          foreach ($a in (Get-ChildItem -Path $avbDir -Filter *.json | Where-Object { $_.Name -notlike '*.golden.json' })) {
+            $b = Join-Path $runB $a.Name
+            if (-not (Test-Path $b)) { $unstable += ($a.Name + " (missing in run B)"); continue }
+            if ((Get-FileHash $a.FullName).Hash -ne (Get-FileHash $b).Hash) { $unstable += $a.Name }
+          }
+          if ($unstable.Count -gt 0) {
+            Write-Host "AVB DETERMINISM FAILED: $($unstable.Count) manifest(s) differ between two runs"
+            Write-Host "  $($unstable -join ' ')"
+            & node ..\oracle\scripts\diff-dumps.mjs (Join-Path $avbDir $unstable[0]) (Join-Path $runB $unstable[0])
+            exit 1
+          }
+          Write-Host "Avb determinism check passed: two runs are byte-identical."
+          # Drive off the captures, not the goldens: iterating goldens would
+          # silently pass if the harness stopped emitting an asset entirely.
+          $captures = Get-ChildItem -Path $avbDir -Filter *.json |
+                      Where-Object { $_.Name -notlike '*.golden.json' } | Sort-Object Name
+          $mismatched = @()
+          $matched = @()
+          $unfrozen = @()
+          foreach ($cap in $captures) {
+            $stem = $cap.Name -replace '\.json$', ''
+            $golden = Join-Path $avbDir "$stem.golden.json"
+            if (Test-Path $golden) {
+              & node ..\oracle\scripts\diff-dumps.mjs $golden $cap.FullName
+              if ($LASTEXITCODE -ne 0) {
+                Write-Host "AVB GOLDEN MISMATCH $stem"
+                $mismatched += $stem
+              } else {
+                $matched += $stem
+              }
+            } else {
+              $unfrozen += $stem
+            }
+          }
+          Write-Host ""
+          Write-Host "=== avb summary ==="
+          Write-Host "matched   : $($matched.Count) [$($matched -join ' ')]"
+          Write-Host "mismatched: $($mismatched.Count) [$($mismatched -join ' ')]"
+          Write-Host "unfrozen  : $($unfrozen.Count) [$($unfrozen -join ' ')]"
+          if ($mismatched.Count -gt 0) { exit 1 }
+
       - name: Upload oracle artifacts
         if: always()
         uses: actions/upload-artifact@v7
@@ -381,7 +386,13 @@ jobs:
             oracle/codecs/codecs.golden.json
             oracle/ccc/ccc.json
             oracle/ccc/ccc.golden.json
+            # Captures only - the exclusion below matters. `oracle/avb/*.json`
+            # also matches the 33 committed *.golden.json, which made the
+            # artifact 66 files and turned a freeze-from-artifact loop into
+            # *.golden.golden.json. @actions/glob takes exclusions as their own
+            # `!`-prefixed line; extglob like !(*.golden).json is not supported.
             oracle/avb/*.json
+            !oracle/avb/*.golden.json
             oracle/corpus/*/expected.json
             oracle/corpus/*/actual.json
             oracle/corpus/*/run_a.json

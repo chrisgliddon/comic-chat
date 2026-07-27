@@ -9,6 +9,11 @@
   "originalURL": null,
   "newURL": null,
   "copyright": "Copyright \u00a9 1996, 1997, 1998 Microsoft Corporation",
+  "record": {
+    "offset": 81,
+    "format": 1,
+    "paletteType": 2
+  },
   "drawing": {
     "biSize": 40,
     "biWidth": 640,
@@ -27,5 +32,32 @@
     "allocBytes": 307200,
     "pixelRowBytes": 640,
     "pixelCrc32": "0xddbd37ec"
-  }
+  },
+  "recordTags": [
+    {
+      "tag": 263,
+      "size": 4
+    },
+    {
+      "tag": 259,
+      "size": 51
+    },
+    {
+      "tag": 258,
+      "size": 6
+    }
+  ],
+  "imageReadFormats": [
+    {
+      "value": 1,
+      "count": 1
+    }
+  ],
+  "imageReadPaletteTypes": [
+    {
+      "value": 2,
+      "count": 1
+    }
+  ],
+  "preConvertCompressions": []
 }

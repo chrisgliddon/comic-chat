@@ -637,10 +637,22 @@ confined to non-rle bitmaps"). So **no caller ever sees an RLE DIB**: by the tim
 a `CPose` hands out `GetDrawing()`/`GetMask()`/`GetAura()`, `biCompression` is
 `BI_RGB` and the bits are expanded.
 
-**Port rule:** expand RLE4/RLE8 at load time, not lazily at draw time. The
-Tier-2 `pixelCrc32` is taken over *expanded* pixels, so a port that keeps the
-compressed bytes and hashes those diverges on every RLE asset even though its
-decoder is correct.
+**Port rule:** *if* you implement this path, expand RLE4/RLE8 at load time, not
+lazily at draw time — the Tier-2 `pixelCrc32` is over *expanded* pixels, so
+hashing compressed bytes diverges even with a correct decoder.
+
+**But measure before you build it.** The `OracleAvbPreConvert` hook shows this
+path never executes for any shipped asset: `preConvertCompressions` is empty for
+all 32, `imageReadFormats` is `{AIF_LZDEFLATE: 752}` with zero `AIF_DIB` reads.
+`CAvatarDIB::Load` is reachable only via `AIF_DIB` or the `'BM'` backdrop branch,
+neither of which occurs, so **`ConvertToNonRLE` and the RLE4/RLE8 expanders are
+dead code for this corpus.** And structurally so, not by luck:
+`CAvatarFileZlibImage::Read` requires `cbBitmapData == stride * height`
+(avbfile.cpp:712), which an RLE payload cannot satisfy — the zlib container
+cannot carry RLE at all.
+
+Treat RLE support as optional scope, needed only to open third-party `.avb`/`.bmp`
+assets this repo does not contain. It cannot be validated against any golden.
 
 Then, on the length:
 
@@ -732,6 +744,18 @@ following have **no possible Tier-2 golden from this tree**:
 
 Port them if you like, but do not read a green Tier-2 as covering them. See
 oracle/LEDGER.md "Measured: what the shipped corpus does NOT cover".
+
+The `ORACLE_HARNESS` tag trace extends that list from the record side: **9 of the
+20 `AVATARRECORDTYPE` values never appear** in any shipped asset — `AK_ICON`(3),
+`AK_NFACES`(4), `AK_NTORSOS`(5), `AK_ENDDATA`(7), `AK_NBODIES`(9),
+`AK_COLORPALETTE`(257), `AK_ORIGINAL_URL`(260), `AK_OVERRIDE_URL`(261),
+`AK_USAGE_FLAGS`(262). `AK_ENDDATA` is unreachable by construction rather than
+merely unused: the tag loop breaks on `AK_STARTDATA` and never reads past it.
+
+The converse is worth as much: **`AK_OFFSET_ADJUSTMENT` appears in all 32
+assets.** Every manifest offset is post-adjustment, so a port that skips the
+fixup (avbfile.cpp:947) diverges on every asset simultaneously rather than in
+some exotic corner.
 
 ### 15.6 Backdrop world metadata is hardcoded, not in the file
 

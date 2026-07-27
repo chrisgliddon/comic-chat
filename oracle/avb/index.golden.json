@@ -8,7 +8,7 @@
       "kind": "avatar",
       "bytes": 39944,
       "fileCrc32": "0x197867c9",
-      "manifestCrc32": "0x9c7f51f1"
+      "manifestCrc32": "0x0cfee017"
     },
     {
       "file": "armando.avb",
@@ -16,7 +16,7 @@
       "kind": "avatar",
       "bytes": 29386,
       "fileCrc32": "0x9ef74c51",
-      "manifestCrc32": "0x3117f202"
+      "manifestCrc32": "0x62ea5200"
     },
     {
       "file": "bolo.avb",
@@ -24,7 +24,7 @@
       "kind": "avatar",
       "bytes": 95460,
       "fileCrc32": "0x292c5e80",
-      "manifestCrc32": "0xe4f4902b"
+      "manifestCrc32": "0xcea1c948"
     },
     {
       "file": "buck.avb",
@@ -32,7 +32,7 @@
       "kind": "avatar",
       "bytes": 73792,
       "fileCrc32": "0x9ffb74c1",
-      "manifestCrc32": "0xb60eeeb1"
+      "manifestCrc32": "0xe2064f7e"
     },
     {
       "file": "connor.avb",
@@ -40,7 +40,7 @@
       "kind": "avatar",
       "bytes": 33691,
       "fileCrc32": "0x41f04d67",
-      "manifestCrc32": "0xc80b89ae"
+      "manifestCrc32": "0x292785b0"
     },
     {
       "file": "cro.avb",
@@ -48,7 +48,7 @@
       "kind": "avatar",
       "bytes": 124107,
       "fileCrc32": "0xc58dcc4c",
-      "manifestCrc32": "0xf1c7a009"
+      "manifestCrc32": "0x2897493b"
     },
     {
       "file": "dan.avb",
@@ -56,7 +56,7 @@
       "kind": "avatar",
       "bytes": 40685,
       "fileCrc32": "0x81bd52fd",
-      "manifestCrc32": "0x4222bd49"
+      "manifestCrc32": "0x50fe4037"
     },
     {
       "file": "denise.avb",
@@ -64,7 +64,7 @@
       "kind": "avatar",
       "bytes": 71703,
       "fileCrc32": "0x943fafd6",
-      "manifestCrc32": "0x6d2903f7"
+      "manifestCrc32": "0x52839b9f"
     },
     {
       "file": "glenda.avb",
@@ -72,7 +72,7 @@
       "kind": "avatar",
       "bytes": 4713,
       "fileCrc32": "0x57b90757",
-      "manifestCrc32": "0xfdcc71f4"
+      "manifestCrc32": "0x5435074c"
     },
     {
       "file": "hugh.avb",
@@ -80,7 +80,7 @@
       "kind": "avatar",
       "bytes": 58699,
       "fileCrc32": "0xe671fa97",
-      "manifestCrc32": "0x08afa09c"
+      "manifestCrc32": "0x9f7df74f"
     },
     {
       "file": "jordan.avb",
@@ -88,7 +88,7 @@
       "kind": "avatar",
       "bytes": 48973,
       "fileCrc32": "0x5935f4e6",
-      "manifestCrc32": "0xf003abb5"
+      "manifestCrc32": "0xbf89d588"
     },
     {
       "file": "kirby.avb",
@@ -96,7 +96,7 @@
       "kind": "avatar",
       "bytes": 85933,
       "fileCrc32": "0x1155bb14",
-      "manifestCrc32": "0x817385c2"
+      "manifestCrc32": "0x8bacb871"
     },
     {
       "file": "lance.avb",
@@ -104,7 +104,7 @@
       "kind": "avatar",
       "bytes": 34813,
       "fileCrc32": "0x741b379b",
-      "manifestCrc32": "0x4ce0a281"
+      "manifestCrc32": "0x6884b348"
     },
     {
       "file": "lynnea.avb",
@@ -112,7 +112,7 @@
       "kind": "avatar",
       "bytes": 117236,
       "fileCrc32": "0xcc5081f7",
-      "manifestCrc32": "0x2ceb7333"
+      "manifestCrc32": "0x06c0c191"
     },
     {
       "file": "margaret.avb",
@@ -120,7 +120,7 @@
       "kind": "avatar",
       "bytes": 46802,
       "fileCrc32": "0x97767940",
-      "manifestCrc32": "0xe9ca7a92"
+      "manifestCrc32": "0xa6b951d9"
     },
     {
       "file": "mike.avb",
@@ -128,7 +128,7 @@
       "kind": "avatar",
       "bytes": 36956,
       "fileCrc32": "0x286c3de5",
-      "manifestCrc32": "0x74d5ba1f"
+      "manifestCrc32": "0x53cee218"
     },
     {
       "file": "pedagog.avb",
@@ -136,7 +136,7 @@
       "kind": "avatar",
       "bytes": 3799,
       "fileCrc32": "0x6fa21832",
-      "manifestCrc32": "0xf4fe80c0"
+      "manifestCrc32": "0x7de19502"
     },
     {
       "file": "rainbow.avb",
@@ -144,7 +144,7 @@
       "kind": "avatar",
       "bytes": 4415,
       "fileCrc32": "0xcab8a109",
-      "manifestCrc32": "0xdd9ec488"
+      "manifestCrc32": "0x9ff548be"
     },
     {
       "file": "susan.avb",
@@ -152,7 +152,7 @@
       "kind": "avatar",
       "bytes": 50892,
       "fileCrc32": "0xa5dd63a6",
-      "manifestCrc32": "0x5f73bf13"
+      "manifestCrc32": "0xaf6481c3"
     },
     {
       "file": "tiki.avb",
@@ -160,7 +160,7 @@
       "kind": "avatar",
       "bytes": 52378,
       "fileCrc32": "0x497b01e9",
-      "manifestCrc32": "0xbdc8a4cd"
+      "manifestCrc32": "0xe20164ec"
     },
     {
       "file": "tongtyed.avb",
@@ -168,7 +168,7 @@
       "kind": "avatar",
       "bytes": 46508,
       "fileCrc32": "0xe51fa20f",
-      "manifestCrc32": "0x7010ec8e"
+      "manifestCrc32": "0xddb5ac81"
     },
     {
       "file": "tux.avb",
@@ -176,7 +176,7 @@
       "kind": "avatar",
       "bytes": 3583,
       "fileCrc32": "0x17a7c1a6",
-      "manifestCrc32": "0xbead082d"
+      "manifestCrc32": "0x332c8577"
     },
     {
       "file": "veronica.avb",
@@ -184,7 +184,7 @@
       "kind": "avatar",
       "bytes": 94939,
       "fileCrc32": "0x84a61fc1",
-      "manifestCrc32": "0x514211ed"
+      "manifestCrc32": "0xd33654ba"
     },
     {
       "file": "waf.avb",
@@ -192,7 +192,7 @@
       "kind": "avatar",
       "bytes": 3758,
       "fileCrc32": "0x9974bbc4",
-      "manifestCrc32": "0x8762d934"
+      "manifestCrc32": "0x76beb063"
     },
     {
       "file": "xeno.avb",
@@ -200,7 +200,7 @@
       "kind": "avatar",
       "bytes": 35789,
       "fileCrc32": "0x415bebba",
-      "manifestCrc32": "0x0c2d9f12"
+      "manifestCrc32": "0xcb76f2c4"
     },
     {
       "file": "buckroom.bgb",
@@ -208,7 +208,7 @@
       "kind": "backdrop",
       "bytes": 17289,
       "fileCrc32": "0x5bce3c89",
-      "manifestCrc32": "0x1104871b"
+      "manifestCrc32": "0x8da19d13"
     },
     {
       "file": "clouds.bgb",
@@ -216,7 +216,7 @@
       "kind": "backdrop",
       "bytes": 108500,
       "fileCrc32": "0x7917650b",
-      "manifestCrc32": "0x5458c606"
+      "manifestCrc32": "0x3a87b956"
     },
     {
       "file": "field.bgb",
@@ -224,7 +224,7 @@
       "kind": "backdrop",
       "bytes": 25983,
       "fileCrc32": "0xf2f134db",
-      "manifestCrc32": "0xd509476a"
+      "manifestCrc32": "0xb7d84179"
     },
     {
       "file": "pastoral.bgb",
@@ -232,7 +232,7 @@
       "kind": "backdrop",
       "bytes": 36990,
       "fileCrc32": "0xd879aabc",
-      "manifestCrc32": "0xf9c7bb55"
+      "manifestCrc32": "0xd112af0d"
     },
     {
       "file": "room.bgb",
@@ -240,7 +240,7 @@
       "kind": "backdrop",
       "bytes": 28038,
       "fileCrc32": "0x3a6f9ef4",
-      "manifestCrc32": "0x544cdf52"
+      "manifestCrc32": "0x887466d5"
     },
     {
       "file": "space.bgb",
@@ -248,7 +248,7 @@
       "kind": "backdrop",
       "bytes": 47288,
       "fileCrc32": "0xace608db",
-      "manifestCrc32": "0x60fbaa99"
+      "manifestCrc32": "0xa7f6abf0"
     },
     {
       "file": "yellow.bgb",
@@ -256,7 +256,7 @@
       "kind": "backdrop",
       "bytes": 1307,
       "fileCrc32": "0xf7e51ad6",
-      "manifestCrc32": "0xcfd5c485"
+      "manifestCrc32": "0xf5fb9b0b"
     }
   ]
 }

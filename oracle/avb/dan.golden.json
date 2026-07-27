@@ -3037,5 +3037,60 @@
         }
       ]
     }
-  ]
+  ],
+  "recordTags": [
+    {
+      "tag": 263,
+      "size": 4
+    },
+    {
+      "tag": 1,
+      "size": -1
+    },
+    {
+      "tag": 8,
+      "size": -1
+    },
+    {
+      "tag": 2,
+      "size": -1
+    },
+    {
+      "tag": 259,
+      "size": 65
+    },
+    {
+      "tag": 256,
+      "size": 6
+    },
+    {
+      "tag": 10,
+      "size": -1
+    },
+    {
+      "tag": 11,
+      "size": -1
+    },
+    {
+      "tag": 6,
+      "size": -1
+    }
+  ],
+  "imageReadFormats": [
+    {
+      "value": 1,
+      "count": 29
+    }
+  ],
+  "imageReadPaletteTypes": [
+    {
+      "value": 2,
+      "count": 1
+    },
+    {
+      "value": 4,
+      "count": 28
+    }
+  ],
+  "preConvertCompressions": []
 }

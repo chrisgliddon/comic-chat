@@ -601,6 +601,62 @@ are exercised across the corpus.
 Palette types across the 745 records: `AIP_MASKEDMONO` 334, `AIP_LOCALPALETTE`
 218, `AIP_DUALMASK` 192, `AIP_MONOCHROME` **1**.
 
+### Measured from the ORACLE_HARNESS hooks: the tag inventory
+
+With `OracleAvbTag` tracing both tag loops, the record inventory across all 32
+assets is now a measurement rather than an inference. **11 of the 20
+`AVATARRECORDTYPE` values appear; 9 never do.**
+
+Present: `AK_NAME`(1) x25, `AK_FLAGS`(2) x25, `AK_STARTDATA`(6) x25,
+`AK_STYLE`(8) x25, `AK_NFACES2`(10) x18, `AK_NTORSOS2`(11) x18,
+`AK_NBODIES2`(12) x7, `AK_ICON_NEW`(256) x25, `AK_BACKDROP`(258) x7,
+`AK_COPYRIGHT`(259) x32, `AK_OFFSET_ADJUSTMENT`(263) x32.
+
+Absent: `AK_ICON`(3), `AK_NFACES`(4), `AK_NTORSOS`(5), `AK_ENDDATA`(7),
+`AK_NBODIES`(9), `AK_COLORPALETTE`(257), `AK_ORIGINAL_URL`(260),
+`AK_OVERRIDE_URL`(261), `AK_USAGE_FLAGS`(262).
+
+Worth pulling out of that:
+
+- **`AK_OFFSET_ADJUSTMENT` is in all 32 assets.** The offset-fixup path the plan
+  flags (avbfile.cpp:947) is exercised by every single asset, not a rare branch.
+  Manifest offsets are therefore all post-adjustment, and a port that skips the
+  fixup diverges everywhere at once.
+- **`AK_COLORPALETTE` never appears**, which independently confirms the earlier
+  `m_nColorCount == 0` finding from the tag stream rather than from the loaded
+  object.
+- **`AK_ENDDATA` never appears** — the tag loop breaks on `AK_STARTDATA` and never
+  reads past it, so the record is unreachable by construction, not merely unused.
+- **`AK_ORIGINAL_URL`/`AK_OVERRIDE_URL` never appear**, matching the null
+  `originalURL`/`newURL` in every manifest. The only provenance the shipped assets
+  carry is `AK_COPYRIGHT`.
+- The old count tags (4, 5, 9) are confirmed unused in favour of the `*2`
+  variants, and `AK_ICON` in favour of `AK_ICON_NEW`.
+
+### Measured: `CAvatarDIB::Load` and the RLE expanders are dead for this corpus
+
+`imageReadFormats` is `{AIF_LZDEFLATE: 752}` — **752 zlib reads, zero DIB reads**
+(752 = the 745 avatar pose images plus the 7 backdrops, which also route through
+`CPose::Load`).
+
+`preConvertCompressions` is **empty for every asset**, i.e. the hook placed
+immediately before `ConvertToNonRLE` never fires. So:
+
+- `CAvatarDIB::Load` (the whole BMP-structure reader, avbfile.cpp:291-470) never
+  runs, because it is only reachable via `AIF_DIB` or the `'BM'` backdrop branch
+  and neither occurs.
+- Therefore `ConvertToNonRLE` never runs, and **the RLE4/RLE8 expanders
+  (dib.cpp:888-1015) are dead code for this corpus** — even though the plan lists
+  them as a Tier-2 item.
+
+The mechanism is a length check, not luck: `CAvatarFileZlibImage::Read` requires
+`cbBitmapData == DIBStorageWidth(w, bpp) * h` (avbfile.cpp:712), which an RLE
+payload cannot satisfy. The zlib container structurally cannot carry RLE.
+
+This also settles the ambiguity noted when `--avb` first landed. Backdrop
+`biSizeImage` values equal to `stride * height` are *not* evidence of a completed
+RLE expansion; they simply came that way in the file.
+
 ### Measured: what the shipped corpus does NOT cover
 
 Four more gaps beyond the format-version ones below, all from the frozen
