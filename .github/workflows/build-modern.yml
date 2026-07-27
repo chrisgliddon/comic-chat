@@ -70,7 +70,7 @@ jobs:
         run: ./scripts/smoke-test-modern-builds.ps1
 
       - name: Upload release-ready packages
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: comic-chat-unofficial-modern-builds-${{ github.sha }}
           path: |
