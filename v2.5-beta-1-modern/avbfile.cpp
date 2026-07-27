@@ -11,7 +11,24 @@
 
 // NOTE: Everything from here down should match with avbfile.cpp in the avtools
 // directory. The only thing different between the two files are the includes.
-					 
+
+#ifdef ORACLE_HARNESS
+// Oracle observability (Tier-2). Defined by oracle/harness/oracleharness.cpp;
+// every call site below is compiled out entirely when ORACLE_HARNESS is
+// undefined, so the shipped build is untouched.
+//
+// These exist because three coverage questions cannot be answered from the
+// loaded object graph alone: which AK_* records a file actually contains (the
+// manifest pins their RESULTS, not the tag stream), which of the two image
+// readers ran, and what biCompression an image had BEFORE CAvatarDIB::Load's
+// unconditional ConvertToNonRLE erased it (avbfile.cpp ConvertToNonRLE call).
+extern void OracleAvbTag(int tag, int size);
+extern void OracleAvbImageRead(int slot, int format, int paletteType);
+extern void OracleAvbPreConvert(int biCompression, unsigned long biSizeImage, int biBitCount);
+extern void OracleAvbBackdropRecord(unsigned long offset, int format, int paletteType);
+#endif
+
+
 static const COLORREF MonochromePalette[] = { RGB(255,255,255), RGB(0,0,0) };
 static const COLORREF MaskedMonoPalette[] = { RGB(255,255,255), RGB(0,0,0), RGB(128,0,0), RGB(0,0,128) };
 
@@ -459,6 +476,14 @@ CAvatarStream * pStream)
     m_bMyBits = TRUE;
 	// djk -- this shouldn't be necessary, but there's a bug in windows that mandates drawing
 	//        be confined to non-rle bitmaps
+   #ifdef ORACLE_HARNESS
+	// Last chance to observe biCompression: ConvertToNonRLE rewrites it to BI_RGB
+	// (and biSizeImage to the expanded length), so after this line no caller can
+	// tell whether the image was RLE4/RLE8 on disk.
+	OracleAvbPreConvert ((int)m_pBMI->bmiHeader.biCompression,
+						 (unsigned long)m_pBMI->bmiHeader.biSizeImage,
+						 (int)m_pBMI->bmiHeader.biBitCount);
+   #endif
 	ConvertToNonRLE ();
     return TRUE;
                 
@@ -806,6 +831,15 @@ CAvatarStream * pStream)
 		if (tag >= AK_ICON_NEW && !pStream->Read16 (&size)) {
 			goto $abort;
 		}
+
+	   #ifdef ORACLE_HARNESS
+		// -1 for old tags: `size` is only read for tag >= AK_ICON_NEW, so for an
+		// old tag it holds either the previous iteration's value or, on the first
+		// iteration, nothing at all. (HandleLoadTag is handed that same
+		// indeterminate `size` below - benign only because its old-tag branches
+		// ignore the parameter.)
+		OracleAvbTag ((int)tag, tag >= AK_ICON_NEW ? (int)size : -1);
+	   #endif
 
 		if (tag == AK_STARTDATA) {
 			// That's it, we're done.
@@ -1420,6 +1454,9 @@ CAvatarPalette * pGlobalPalette)
 			im.m_pGlobalPalette = pGlobalPalette;
 			im.m_pDib = NULL;
 			BOOL bRet;
+		   #ifdef ORACLE_HARNESS
+			OracleAvbImageRead (i, (int)im.m_byFormat, (int)im.m_byPaletteType);
+		   #endif
 			switch (im.m_byFormat) {
 				case AIF_DIB:
 					bRet = CAvatarFileDIBImage(&im).Read (pStream);
@@ -1820,8 +1857,18 @@ CAvatarStream* pStream)
 		} else {
 			// No old tags allowed!!
 			TRACE("Old tag found, not supported in backdrop file");
+		   #ifdef ORACLE_HARNESS
+			// Traced before the bail so a rejected file still reports the tag
+			// that got it rejected.
+			OracleAvbTag ((int)nTag, -1);
+		   #endif
 			return FALSE;
 		}
+	   #ifdef ORACLE_HARNESS
+		// Same trace as the avatar tag walk, so a backdrop manifest's recordTags
+		// means "the tags in this file" rather than "not instrumented".
+		OracleAvbTag ((int)nTag, (int)nSize);
+	   #endif
 
 		// Handle information tags.
 		BOOL bHandled = FALSE;
@@ -1885,6 +1932,13 @@ CAvatarStream* pStream)
 
 			ADJUST_OFFSET(dwOffset[0], nResourcesAdjustment);
 			dwOffset[1] = dwOffset[2] = 0;
+		   #ifdef ORACLE_HARNESS
+			// A backdrop's format/paletteType live only in this local, so unlike
+			// an avatar pose they are unreachable from the loaded CChatBackdrop.
+			// Recorded post-ADJUST_OFFSET, matching the avatar manifests.
+			OracleAvbBackdropRecord ((unsigned long)dwOffset[0], (int)byFormat[0],
+									 (int)byPaletteType[0]);
+		   #endif
 			CPose rec (dwOffset, byFormat, byPaletteType);
 			if (!rec.Load (pStream, NULL)) {
 				return FALSE;

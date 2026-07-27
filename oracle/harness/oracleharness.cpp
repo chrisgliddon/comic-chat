@@ -1613,6 +1613,105 @@ static ojson::Value StrOrNull(const char* s) {
 }
 
 // ---------------------------------------------------------------------------
+// Tier-2 observability sinks. avbfile.cpp declares these extern under
+// ORACLE_HARNESS and calls them at four points; see the comment block there for
+// why each is needed. They answer coverage questions the loaded object graph
+// cannot: the AK_* tag stream (the manifest pins tag RESULTS, not which tags
+// exist), which image reader ran, and what biCompression an image had before
+// ConvertToNonRLE erased it.
+//
+// Deliberately append-only counters and lists rather than anything the engine
+// could read back: a hook that fed information INTO the engine would change what
+// is being measured.
+// ---------------------------------------------------------------------------
+struct AvbTagRec { int tag; int size; };
+static std::vector<AvbTagRec> g_avbTags;
+static std::vector<std::pair<int, int> > g_avbImageReads;   // (format, paletteType)
+static std::vector<std::pair<int, unsigned long> > g_avbPreConvert; // (compression, sizeImage)
+static bool g_avbBackdropSeen = false;
+static unsigned long g_avbBackdropOffset = 0;
+static int g_avbBackdropFormat = -1;
+static int g_avbBackdropPaletteType = -1;
+
+static void OracleAvbTraceReset() {
+    g_avbTags.clear();
+    g_avbImageReads.clear();
+    g_avbPreConvert.clear();
+    g_avbBackdropSeen = false;
+    g_avbBackdropOffset = 0;
+    g_avbBackdropFormat = -1;
+    g_avbBackdropPaletteType = -1;
+}
+
+void OracleAvbTag(int tag, int size) {
+    AvbTagRec r; r.tag = tag; r.size = size;
+    g_avbTags.push_back(r);
+}
+
+void OracleAvbImageRead(int slot, int format, int paletteType) {
+    (void)slot;   // the slot is already in the manifest's per-pose records
+    g_avbImageReads.push_back(std::make_pair(format, paletteType));
+}
+
+void OracleAvbPreConvert(int biCompression, unsigned long biSizeImage, int biBitCount) {
+    (void)biBitCount;
+    g_avbPreConvert.push_back(std::make_pair(biCompression, biSizeImage));
+}
+
+void OracleAvbBackdropRecord(unsigned long offset, int format, int paletteType) {
+    g_avbBackdropSeen = true;
+    g_avbBackdropOffset = offset;
+    g_avbBackdropFormat = format;
+    g_avbBackdropPaletteType = paletteType;
+}
+
+// Histogram helper: emits [{value, count}, ...] sorted by value. Sorted rather
+// than insertion-ordered so the golden does not encode load order.
+static ojson::Value DumpIntHistogram(const std::vector<int>& values) {
+    std::vector<int> sorted(values);
+    std::sort(sorted.begin(), sorted.end());
+    ojson::Value arr = ojson::Value::Arr();
+    for (size_t i = 0; i < sorted.size();) {
+        size_t j = i;
+        while (j < sorted.size() && sorted[j] == sorted[i]) j++;
+        ojson::Value e = ojson::Value::Obj();
+        e.Set("value", ojson::Value::Int((long)sorted[i]));
+        e.Set("count", ojson::Value::Int((long)(j - i)));
+        arr.Push(e);
+        i = j;
+    }
+    return arr;
+}
+
+// The recorded tag stream, plus the histograms drained from the trace.
+static void SetAvbTraceFields(ojson::Value& v) {
+    ojson::Value tags = ojson::Value::Arr();
+    for (size_t i = 0; i < g_avbTags.size(); i++) {
+        ojson::Value e = ojson::Value::Obj();
+        e.Set("tag", ojson::Value::Int((long)g_avbTags[i].tag));
+        // -1 means the record carried no size field, i.e. an old (< 256) tag.
+        e.Set("size", ojson::Value::Int((long)g_avbTags[i].size));
+        tags.Push(e);
+    }
+    v.Set("recordTags", tags);
+
+    std::vector<int> fmts, pals, comps;
+    for (size_t i = 0; i < g_avbImageReads.size(); i++) {
+        fmts.push_back(g_avbImageReads[i].first);
+        pals.push_back(g_avbImageReads[i].second);
+    }
+    for (size_t i = 0; i < g_avbPreConvert.size(); i++)
+        comps.push_back(g_avbPreConvert[i].first);
+
+    v.Set("imageReadFormats", DumpIntHistogram(fmts));
+    v.Set("imageReadPaletteTypes", DumpIntHistogram(pals));
+    // Empty means CAvatarDIB::Load never ran for this asset, so ConvertToNonRLE
+    // never ran either - which is itself the finding for an all-AIF_LZDEFLATE
+    // corpus, since CAvatarFileZlibImage::Read does not go through that path.
+    v.Set("preConvertCompressions", DumpIntHistogram(comps));
+}
+
+// ---------------------------------------------------------------------------
 // Exception guards for the three asset-loading entry points.
 //
 // Each needs TWO layers, in two separate functions, for reasons that are all
@@ -2005,11 +2104,13 @@ static ojson::Value CaptureAvbFile(const char* path, const char* basename) {
     fprintf(stderr, "ORACLE: avb '%s'\n", basename);
     fflush(stderr);
 
+    OracleAvbTraceReset();
     CAvatarFileStream* stream = new CAvatarFileStream(path);
     int status = ORACLE_LOAD_FAILED;
     CAvatarX* av = LoadAvbNoThrow(stream, &status);
     v.Set("loadStatus", LoadStatusStr(status));
     if (av == NULL) {
+        SetAvbTraceFields(v);   // the tag stream is the diagnosis for a failed load
         delete stream;
         return v;
     }
@@ -2100,6 +2201,10 @@ static ojson::Value CaptureAvbFile(const char* path, const char* basename) {
     }
     v.Set("poses", poses);
 
+    // Drained after the poses, so imageReadFormats/preConvertCompressions cover
+    // every image this asset decoded rather than only the tag-walk phase.
+    SetAvbTraceFields(v);
+
     // The avatar owns the stream once SetStream is called; deleting the avatar
     // does NOT free it (CAvatarX::~CAvatarX leaves m_pStream alone), so the
     // stream is leaked deliberately - this is a one-shot console dump and
@@ -2122,18 +2227,35 @@ static ojson::Value CaptureBgbFile(const char* path, const char* basename) {
     fprintf(stderr, "ORACLE: bgb '%s'\n", basename);
     fflush(stderr);
 
+    OracleAvbTraceReset();
     CAvatarFileStream* stream = new CAvatarFileStream(path);
     int status = ORACLE_LOAD_FAILED;
     CChatBackdrop* bd = LoadBgbNoThrow(stream, &status);
     v.Set("loadStatus", LoadStatusStr(status));
     if (bd == NULL) {
+        SetAvbTraceFields(v);
         delete stream;
         return v;
     }
     v.Set("originalURL", StrOrNull(bd->m_pszOrigURL));
     v.Set("newURL", StrOrNull(bd->m_pszNewURL));
     v.Set("copyright", StrOrNull(bd->m_pszCopyright));
+
+    // The AK_BACKDROP record's own (offset, format, paletteType). These live in a
+    // local inside CChatBackdrop::Load and are dropped on the floor - unlike an
+    // avatar pose, the loaded CChatBackdrop cannot be asked - so they arrive via
+    // the ORACLE_HARNESS hook. Without them a backdrop manifest could not say
+    // whether the image came through the DIB reader or the zlib one.
+    ojson::Value rec = ojson::Value::Obj();
+    if (g_avbBackdropSeen) {
+        rec.Set("offset", ojson::Value::Int((long)g_avbBackdropOffset));
+        rec.Set("format", ojson::Value::Int((long)g_avbBackdropFormat));
+        rec.Set("paletteType", ojson::Value::Int((long)g_avbBackdropPaletteType));
+    }
+    v.Set("record", g_avbBackdropSeen ? rec : ojson::Value::Null());
+
     v.Set("drawing", DumpDibSlot(bd->GetDrawing()));
+    SetAvbTraceFields(v);
     return v;
 }
 
