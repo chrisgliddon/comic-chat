@@ -478,6 +478,29 @@ Decisions worth knowing:
   length and the stride formula does not apply. Both are recorded so a port that
   picks the wrong one shows up as a length mismatch, not a silent CRC drift.
 
+### dib.h declares nine methods that dib.cpp does not define
+
+First `--avb` CI round failed to link with exactly one error:
+
+    oracleharness.obj : error LNK2019: unresolved external symbol
+    "public: int __thiscall CDIB::GetNumClrEntries(void)"
+
+`CDIB::GetNumClrEntries` is declared in dib.h:30 — **outside** that header's own
+`#if 0` region — but its definition sits **inside** a 546-line `#if 0` in
+dib.cpp (260-806). So it is a declaration with no definition, and the harness was
+its first caller in the whole tree.
+
+The same `#if 0` swallows eight more definitions whose declarations are likewise
+visible: `Create(int,int)`, `Load(CFile*)`, `Load(FILE*)`, `Load(LPCSTR)`,
+`MapColorsToPalette`, `GetPixelAddress`, `GetRect`, `CopyBits`.
+
+Fixed by calling the free function `NumDIBColorEntries` (dib.cpp:70, compiled)
+which is all the method wrapped anyway.
+
+**Port note:** treat dib.h as an unreliable inventory. Nine of its declarations
+are unbacked, so "declared in the header" is not evidence a method exists, let
+alone that the engine uses it. Port `CDIB` from what dib.cpp actually compiles.
+
 ### Port trap: the record tables are not initialised on construction
 
 `CAvatarX::Initialize` (avatar.cpp:886) covers only base-class members.

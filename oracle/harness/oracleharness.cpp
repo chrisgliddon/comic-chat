@@ -1820,7 +1820,14 @@ static ojson::Value DumpDibSlot(CAvatarDIB* dib) {
     long stride = (long)dib->StorageWidth();
     v.Set("storageWidth", ojson::Value::Int(stride));
 
-    int nClr = dib->GetNumClrEntries();
+    // NumDIBColorEntries (the free function, dib.cpp:70) rather than the
+    // CDIB::GetNumClrEntries method it wraps. The method is declared in dib.h:30
+    // - outside that header's own #if 0 - but its definition sits INSIDE a
+    // 546-line #if 0 in dib.cpp (260-806), together with Create(int,int), three
+    // Load overloads, MapColorsToPalette, GetPixelAddress, GetRect and CopyBits.
+    // So it is a declaration with no definition: calling it links fine right up
+    // until someone actually does, which is how this first surfaced (LNK2019).
+    int nClr = NumDIBColorEntries(bmi);
     v.Set("numClrEntries", ojson::Value::Int((long)nClr));
     if (nClr > 0) {
         RGBQUAD* tab = dib->GetClrTabAddress();
