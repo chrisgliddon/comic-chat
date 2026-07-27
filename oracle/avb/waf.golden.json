@@ -1,0 +1,189 @@
+{
+  "file": "waf.avb",
+  "kind": "avatar",
+  "identity": {
+    "bytes": 3758,
+    "crc32": "0x9974bbc4"
+  },
+  "loadStatus": "ok",
+  "name": "Waf",
+  "style": 1,
+  "flags": 5,
+  "freeze": 1,
+  "icon": 1,
+  "originalURL": null,
+  "newURL": null,
+  "copyright": "Copyright \u00a9 1996, 1997, 1998 Microsoft Corporation\\nJim Woodring",
+  "poseCount": 2,
+  "palette": {
+    "colorCount": 0,
+    "crc32": null,
+    "colors": null
+  },
+  "class": "simple",
+  "nBodies": 1,
+  "bodyRecs": [
+    {
+      "index": 0,
+      "poseID": 2,
+      "emotionPair": {
+        "emotion": 0,
+        "intensity": 0
+      },
+      "faceX": 158,
+      "faceY": 85
+    }
+  ],
+  "poses": [
+    {
+      "index": 0,
+      "poseID": 1,
+      "records": [
+        {
+          "slot": "drawing",
+          "offset": 138,
+          "format": 1,
+          "paletteType": 2
+        },
+        {
+          "slot": "mask",
+          "offset": 0,
+          "format": 0,
+          "paletteType": 0
+        },
+        {
+          "slot": "aura",
+          "offset": 0,
+          "format": 0,
+          "paletteType": 0
+        }
+      ],
+      "loadStatus": "ok",
+      "slots": [
+        {
+          "slot": "drawing",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 40,
+            "biHeight": 40,
+            "biPlanes": 1,
+            "biBitCount": 4,
+            "biCompression": 0,
+            "biSizeImage": 800,
+            "biClrUsed": 16,
+            "biClrImportant": 16,
+            "getWidth": 40,
+            "getHeight": 40,
+            "storageWidth": 20,
+            "numClrEntries": 16,
+            "clrTabCrc32": "0x3e4d6c95",
+            "allocBytes": 800,
+            "pixelRowBytes": 20,
+            "pixelCrc32": "0x0cc84b9e"
+          }
+        },
+        {
+          "slot": "mask",
+          "dib": null
+        },
+        {
+          "slot": "aura",
+          "dib": null
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "poseID": 2,
+      "records": [
+        {
+          "slot": "drawing",
+          "offset": 696,
+          "format": 1,
+          "paletteType": 4
+        },
+        {
+          "slot": "mask",
+          "offset": 0,
+          "format": 1,
+          "paletteType": 3
+        },
+        {
+          "slot": "aura",
+          "offset": 0,
+          "format": 1,
+          "paletteType": 3
+        }
+      ],
+      "loadStatus": "ok",
+      "slots": [
+        {
+          "slot": "drawing",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 208,
+            "biHeight": 367,
+            "biPlanes": 1,
+            "biBitCount": 1,
+            "biCompression": 0,
+            "biSizeImage": 0,
+            "biClrUsed": 2,
+            "biClrImportant": 2,
+            "getWidth": 208,
+            "getHeight": 367,
+            "storageWidth": 28,
+            "numClrEntries": 2,
+            "clrTabCrc32": "0x359b3873",
+            "allocBytes": 10276,
+            "pixelRowBytes": 26,
+            "pixelCrc32": "0x2b87d7de"
+          }
+        },
+        {
+          "slot": "mask",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 208,
+            "biHeight": 367,
+            "biPlanes": 1,
+            "biBitCount": 1,
+            "biCompression": 0,
+            "biSizeImage": 0,
+            "biClrUsed": 2,
+            "biClrImportant": 2,
+            "getWidth": 208,
+            "getHeight": 367,
+            "storageWidth": 28,
+            "numClrEntries": 2,
+            "clrTabCrc32": "0x359b3873",
+            "allocBytes": 10276,
+            "pixelRowBytes": 26,
+            "pixelCrc32": "0x329ddf94"
+          }
+        },
+        {
+          "slot": "aura",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 208,
+            "biHeight": 367,
+            "biPlanes": 1,
+            "biBitCount": 1,
+            "biCompression": 0,
+            "biSizeImage": 0,
+            "biClrUsed": 2,
+            "biClrImportant": 2,
+            "getWidth": 208,
+            "getHeight": 367,
+            "storageWidth": 28,
+            "numClrEntries": 2,
+            "clrTabCrc32": "0x359b3873",
+            "allocBytes": 10276,
+            "pixelRowBytes": 26,
+            "pixelCrc32": "0x329ddf94"
+          }
+        }
+      ]
+    }
+  ]
+}

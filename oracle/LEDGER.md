@@ -585,6 +585,11 @@ all 552 poses `ok`):
 | decoded pixel bytes hashed | 13,780,864 (9x the 1.5 MB on disk) |
 | stored image records | 745 |
 
+The row-masked hash is not theoretical: **1058 of the 1612 slots have row padding
+excluded** from the hash (`storageWidth > pixelRowBytes`), and **1159 have a
+partial final byte masked** (`width * bpp` not a multiple of 8). Both mechanisms
+are exercised across the corpus.
+
 1612 decoded slots from 745 stored images is the **2-bpp expansion working**: one
 `AIP_MASKEDMONO`/`AIP_DUALMASK` source becomes two or three 1-bpp DIBs via
 `ConvertFromMaskedMono`/`ConvertFromDualMask`. The decoded bpp histogram agrees —

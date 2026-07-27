@@ -1,0 +1,31 @@
+{
+  "file": "room.bgb",
+  "kind": "backdrop",
+  "identity": {
+    "bytes": 28038,
+    "crc32": "0x3a6f9ef4"
+  },
+  "loadStatus": "ok",
+  "originalURL": null,
+  "newURL": null,
+  "copyright": "Copyright \u00a9 1996, 1997, 1998 Microsoft Corporation",
+  "drawing": {
+    "biSize": 40,
+    "biWidth": 315,
+    "biHeight": 315,
+    "biPlanes": 1,
+    "biBitCount": 4,
+    "biCompression": 0,
+    "biSizeImage": 50400,
+    "biClrUsed": 16,
+    "biClrImportant": 16,
+    "getWidth": 315,
+    "getHeight": 315,
+    "storageWidth": 160,
+    "numClrEntries": 16,
+    "clrTabCrc32": "0xf9e59231",
+    "allocBytes": 50400,
+    "pixelRowBytes": 158,
+    "pixelCrc32": "0x99bdb4f9"
+  }
+}
