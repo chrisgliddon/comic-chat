@@ -1,0 +1,67 @@
+name: Port tests
+
+# The TypeScript/PixiJS port in port/ is the actual deliverable, and its
+# oracle-golden tests (port/test/engine/*_oracle.test.ts) are what turn the
+# frozen C++ dumps into a regression guard. Nothing ran them in CI until this
+# workflow existed: the Windows oracle job only builds and dumps the C++ side.
+# This job needs no MSVC, so it runs on Linux in seconds.
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/port-tests.yml"
+      - "port/**"
+      # The differential tests read the frozen dumps, so a golden re-freeze
+      # must re-run them.
+      - "oracle/textpose/*.json"
+      - "oracle/avatario/*.json"
+      - "oracle/avatar/*.json"
+      - "oracle/glyphs/*.json"
+  pull_request:
+    paths:
+      - ".github/workflows/port-tests.yml"
+      - "port/**"
+      - "oracle/textpose/*.json"
+      - "oracle/avatario/*.json"
+      - "oracle/avatar/*.json"
+      - "oracle/glyphs/*.json"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Typecheck and test the TS port
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    defaults:
+      run:
+        working-directory: port
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: port/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      # CI=true makes the *_oracle.test.ts differential suites fail instead of
+      # skip when a golden is missing, so a bad path can't read as green.
+      - name: Test
+        run: npm test
+        env:
+          CI: "true"

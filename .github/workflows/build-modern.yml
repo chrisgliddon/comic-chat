@@ -2,6 +2,16 @@ name: Build unofficial modern clients
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/build-modern.yml"
+      - "scripts/**"
+      - "v1.0-pre-modern/**"
+      - "v2.5-beta-1-modern/**"
+      - "artifacts/inc/**"
+      - "artifacts/lib/i386/zlib.lib"
   pull_request:
     paths:
       - ".github/workflows/build-modern.yml"
@@ -60,7 +70,7 @@ jobs:
         run: ./scripts/smoke-test-modern-builds.ps1
 
       - name: Upload release-ready packages
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: comic-chat-unofficial-modern-builds-${{ github.sha }}
           path: |

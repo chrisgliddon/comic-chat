@@ -441,3 +441,15 @@ FodyWeavers.xsd
 *.msm
 *.msp
 .gstack/
+
+# Oracle harness captures. Only the frozen references are tracked
+# (*.golden.json, oracle/corpus/*/expected.json, oracle/glyphs/glyphs.json);
+# everything below is produced by a run and must never be committed as if it
+# were a golden.
+oracle/glyphs/glyphs.actual.json
+oracle/textpose/textpose.json
+oracle/avatario/avatario.json
+oracle/avatar/avatar.json
+oracle/corpus/*/actual.json
+oracle/corpus/*/run_a.json
+oracle/corpus/*/run_b.json

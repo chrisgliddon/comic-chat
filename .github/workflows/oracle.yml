@@ -2,14 +2,23 @@ name: Oracle harness
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/oracle.yml"
+      - "oracle/**"
+      # oracle.mak links essentially the whole v2.5 tree (avatario.obj,
+      # textpose.obj, panel.obj, ...), so any engine source can move a
+      # golden. Watch the tree, not a hand-picked file list.
+      - "v2.5-beta-1-modern/**"
+      - "artifacts/inc/**"
   pull_request:
     paths:
       - ".github/workflows/oracle.yml"
       - "oracle/**"
-      - "v2.5-beta-1-modern/oracle.mak"
-      - "v2.5-beta-1-modern/avatar.cpp"
-      - "v2.5-beta-1-modern/chatdoc.cpp"
-      - "v2.5-beta-1-modern/panel.cpp"
+      - "v2.5-beta-1-modern/**"
+      - "artifacts/inc/**"
 
 permissions:
   contents: read
@@ -25,9 +34,9 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Build the oracle harness
         shell: cmd
@@ -53,75 +62,86 @@ jobs:
           )
           popd
 
+      # glyphs.json is a frozen *input* to the port (RULEBOOK 6: the TS side
+      # consumes oracle/glyphs/glyphs.json verbatim and never re-measures
+      # text), so the committed path stays put and the fresh capture goes to
+      # glyphs.actual.json for comparison. Before this guard existed, every
+      # run silently overwrote the frozen table - a runner-image or SDK font
+      # change would have gone unnoticed.
       - name: Capture glyph tables
-        shell: cmd
+        shell: pwsh
         run: |
-          if not exist oracle\glyphs mkdir oracle\glyphs
-          cd v2.5-beta-1-modern
-          Release\OracleHarness.exe --glyphs ..\oracle\glyphs\glyphs.json
-          if errorlevel 1 exit /b 1
-          echo "Glyphs captured."
-          type ..\oracle\glyphs\glyphs.json
+          New-Item -ItemType Directory -Force -Path oracle\glyphs | Out-Null
+          Set-Location v2.5-beta-1-modern
+          $frozen = "..\oracle\glyphs\glyphs.json"
+          $capture = if (Test-Path $frozen) { "..\oracle\glyphs\glyphs.actual.json" } else { $frozen }
+          & Release\OracleHarness.exe --glyphs $capture
+          if ($LASTEXITCODE -ne 0) { Write-Host "GLYPH CAPTURE FAILED (exit $LASTEXITCODE)"; exit 1 }
+          Write-Host "Glyphs captured."
+          if ($capture -ne $frozen) {
+            & node ..\oracle\scripts\diff-dumps.mjs $frozen $capture
+            if ($LASTEXITCODE -ne 0) { Write-Host "GLYPH TABLE MISMATCH: frozen oracle/glyphs/glyphs.json no longer matches this runner's capture"; exit 1 }
+            Write-Host "Glyph table match."
+          } else {
+            Write-Host "No frozen glyph table yet - freeze by committing oracle/glyphs/glyphs.json"
+          }
 
+      # The three Tier-1 dumps below use pwsh rather than cmd: $LASTEXITCODE
+      # after `node diff-dumps.mjs` is unambiguous, whereas nested
+      # `if exist (... if errorlevel 1 ...)` batch blocks are exactly the
+      # shape that swallowed the corpus diff output before it was moved to
+      # pwsh. The mismatch branch of a golden check must never be the
+      # unexercised one - a false "golden match" invalidates the oracle.
       - name: Capture textpose (Tier-1 #1 dump)
-        shell: cmd
+        shell: pwsh
         run: |
-          if not exist oracle\textpose mkdir oracle\textpose
-          cd v2.5-beta-1-modern
-          Release\OracleHarness.exe --textpose ..\oracle\textpose\textpose.json
-          if errorlevel 1 exit /b 1
-          echo "Textpose captured."
-          type ..\oracle\textpose\textpose.json
-          if exist ..\oracle\textpose\textpose.golden.json (
-            node ..\oracle\scripts\diff-dumps.mjs ..\oracle\textpose\textpose.golden.json ..\oracle\textpose\textpose.json
-            if errorlevel 1 (
-              echo TEXTPOSE GOLDEN MISMATCH
-              exit /b 1
-            )
-            echo "Textpose golden match."
-          ) else (
-            echo "No textpose golden yet - freeze by committing as textpose.golden.json"
-          )
+          New-Item -ItemType Directory -Force -Path oracle\textpose | Out-Null
+          Set-Location v2.5-beta-1-modern
+          & Release\OracleHarness.exe --textpose ..\oracle\textpose\textpose.json
+          if ($LASTEXITCODE -ne 0) { Write-Host "TEXTPOSE CAPTURE FAILED (exit $LASTEXITCODE)"; exit 1 }
+          Write-Host "Textpose captured."
+          $golden = "..\oracle\textpose\textpose.golden.json"
+          if (Test-Path $golden) {
+            & node ..\oracle\scripts\diff-dumps.mjs $golden ..\oracle\textpose\textpose.json
+            if ($LASTEXITCODE -ne 0) { Write-Host "TEXTPOSE GOLDEN MISMATCH"; exit 1 }
+            Write-Host "Textpose golden match."
+          } else {
+            Write-Host "No textpose golden yet - freeze by committing as textpose.golden.json"
+          }
 
       - name: Capture avatario (Tier-1 #3 dump: emotion quantization round-trip)
-        shell: cmd
+        shell: pwsh
         run: |
-          if not exist oracle\avatario mkdir oracle\avatario
-          cd v2.5-beta-1-modern
-          Release\OracleHarness.exe --avatario ..\oracle\avatario\avatario.json
-          if errorlevel 1 exit /b 1
-          echo "Avatario captured."
-          type ..\oracle\avatario\avatario.json
-          if exist ..\oracle\avatario\avatario.golden.json (
-            node ..\oracle\scripts\diff-dumps.mjs ..\oracle\avatario\avatario.golden.json ..\oracle\avatario\avatario.json
-            if errorlevel 1 (
-              echo AVATARIO GOLDEN MISMATCH
-              exit /b 1
-            )
-            echo "Avatario golden match."
-          ) else (
-            echo "No avatario golden yet - freeze by committing as avatario.golden.json"
-          )
+          New-Item -ItemType Directory -Force -Path oracle\avatario | Out-Null
+          Set-Location v2.5-beta-1-modern
+          & Release\OracleHarness.exe --avatario ..\oracle\avatario\avatario.json
+          if ($LASTEXITCODE -ne 0) { Write-Host "AVATARIO CAPTURE FAILED (exit $LASTEXITCODE)"; exit 1 }
+          Write-Host "Avatario captured."
+          $golden = "..\oracle\avatario\avatario.golden.json"
+          if (Test-Path $golden) {
+            & node ..\oracle\scripts\diff-dumps.mjs $golden ..\oracle\avatario\avatario.json
+            if ($LASTEXITCODE -ne 0) { Write-Host "AVATARIO GOLDEN MISMATCH"; exit 1 }
+            Write-Host "Avatario golden match."
+          } else {
+            Write-Host "No avatario golden yet - freeze by committing as avatario.golden.json"
+          }
 
       - name: Capture avatar-pose (Tier-1 #2 dump: emotion-to-pose selection)
-        shell: cmd
+        shell: pwsh
         run: |
-          if not exist oracle\avatar mkdir oracle\avatar
-          cd v2.5-beta-1-modern
-          Release\OracleHarness.exe --avatar-pose ..\oracle\avatar\avatar.json
-          if errorlevel 1 exit /b 1
-          echo "Avatar-pose captured."
-          type ..\oracle\avatar\avatar.json
-          if exist ..\oracle\avatar\avatar.golden.json (
-            node ..\oracle\scripts\diff-dumps.mjs ..\oracle\avatar\avatar.golden.json ..\oracle\avatar\avatar.json
-            if errorlevel 1 (
-              echo AVATAR GOLDEN MISMATCH
-              exit /b 1
-            )
-            echo "Avatar golden match."
-          ) else (
-            echo "No avatar golden yet - freeze by committing as avatar.golden.json"
-          )
+          New-Item -ItemType Directory -Force -Path oracle\avatar | Out-Null
+          Set-Location v2.5-beta-1-modern
+          & Release\OracleHarness.exe --avatar-pose ..\oracle\avatar\avatar.json
+          if ($LASTEXITCODE -ne 0) { Write-Host "AVATAR CAPTURE FAILED (exit $LASTEXITCODE)"; exit 1 }
+          Write-Host "Avatar-pose captured."
+          $golden = "..\oracle\avatar\avatar.golden.json"
+          if (Test-Path $golden) {
+            & node ..\oracle\scripts\diff-dumps.mjs $golden ..\oracle\avatar\avatar.json
+            if ($LASTEXITCODE -ne 0) { Write-Host "AVATAR GOLDEN MISMATCH"; exit 1 }
+            Write-Host "Avatar golden match."
+          } else {
+            Write-Host "No avatar golden yet - freeze by committing as avatar.golden.json"
+          }
 
       - name: Judge validation - determinism (two identical runs)
         shell: cmd
@@ -175,11 +195,13 @@ jobs:
           node oracle/scripts/validate.mjs --corpus oracle/corpus
 
       - name: Upload oracle artifacts
-        uses: actions/upload-artifact@v4
+        if: always()
+        uses: actions/upload-artifact@v5
         with:
           name: oracle-artifacts-${{ github.sha }}
           path: |
             oracle/glyphs/glyphs.json
+            oracle/glyphs/glyphs.actual.json
             oracle/textpose/textpose.json
             oracle/textpose/textpose.golden.json
             oracle/avatario/avatario.json

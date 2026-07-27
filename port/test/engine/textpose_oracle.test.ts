@@ -13,9 +13,10 @@
  * golden and this test becomes the referee.
  */
 import { describe, it, expect } from "vitest";
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
+import { hasGoldenOrThrowInCI } from "../helpers/golden.js";
 import { GetEmotionsFromString, InitializeEmotionRules } from "../../src/engine/textpose.js";
 import { CEmotionOpts } from "../../src/core/emotionopts.js";
 import { dumpTextposeProbes } from "../../src/engine/textpose_dump.js";
@@ -30,7 +31,7 @@ const GOLDEN_PATH = resolve(__dirname, "../../../oracle/textpose/textpose.golden
 // per-opt comparison in the test below.
 void 0; // (helper removed; comparison is inline)
 
-const hasGolden = existsSync(GOLDEN_PATH);
+const hasGolden = hasGoldenOrThrowInCI(GOLDEN_PATH);
 
 describe("textpose oracle golden (differential)", () => {
   it.skipIf(!hasGolden)("TS port matches oracle textpose.golden.json for every probe", () => {

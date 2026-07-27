@@ -10,19 +10,20 @@
  * the unit-level check; this is the differential oracle check.
  *
  * Until the first CI run freezes `avatario.golden.json`, this test SKIPS
- * (the golden file doesn't exist locally). After the first freeze, commit
- * the golden and this test becomes the referee.
+ * locally (the golden file doesn't exist yet). Under CI a missing golden is
+ * an error, not a skip — see `test/helpers/golden.ts`.
  */
 import { describe, it, expect } from "vitest";
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { dumpAvatarioProbes } from "../../src/engine/avatario_dump.js";
+import { hasGoldenOrThrowInCI } from "../helpers/golden.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const GOLDEN_PATH = resolve(__dirname, "../../../oracle/avatario/avatario.golden.json");
 
-const hasGolden = existsSync(GOLDEN_PATH);
+const hasGolden = hasGoldenOrThrowInCI(GOLDEN_PATH);
 
 describe("avatario oracle golden (differential)", () => {
   it.skipIf(!hasGolden)("TS port matches oracle avatario.golden.json for every probe", () => {
