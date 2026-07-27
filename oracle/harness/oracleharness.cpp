@@ -608,6 +608,7 @@ static ojson::Value CaptureCodecs() {
     // combinations MakeBalloon accepts for SM2BM/BM2SM. BM2SM's argument is a
     // bit set, so the combined ACTION forms matter.
     {
+        fprintf(stderr, "ORACLE: codecs - modeMaps\n"); fflush(stderr);
         ojson::Value mm = ojson::Value::Obj();
         ojson::Value i2b = ojson::Value::Arr(), b2i = ojson::Value::Arr();
         for (int i = 0; i < 256; i++) {
@@ -645,6 +646,7 @@ static ojson::Value CaptureCodecs() {
 
     // --- Tier-1 #7: formatting codec ------------------------------------
     {
+        fprintf(stderr, "ORACLE: codecs - formatting\n"); fflush(stderr);
         ojson::Value fmt = ojson::Value::Obj();
 
         // nFillFormatting: every effect toggle in isolation, then the colour
@@ -698,6 +700,7 @@ static ojson::Value CaptureCodecs() {
         };
         ojson::Value lessArr = ojson::Value::Arr();
         for (int i = 0; i < (int)(sizeof(kLessProbes) / sizeof(kLessProbes[0])); i++) {
+            fprintf(stderr, "ORACLE: codecs - szControlLess probe %d\n", i); fflush(stderr);
             char mutableIn[512];
             strncpy(mutableIn, kLessProbes[i], sizeof(mutableIn) - 1);
             mutableIn[sizeof(mutableIn) - 1] = 0;
@@ -723,6 +726,7 @@ static ojson::Value CaptureCodecs() {
         };
         ojson::Value fullArr = ojson::Value::Arr();
         for (int i = 0; i < (int)(sizeof(kFull) / sizeof(kFull[0])); i++) {
+            fprintf(stderr, "ORACLE: codecs - szControlFull probe %d\n", i); fflush(stderr);
             CDWordArray rgdw;
             for (int r = 0; r < kFull[i].nRuns; r++) rgdw.Add(kFull[i].runs[r]);
             char* out = SzControlFull(kFull[i].text, &rgdw);
@@ -748,11 +752,20 @@ static ojson::Value CaptureCodecs() {
             ":n!u@m PRIVMSG #r :a b c d e f g h i j k l m n o p",
             ":n!u@m MODE #room +o someone",
             "",
-            ":only.a.prefix",
+            // NOT probed: a prefix with no following space, e.g.
+            // ":only.a.prefix". ParseIt does `szBody = strchr(szMessage, ' ')`
+            // then `ASSERT(szBody)` - "messages must have a body"
+            // (ircsock.cpp:159) - and that assert is the only guard. In the
+            // release build it compiles away and the next line computes
+            // `szBody - szMessage` from a NULL, feeding garbage to strncpy.
+            // That crashed this dump (0xC0000005) on its first run. The input
+            // is outside the parser's stated contract, so it is left out
+            // rather than pinned; the fragility is recorded in the LEDGER.
             ":n!u@m QUIT :Client exited \"with quotes\""
         };
         ojson::Value arr = ojson::Value::Arr();
         for (int i = 0; i < (int)(sizeof(kIrcProbes) / sizeof(kIrcProbes[0])); i++) {
+            fprintf(stderr, "ORACLE: codecs - ircParse probe %d\n", i); fflush(stderr);
             IRCPARSE parse;
             memset(&parse, 0, sizeof(parse));
             ParseIt(kIrcProbes[i], &parse);
@@ -795,6 +808,7 @@ static ojson::Value CaptureCodecs() {
         };
         ojson::Value arr = ojson::Value::Arr();
         for (int i = 0; i < (int)(sizeof(kUrlProbes) / sizeof(kUrlProbes[0])); i++) {
+            fprintf(stderr, "ORACLE: codecs - url probe %d\n", i); fflush(stderr);
             int bounds[MAX_URL_INTEXT * 2];
             memset(bounds, 0, sizeof(bounds));
             int nUrls = MAX_URL_INTEXT;
@@ -830,6 +844,7 @@ static ojson::Value CaptureCodecs() {
     // backwards, which exercises the modulo arithmetic over m_iStartIndex /
     // m_iEndIndex / m_iCurIndex.
     {
+        fprintf(stderr, "ORACLE: codecs - doskey\n"); fflush(stderr);
         ojson::Value dk = ojson::Value::Obj();
         const UINT kMax = 4;
         CDosKey key;
