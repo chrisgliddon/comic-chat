@@ -12,6 +12,7 @@
 //        OracleHarness.exe --glyphs <glyphs.json>
 //        OracleHarness.exe --codecs <codecs.json>
 //        OracleHarness.exe --ccc <ccc.json> [treeDir]
+//        OracleHarness.exe --avb <outDir> [artDir]
 //
 // See oracle/harness/README.md for the linkage design decision.
 
@@ -19,6 +20,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <string>
+#include <vector>
+#include <algorithm>   // std::sort, for the deterministic ComicArt asset order
 
 #include "chat.h"
 #include "bbox.h"
@@ -1535,6 +1539,633 @@ static ojson::Value DumpAvatarState(USHORT avatarID) {
     return v;
 }
 
+// ===========================================================================
+// Tier-2: .avb / .bgb asset manifests + decoded-pixel CRC32s
+//
+// The unit under test is avbfile.cpp + dib.cpp: the record-tag walk that turns
+// a file into a CAvatarX (name/flags/URLs, the global palette, and the
+// face/torso/body record tables), and the image decode that turns a stream
+// offset into a CAvatarDIB. Two layers, deliberately dumped side by side:
+//
+//   * pre-load facts   - per pose, the three (offset, format, paletteType)
+//                        triples straight out of the pose records. No decode
+//                        involved, so these stay meaningful even when an image
+//                        fails to decode.
+//   * post-load facts  - per image slot, the BITMAPINFOHEADER scalars plus a
+//                        CRC32 over the pixel bytes.
+//
+// One golden per asset file (oracle/avb/<name>.golden.json) rather than one
+// monolith: 32 assets worth of poses in a single file would be a multi-megabyte
+// golden whose diff names nothing useful. Sharded, a mismatch names the asset.
+// ===========================================================================
+
+// Standard IEEE 802.3 CRC32 (reflected, init/final 0xFFFFFFFF), table built on
+// first use. Chosen over a rolling sum because the TS port has crc32 available
+// from any number of libraries and the same polynomial is unambiguous; a
+// checksum that only this harness can compute would not be portable.
+static unsigned long g_crcTable[256];
+static bool g_crcTableReady = false;
+
+static void CrcInit() {
+    if (g_crcTableReady) return;
+    for (unsigned long n = 0; n < 256; n++) {
+        unsigned long c = n;
+        for (int k = 0; k < 8; k++) {
+            c = (c & 1) ? (0xEDB88320UL ^ (c >> 1)) : (c >> 1);
+        }
+        g_crcTable[n] = c;
+    }
+    g_crcTableReady = true;
+}
+
+static unsigned long Crc32(const void* data, size_t len) {
+    CrcInit();
+    const unsigned char* p = (const unsigned char*)data;
+    unsigned long c = 0xFFFFFFFFUL;
+    for (size_t i = 0; i < len; i++) {
+        c = g_crcTable[(c ^ p[i]) & 0xFF] ^ (c >> 8);
+    }
+    return c ^ 0xFFFFFFFFUL;
+}
+
+// CRCs go out as "0x........" strings, not numbers: ojson emits integers with
+// %ld, so any CRC with the top bit set would land in the golden as a negative
+// number. A fixed-width lowercase hex string is unambiguous in both directions.
+static ojson::Value CrcStr(unsigned long crc) {
+    char buf[16];
+    snprintf(buf, sizeof(buf), "0x%08lx", crc & 0xFFFFFFFFUL);
+    return ojson::Value::Str(buf);
+}
+
+// A char* field that is legitimately absent (no AK_COPYRIGHT record, say) is
+// dumped as JSON null rather than "" - the port needs to tell "record missing"
+// from "record present and empty".
+static ojson::Value StrOrNull(const char* s) {
+    return s ? ojson::Value::Str(s) : ojson::Value::Null();
+}
+
+// ---------------------------------------------------------------------------
+// Exception guards for the three asset-loading entry points.
+//
+// Each needs TWO layers, in two separate functions, for reasons that are all
+// MSVC constraints rather than preference:
+//
+//   * The load can raise either kind of failure. Malformed image data faults
+//     (an access violation, which is SEH); the stream reads underneath raise
+//     MFC CFileException (which is a C++ throw). __except does not catch C++
+//     exceptions under /EHsc, and CATCH_ALL does not catch faults - so both
+//     guards are needed, and neither subsumes the other.
+//   * MSVC forbids __try and C++ try/catch in the same function, so the two
+//     guards cannot be nested inline; they nest across a function boundary.
+//   * MSVC also rejects __try in any function holding a local that requires
+//     unwinding (C2712), which is why these are standalone helpers instead of
+//     living in the Capture* functions - those all hold ojson::Value locals.
+//     LoadAvatarNoThrow above exists for the same reason.
+//
+// Status codes are shared by all three: 1 = ok, 0 = returned failure,
+// -1 = MFC exception, -2 = access violation. Distinguishing the last two is
+// worth the extra code: "the file is truncated" and "the decoder walked off
+// the end of a buffer" are different bugs.
+// ---------------------------------------------------------------------------
+#define ORACLE_LOAD_OK        1
+#define ORACLE_LOAD_FAILED    0
+#define ORACLE_LOAD_MFC_EXC (-1)
+#define ORACLE_LOAD_FAULT   (-2)
+
+static int PoseLoadMfcGuard(CPose* pose, CAvatarStream* stream, CAvatarPalette* pal) {
+    int r;
+    TRY {
+        r = pose->Load(stream, pal) ? ORACLE_LOAD_OK : ORACLE_LOAD_FAILED;
+    }
+    CATCH_ALL(e) {
+        r = ORACLE_LOAD_MFC_EXC;
+    }
+    END_CATCH_ALL
+    return r;
+}
+
+static int PoseLoadNoThrow(CPose* pose, CAvatarStream* stream, CAvatarPalette* pal) {
+    int r;
+    __try {
+        r = PoseLoadMfcGuard(pose, stream, pal);
+    } __except(EXCEPTION_EXECUTE_HANDLER) {
+        r = ORACLE_LOAD_FAULT;
+    }
+    return r;
+}
+
+static CAvatarX* LoadAvbMfcGuard(CAvatarStream* stream, int* status) {
+    CAvatarX* av = NULL;
+    TRY {
+        av = CAvatarX::LoadAvatar(stream);
+        *status = av ? ORACLE_LOAD_OK : ORACLE_LOAD_FAILED;
+    }
+    CATCH_ALL(e) {
+        av = NULL;
+        *status = ORACLE_LOAD_MFC_EXC;
+    }
+    END_CATCH_ALL
+    return av;
+}
+
+static CAvatarX* LoadAvbNoThrow(CAvatarStream* stream, int* status) {
+    CAvatarX* av = NULL;
+    __try {
+        av = LoadAvbMfcGuard(stream, status);
+    } __except(EXCEPTION_EXECUTE_HANDLER) {
+        av = NULL;
+        *status = ORACLE_LOAD_FAULT;
+    }
+    return av;
+}
+
+static CChatBackdrop* LoadBgbMfcGuard(CAvatarStream* stream, int* status) {
+    CChatBackdrop* bd = NULL;
+    TRY {
+        bd = CChatBackdrop::LoadBackdrop(stream);
+        *status = bd ? ORACLE_LOAD_OK : ORACLE_LOAD_FAILED;
+    }
+    CATCH_ALL(e) {
+        bd = NULL;
+        *status = ORACLE_LOAD_MFC_EXC;
+    }
+    END_CATCH_ALL
+    return bd;
+}
+
+static CChatBackdrop* LoadBgbNoThrow(CAvatarStream* stream, int* status) {
+    CChatBackdrop* bd = NULL;
+    __try {
+        bd = LoadBgbMfcGuard(stream, status);
+    } __except(EXCEPTION_EXECUTE_HANDLER) {
+        bd = NULL;
+        *status = ORACLE_LOAD_FAULT;
+    }
+    return bd;
+}
+
+// ---------------------------------------------------------------------------
+// Is a record-table count safe to iterate?
+//
+// This guard exists because the record tables are NOT initialised on
+// construction. CAvatarX::Initialize (avatar.cpp:886) covers only base-class
+// members; CAvatarComplex() sets just m_lastFace/m_lastTorso and CAvatarSimple()
+// just m_lastBody, so fRec/bRec/nFaces/nTorsos/m_nBodies are indeterminate until
+// LoadFaceRecs/LoadTorsoRecs/LoadBodyRecs writes the pointer and the count as a
+// pair (avbfile.cpp:1077, 1181, 1255). An .avb missing its AK_NFACES/AK_NTORSOS/
+// AK_NBODIES record therefore leaves BOTH garbage - so a NULL check on the
+// pointer is not enough, and iterating "count" entries would read out of bounds.
+//
+// Every shipped asset has the records, so this should never fire; it is here so
+// that if it ever does, the dump says so instead of hashing stack garbage.
+//
+// PORT NOTE: the TS side must zero-initialise these fields rather than mirror
+// the C++ constructors, or a malformed .avb turns into an out-of-bounds read.
+// ---------------------------------------------------------------------------
+#define ORACLE_MAX_PLAUSIBLE_RECS 4096
+
+static bool RecCountPlausible(const void* recs, long count) {
+    return recs != NULL && count >= 0 && count <= ORACLE_MAX_PLAUSIBLE_RECS;
+}
+
+// Status code -> golden field. Emitted as a name rather than the number so the
+// golden stays readable and a new code cannot silently look like an old one.
+static ojson::Value LoadStatusStr(int status) {
+    switch (status) {
+        case ORACLE_LOAD_OK:      return ojson::Value::Str("ok");
+        case ORACLE_LOAD_FAILED:  return ojson::Value::Str("failed");
+        case ORACLE_LOAD_MFC_EXC: return ojson::Value::Str("mfcException");
+        case ORACLE_LOAD_FAULT:   return ojson::Value::Str("accessViolation");
+        default:                  return ojson::Value::Str("unknown");
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Dump a CAvatarPalette.
+//
+// Entries are listed in full up to 256 and carried by the CRC alone beyond that.
+// avbfile.h allows MAX_PALETTE_SIZE = 2048, and 2048 lines per asset across 25
+// assets would dominate the golden without adding a failure mode the CRC misses.
+// The threshold is generous enough that every shipped 8bpp palette lists in full.
+//
+// COLORREF is 0x00BBGGRR on Win32 - byte 0 is RED, not blue. Emitted as hex so
+// that byte order is visible in the golden rather than hidden in a decimal, and
+// so a port that swaps the channels is obvious on sight.
+// ---------------------------------------------------------------------------
+#define ORACLE_MAX_LISTED_COLORS 256
+
+static ojson::Value DumpAvatarPalette(CAvatarPalette& pal) {
+    ojson::Value v = ojson::Value::Obj();
+    v.Set("colorCount", ojson::Value::Int((long)pal.m_nColorCount));
+    if (pal.m_pclrref == NULL) {
+        v.Set("crc32", ojson::Value::Null());
+        v.Set("colors", ojson::Value::Null());
+        return v;
+    }
+    v.Set("crc32", CrcStr(Crc32(pal.m_pclrref, pal.m_nColorCount * sizeof(COLORREF))));
+    if (pal.m_nColorCount > ORACLE_MAX_LISTED_COLORS) {
+        v.Set("colors", ojson::Value::Str("elided (see crc32)"));
+        return v;
+    }
+    ojson::Value colors = ojson::Value::Arr();
+    for (UINT i = 0; i < pal.m_nColorCount; i++) {
+        char buf[16];
+        snprintf(buf, sizeof(buf), "0x%06lx", (unsigned long)(pal.m_pclrref[i] & 0xFFFFFFUL));
+        colors.Push(ojson::Value::Str(buf));
+    }
+    v.Set("colors", colors);
+    return v;
+}
+
+// ---------------------------------------------------------------------------
+// Dump one decoded image slot.
+//
+// Byte extent: for BI_RGB it is StorageWidth() * abs(biHeight) - biSizeImage is
+// documented as "may be 0" for uncompressed DIBs and dib.cpp does set it to 0
+// on the paths that build headers by hand (dib.cpp:295, 377), so it cannot be
+// trusted as the length. For the RLE compressions biSizeImage IS the length and
+// the stride formula does not apply. Both cases are recorded so a port that
+// picks the wrong one shows up as a length mismatch, not a silent CRC drift.
+//
+// DIBStorageWidth's own quirk is worth noting for the port: for bpp < 8 it
+// rounds nWidth UP by (8/bpp - 1) before the multiply (dib.cpp:1027), which is
+// arithmetically the same as ceil(width*bpp/8) but reads differently enough
+// that a transliteration is easy to get wrong. storageWidth is dumped so the
+// port checks the result rather than the derivation.
+// ---------------------------------------------------------------------------
+static ojson::Value DumpDibSlot(CAvatarDIB* dib) {
+    if (dib == NULL) return ojson::Value::Null();
+
+    ojson::Value v = ojson::Value::Obj();
+    BITMAPINFO* bmi = dib->GetBitmapInfoAddress();
+    if (bmi == NULL) {
+        v.Set("bitmapInfo", ojson::Value::Null());
+        return v;
+    }
+    const BITMAPINFOHEADER& h = bmi->bmiHeader;
+    v.Set("biSize", ojson::Value::Int((long)h.biSize));
+    v.Set("biWidth", ojson::Value::Int((long)h.biWidth));
+    v.Set("biHeight", ojson::Value::Int((long)h.biHeight));
+    v.Set("biPlanes", ojson::Value::Int((long)h.biPlanes));
+    v.Set("biBitCount", ojson::Value::Int((long)h.biBitCount));
+    v.Set("biCompression", ojson::Value::Int((long)h.biCompression));
+    v.Set("biSizeImage", ojson::Value::Int((long)h.biSizeImage));
+    v.Set("biClrUsed", ojson::Value::Int((long)h.biClrUsed));
+    v.Set("biClrImportant", ojson::Value::Int((long)h.biClrImportant));
+
+    // The accessors, not the header, so the golden pins what callers actually
+    // see (GetWidth/GetHeight are virtual and delegate to DibWidth/DibHeight).
+    v.Set("getWidth", ojson::Value::Int((long)dib->GetWidth()));
+    v.Set("getHeight", ojson::Value::Int((long)dib->GetHeight()));
+    long stride = (long)dib->StorageWidth();
+    v.Set("storageWidth", ojson::Value::Int(stride));
+
+    int nClr = dib->GetNumClrEntries();
+    v.Set("numClrEntries", ojson::Value::Int((long)nClr));
+    if (nClr > 0) {
+        RGBQUAD* tab = dib->GetClrTabAddress();
+        v.Set("clrTabCrc32", CrcStr(Crc32(tab, (size_t)nClr * sizeof(RGBQUAD))));
+    } else {
+        v.Set("clrTabCrc32", ojson::Value::Null());
+    }
+
+    void* bits = dib->GetBitsAddress();
+    if (bits == NULL) {
+        v.Set("pixelBytes", ojson::Value::Null());
+        v.Set("pixelCrc32", ojson::Value::Null());
+        return v;
+    }
+    long absHeight = h.biHeight < 0 ? -(long)h.biHeight : (long)h.biHeight;
+    size_t len;
+    if (h.biCompression == BI_RGB) {
+        len = (size_t)stride * (size_t)absHeight;
+    } else {
+        len = (size_t)h.biSizeImage;
+    }
+    v.Set("pixelBytes", ojson::Value::Int((long)len));
+    v.Set("pixelCrc32", len ? CrcStr(Crc32(bits, len)) : ojson::Value::Null());
+    return v;
+}
+
+// ---------------------------------------------------------------------------
+// Dump one pose: the pre-load record triples, then the three decoded slots.
+//
+// Poses load lazily - CAvatarX::GetPoseFromID (avatar.cpp:135) checks
+// m_pdibs[0] and calls CPose::Load only on a miss. GetPoseFromID is protected
+// on CAvatarX and its public overloads on the derived classes are keyed by
+// poseID with fallback search, which would silently substitute a different pose
+// on a miss. So this walks m_arrPoses by index and calls Load itself: index i
+// IS poseID i+1 (that same m_arrPoses[nID - 1] indexing), and a failed load is
+// then reported as a failure rather than papered over.
+// ---------------------------------------------------------------------------
+static const char* kSlotNames[3] = { "drawing", "mask", "aura" };
+
+static ojson::Value DumpPose(CPose* pose, int index, CAvatarStream* stream,
+                             CAvatarPalette* pal) {
+    ojson::Value v = ojson::Value::Obj();
+    v.Set("index", ojson::Value::Int(index));
+    v.Set("poseID", ojson::Value::Int(index + 1));
+
+    // Pre-load: the record as it appears in the file.
+    ojson::Value recs = ojson::Value::Arr();
+    for (int i = 0; i < 3; i++) {
+        ojson::Value r = ojson::Value::Obj();
+        r.Set("slot", ojson::Value::Str(kSlotNames[i]));
+        r.Set("offset", ojson::Value::Int((long)pose->m_dwOffsets[i]));
+        r.Set("format", ojson::Value::Int((long)pose->m_byFormats[i]));
+        r.Set("paletteType", ojson::Value::Int((long)pose->m_byPaletteTypes[i]));
+        recs.Push(r);
+    }
+    v.Set("records", recs);
+
+    // Post-load. A decode that faults must not take the whole dump with it:
+    // the pre-load half above is still worth freezing, and knowing WHICH pose
+    // faulted is the diagnosis. (--codecs cost two CI rounds to learn this.)
+    int status;
+    if (pose->m_pdibs[0] != NULL) {
+        status = ORACLE_LOAD_OK;   // already resident
+    } else if (stream != NULL) {
+        status = PoseLoadNoThrow(pose, stream, pal);
+    } else {
+        status = ORACLE_LOAD_FAILED;
+    }
+    bool loaded = (status == ORACLE_LOAD_OK);
+    v.Set("loadStatus", LoadStatusStr(status));
+
+    ojson::Value slots = ojson::Value::Arr();
+    for (int i = 0; i < 3; i++) {
+        ojson::Value s = ojson::Value::Obj();
+        s.Set("slot", ojson::Value::Str(kSlotNames[i]));
+        s.Set("dib", loaded ? DumpDibSlot(pose->m_pdibs[i]) : ojson::Value::Null());
+        slots.Push(s);
+    }
+    v.Set("slots", slots);
+    return v;
+}
+
+// ---------------------------------------------------------------------------
+// Read a whole file and CRC it. Pins the exact asset bytes the manifest was
+// derived from, so a port comparing manifests knows it read the same file
+// rather than a differently-versioned ComicArt.
+// ---------------------------------------------------------------------------
+static ojson::Value DumpFileIdentity(const char* path) {
+    ojson::Value v = ojson::Value::Obj();
+    FILE* f = fopen(path, "rb");
+    if (!f) {
+        v.Set("bytes", ojson::Value::Null());
+        v.Set("crc32", ojson::Value::Null());
+        return v;
+    }
+    fseek(f, 0, SEEK_END);
+    long sz = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    std::string buf((size_t)(sz > 0 ? sz : 0), '\0');
+    if (sz > 0) fread(&buf[0], 1, (size_t)sz, f);
+    fclose(f);
+    v.Set("bytes", ojson::Value::Int(sz));
+    v.Set("crc32", CrcStr(Crc32(buf.data(), buf.size())));
+    return v;
+}
+
+// ---------------------------------------------------------------------------
+// Manifest one .avb file.
+//
+// Loads through CAvatarX::LoadAvatar directly rather than the engine's
+// LoadAvatar(name)/LoadAvatarInfo pair. Two reasons: LoadAvatarInfo derives its
+// path from theApp.GetAvatarDir() and calls SetNewName, which overwrites m_name
+// with the FILENAME - exactly the field a format manifest wants to pin from the
+// AK_NAME record. Going straight at the file also keeps this dump on avbfile.cpp
+// (the unit under test) instead of the avatar registry.
+// ---------------------------------------------------------------------------
+static ojson::Value CaptureAvbFile(const char* path, const char* basename) {
+    ojson::Value v = ojson::Value::Obj();
+    v.Set("file", ojson::Value::Str(basename));
+    v.Set("kind", ojson::Value::Str("avatar"));
+    v.Set("identity", DumpFileIdentity(path));
+
+    fprintf(stderr, "ORACLE: avb '%s'\n", basename);
+    fflush(stderr);
+
+    CAvatarFileStream* stream = new CAvatarFileStream(path);
+    int status = ORACLE_LOAD_FAILED;
+    CAvatarX* av = LoadAvbNoThrow(stream, &status);
+    v.Set("loadStatus", LoadStatusStr(status));
+    if (av == NULL) {
+        delete stream;
+        return v;
+    }
+    av->SetStream(stream);
+
+    // Header-ish scalars. m_avatarID is a registry-assigned runtime value, not
+    // a file fact, so it is deliberately NOT dumped - it would make the golden
+    // depend on load order.
+    v.Set("name", StrOrNull(av->m_name));
+    v.Set("style", ojson::Value::Int((long)av->m_style));
+    v.Set("flags", ojson::Value::Int((long)av->m_flags));
+    v.Set("freeze", ojson::Value::Int((long)av->m_freeze));
+    v.Set("icon", ojson::Value::Int((long)av->m_icon));
+    v.Set("originalURL", StrOrNull(av->m_pszOriginalURL));
+    v.Set("newURL", StrOrNull(av->m_pszNewURL));
+    v.Set("copyright", StrOrNull(av->m_pszCopyright));
+    v.Set("poseCount", ojson::Value::Int((long)av->GetPoseCount()));
+    v.Set("palette", DumpAvatarPalette(av->m_palette));
+
+    // The record tables. dynamic_cast rather than a flag test: the two classes
+    // carry genuinely different tables (FACEREC+BODYREC vs RBODYREC), and the
+    // AT_SIMPLE/AT_COMPLEX type byte is consumed inside LoadAvatar and not kept.
+    CAvatarComplex* cx = dynamic_cast<CAvatarComplex*>(av);
+    CAvatarSimple* sx = dynamic_cast<CAvatarSimple*>(av);
+    if (cx != NULL) {
+        v.Set("class", ojson::Value::Str("complex"));
+        bool faceOk = RecCountPlausible(cx->fRec, (long)cx->nFaces);
+        bool torsoOk = RecCountPlausible(cx->bRec, (long)cx->nTorsos);
+        v.Set("nFaces", faceOk ? ojson::Value::Int((long)cx->nFaces) : ojson::Value::Null());
+        v.Set("nTorsos", torsoOk ? ojson::Value::Int((long)cx->nTorsos) : ojson::Value::Null());
+        if (!faceOk) v.Set("faceRecsUnreadable", ojson::Value::Bool(true));
+        if (!torsoOk) v.Set("torsoRecsUnreadable", ojson::Value::Bool(true));
+        ojson::Value faces = ojson::Value::Arr();
+        for (int i = 0; faceOk && i < cx->nFaces; i++) {
+            const FACEREC& r = cx->fRec[i];
+            ojson::Value e = ojson::Value::Obj();
+            e.Set("index", ojson::Value::Int(i));
+            e.Set("poseID", ojson::Value::Int((long)r.poseID));
+            e.Set("emotionPair", DumpEmotionPair(r.emotion, r.intensity));
+            e.Set("xCX", ojson::Value::Int((long)r.xCX));
+            e.Set("yCX", ojson::Value::Int((long)r.yCX));
+            e.Set("delta_xCX", ojson::Value::Int((long)r.delta_xCX));
+            e.Set("delta_yCX", ojson::Value::Int((long)r.delta_yCX));
+            e.Set("faceX", ojson::Value::Int((long)r.faceX));
+            e.Set("faceY", ojson::Value::Int((long)r.faceY));
+            faces.Push(e);
+        }
+        v.Set("faceRecs", faces);
+        ojson::Value torsos = ojson::Value::Arr();
+        for (int i = 0; torsoOk && i < cx->nTorsos; i++) {
+            const BODYREC& r = cx->bRec[i];
+            ojson::Value e = ojson::Value::Obj();
+            e.Set("index", ojson::Value::Int(i));
+            e.Set("poseID", ojson::Value::Int((long)r.poseID));
+            e.Set("emotionPair", DumpEmotionPair(r.emotion, r.intensity));
+            e.Set("xCX", ojson::Value::Int((long)r.xCX));
+            e.Set("yCX", ojson::Value::Int((long)r.yCX));
+            torsos.Push(e);
+        }
+        v.Set("torsoRecs", torsos);
+    } else if (sx != NULL) {
+        v.Set("class", ojson::Value::Str("simple"));
+        bool bodyOk = RecCountPlausible(sx->bRec, (long)sx->m_nBodies);
+        v.Set("nBodies", bodyOk ? ojson::Value::Int((long)sx->m_nBodies) : ojson::Value::Null());
+        if (!bodyOk) v.Set("bodyRecsUnreadable", ojson::Value::Bool(true));
+        ojson::Value bodies = ojson::Value::Arr();
+        for (int i = 0; bodyOk && i < sx->m_nBodies; i++) {
+            const RBODYREC& r = sx->bRec[i];
+            ojson::Value e = ojson::Value::Obj();
+            e.Set("index", ojson::Value::Int(i));
+            e.Set("poseID", ojson::Value::Int((long)r.poseID));
+            e.Set("emotionPair", DumpEmotionPair(r.emotion, r.intensity));
+            e.Set("faceX", ojson::Value::Int((long)r.faceX));
+            e.Set("faceY", ojson::Value::Int((long)r.faceY));
+            bodies.Push(e);
+        }
+        v.Set("bodyRecs", bodies);
+    } else {
+        v.Set("class", ojson::Value::Str("unknown"));
+    }
+
+    ojson::Value poses = ojson::Value::Arr();
+    int n = av->GetPoseCount();
+    for (int i = 0; i < n; i++) {
+        fprintf(stderr, "ORACLE:   pose %d/%d\n", i + 1, n);
+        fflush(stderr);
+        poses.Push(DumpPose(av->m_arrPoses[i], i, stream, &av->m_palette));
+    }
+    v.Set("poses", poses);
+
+    // The avatar owns the stream once SetStream is called; deleting the avatar
+    // does NOT free it (CAvatarX::~CAvatarX leaves m_pStream alone), so the
+    // stream is leaked deliberately - this is a one-shot console dump and
+    // freeing it after the DIBs were built off it is not worth the risk.
+    return v;
+}
+
+// ---------------------------------------------------------------------------
+// Manifest one .bgb file. A backdrop is a single image plus URL/copyright -
+// CChatBackdrop::Load (avbfile.cpp:1774) rejects anything but AT_BACKDROP with
+// an AK_BACKDROP record whose image is AIP_LOCALPALETTE or AIP_NOPALETTE, so
+// there is no global palette and no pose table to dump.
+// ---------------------------------------------------------------------------
+static ojson::Value CaptureBgbFile(const char* path, const char* basename) {
+    ojson::Value v = ojson::Value::Obj();
+    v.Set("file", ojson::Value::Str(basename));
+    v.Set("kind", ojson::Value::Str("backdrop"));
+    v.Set("identity", DumpFileIdentity(path));
+
+    fprintf(stderr, "ORACLE: bgb '%s'\n", basename);
+    fflush(stderr);
+
+    CAvatarFileStream* stream = new CAvatarFileStream(path);
+    int status = ORACLE_LOAD_FAILED;
+    CChatBackdrop* bd = LoadBgbNoThrow(stream, &status);
+    v.Set("loadStatus", LoadStatusStr(status));
+    if (bd == NULL) {
+        delete stream;
+        return v;
+    }
+    v.Set("originalURL", StrOrNull(bd->m_pszOrigURL));
+    v.Set("newURL", StrOrNull(bd->m_pszNewURL));
+    v.Set("copyright", StrOrNull(bd->m_pszCopyright));
+    v.Set("drawing", DumpDibSlot(bd->GetDrawing()));
+    return v;
+}
+
+// ---------------------------------------------------------------------------
+// Enumerate ComicArt and manifest every asset. Returns the index; the per-asset
+// manifests are written by the caller.
+//
+// FindFirstFile order is filesystem-dependent (it is NOT specified to be
+// sorted), so names are collected then sorted explicitly. Without that, the
+// index.json ordering would be a property of the runner's disk.
+// ---------------------------------------------------------------------------
+static void ListAssets(const char* artDir, const char* pattern,
+                       std::vector<std::string>& out) {
+    char glob[MAX_PATH];
+    snprintf(glob, MAX_PATH, "%s\\%s", artDir, pattern);
+    WIN32_FIND_DATA fd;
+    HANDLE h = FindFirstFile(glob, &fd);
+    if (h == INVALID_HANDLE_VALUE) return;
+    do {
+        if (!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
+            out.push_back(std::string(fd.cFileName));
+        }
+    } while (FindNextFile(h, &fd));
+    FindClose(h);
+    std::sort(out.begin(), out.end());
+}
+
+// Writes <outDir>\<basename>.json for each asset and returns the index value.
+static ojson::Value CaptureAvb(const char* artDir, const char* outDir) {
+    // artDir deliberately does NOT go into the dump: it is an invocation
+    // argument, not an observable, and putting it in would make the frozen
+    // golden depend on the path the harness happened to be called with.
+    ojson::Value root = ojson::Value::Obj();
+
+    std::vector<std::string> avbs, bgbs;
+    ListAssets(artDir, "*.avb", avbs);
+    ListAssets(artDir, "*.bgb", bgbs);
+    fprintf(stderr, "ORACLE: avb dump - %d avatars, %d backdrops in %s\n",
+            (int)avbs.size(), (int)bgbs.size(), artDir);
+    fflush(stderr);
+
+    ojson::Value assets = ojson::Value::Arr();
+    for (size_t pass = 0; pass < 2; pass++) {
+        std::vector<std::string>& names = (pass == 0) ? avbs : bgbs;
+        for (size_t i = 0; i < names.size(); i++) {
+            const std::string& base = names[i];
+            char path[MAX_PATH];
+            snprintf(path, MAX_PATH, "%s\\%s", artDir, base.c_str());
+
+            ojson::Value m = (pass == 0) ? CaptureAvbFile(path, base.c_str())
+                                         : CaptureBgbFile(path, base.c_str());
+            std::string text = m.EmitToString();
+
+            // Per-asset golden name: strip the extension, keep the stem.
+            std::string stem = base;
+            size_t dot = stem.rfind('.');
+            if (dot != std::string::npos) stem = stem.substr(0, dot);
+            char outPath[MAX_PATH];
+            snprintf(outPath, MAX_PATH, "%s\\%s.json", outDir, stem.c_str());
+            FILE* f = fopen(outPath, "wb");
+            if (!f) {
+                fprintf(stderr, "ORACLE: cannot write %s\n", outPath);
+                fflush(stderr);
+                continue;
+            }
+            fwrite(text.c_str(), 1, text.size(), f);
+            fclose(f);
+
+            // The index carries a CRC of the manifest text itself, so a single
+            // line in index.json tells you whether any asset moved at all.
+            ojson::Value e = ojson::Value::Obj();
+            e.Set("file", ojson::Value::Str(base));
+            e.Set("manifest", ojson::Value::Str(stem + ".json"));
+            e.Set("kind", ojson::Value::Str(pass == 0 ? "avatar" : "backdrop"));
+            const ojson::Value* id = m.Find("identity");
+            if (id) {
+                const ojson::Value* crc = id->Find("crc32");
+                const ojson::Value* bytes = id->Find("bytes");
+                if (bytes) e.Set("bytes", *bytes);
+                if (crc) e.Set("fileCrc32", *crc);
+            }
+            e.Set("manifestCrc32", CrcStr(Crc32(text.data(), text.size())));
+            assets.Push(e);
+        }
+    }
+    root.Set("avatarCount", ojson::Value::Int((long)avbs.size()));
+    root.Set("backdropCount", ojson::Value::Int((long)bgbs.size()));
+    root.Set("assets", assets);
+    return root;
+}
+
 // ---------------------------------------------------------------------------
 // Initialize the harness environment (fonts, emotion rules, avatars, DC)
 // ---------------------------------------------------------------------------
@@ -1677,6 +2308,7 @@ int main(int argc, char** argv) {
         fprintf(stderr, "       OracleHarness.exe --glyphs <glyphs.json>\n");
         fprintf(stderr, "       OracleHarness.exe --codecs <codecs.json>\n");
         fprintf(stderr, "       OracleHarness.exe --ccc <ccc.json> [treeDir]\n");
+        fprintf(stderr, "       OracleHarness.exe --avb <outDir> [artDir]\n");
         return 2;
     }
 
@@ -1828,6 +2460,39 @@ int main(int argc, char** argv) {
         fwrite(out.c_str(), 1, out.size(), f);
         fclose(f);
         printf("ccc written to %s\n", argv[2]);
+        return 0;
+    }
+
+    // Tier-2: .avb/.bgb asset manifests + decoded-pixel CRC32s. Needs less
+    // setup than any other mode - avbfile.cpp and dib.cpp reference theApp only
+    // for the #include, never for state, so there is no DC, no font, no emotion
+    // table and no avatar registry here. Keeping it that way is the point: the
+    // dump then cannot be perturbed by anything outside the two files under
+    // test. Writes one manifest per asset plus an index.
+    if (strcmp(argv[1], "--avb") == 0) {
+        if (argc < 3) {
+            fprintf(stderr, "usage: OracleHarness.exe --avb <outDir> [artDir]\n");
+            return 2;
+        }
+        const char* outDir = argv[2];
+        char artDir[MAX_PATH];
+        if (argc >= 4) {
+            strncpy(artDir, argv[3], MAX_PATH - 1);
+            artDir[MAX_PATH - 1] = 0;
+        } else {
+            snprintf(artDir, MAX_PATH, "%s\\ComicArt", treeDir);
+        }
+        AfxWinInit(GetModuleHandle(NULL), NULL, ::GetCommandLine(), SW_HIDE);
+
+        ojson::Value idx = CaptureAvb(artDir, outDir);
+        char idxPath[MAX_PATH];
+        snprintf(idxPath, MAX_PATH, "%s\\index.json", outDir);
+        FILE* f = fopen(idxPath, "wb");
+        if (!f) { fprintf(stderr, "cannot write %s\n", idxPath); return 1; }
+        std::string out = idx.EmitToString();
+        fwrite(out.c_str(), 1, out.size(), f);
+        fclose(f);
+        printf("avb manifests written to %s\n", outDir);
         return 0;
     }
 

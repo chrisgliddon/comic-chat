@@ -27,6 +27,7 @@ on:
       - "oracle/avatar/**"
       - "oracle/codecs/**"
       - "oracle/ccc/**"
+      - "oracle/avb/**"
       - "oracle/package.json"
       - "oracle/pnpm-lock.yaml"
       # oracle.mak links essentially the whole v2.5 tree (avatario.obj,
@@ -224,6 +225,51 @@ jobs:
             Write-Host "No ccc golden yet - freeze by committing as ccc.golden.json"
           }
 
+      # Tier-2: one manifest per ComicArt asset (25 .avb + 7 .bgb), covering the
+      # avbfile.cpp record walk and the dib.cpp image decode. Sharded per asset
+      # rather than one dump, so a mismatch names the asset that moved.
+      #
+      # Loops over every asset before failing, like the corpus step and for the
+      # same reason: adding a field to the manifest invalidates all 32 goldens at
+      # once, and re-freezing that one asset per CI round would be absurd.
+      - name: Capture avb/bgb asset manifests (Tier-2)
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path oracle\avb | Out-Null
+          Set-Location v2.5-beta-1-modern
+          & Release\OracleHarness.exe --avb ..\oracle\avb ComicArt
+          if ($LASTEXITCODE -ne 0) { Write-Host "AVB CAPTURE FAILED (exit $LASTEXITCODE)"; exit 1 }
+          Write-Host "Avb manifests captured."
+          $avbDir = Resolve-Path ..\oracle\avb
+          # Drive off the captures, not the goldens: iterating goldens would
+          # silently pass if the harness stopped emitting an asset entirely.
+          $captures = Get-ChildItem -Path $avbDir -Filter *.json |
+                      Where-Object { $_.Name -notlike '*.golden.json' } | Sort-Object Name
+          $mismatched = @()
+          $matched = @()
+          $unfrozen = @()
+          foreach ($cap in $captures) {
+            $stem = $cap.Name -replace '\.json$', ''
+            $golden = Join-Path $avbDir "$stem.golden.json"
+            if (Test-Path $golden) {
+              & node ..\oracle\scripts\diff-dumps.mjs $golden $cap.FullName
+              if ($LASTEXITCODE -ne 0) {
+                Write-Host "AVB GOLDEN MISMATCH $stem"
+                $mismatched += $stem
+              } else {
+                $matched += $stem
+              }
+            } else {
+              $unfrozen += $stem
+            }
+          }
+          Write-Host ""
+          Write-Host "=== avb summary ==="
+          Write-Host "matched   : $($matched.Count) [$($matched -join ' ')]"
+          Write-Host "mismatched: $($mismatched.Count) [$($mismatched -join ' ')]"
+          Write-Host "unfrozen  : $($unfrozen.Count) [$($unfrozen -join ' ')]"
+          if ($mismatched.Count -gt 0) { exit 1 }
+
       # Runs BEFORE the corpus comparison on purpose: it used to follow it, so a
       # red corpus round skipped schema validation entirely - exactly the round
       # whose dumps you are about to freeze from. It needs no harness output.
@@ -311,6 +357,7 @@ jobs:
             oracle/codecs/codecs.golden.json
             oracle/ccc/ccc.json
             oracle/ccc/ccc.golden.json
+            oracle/avb/*.json
             oracle/corpus/*/expected.json
             oracle/corpus/*/actual.json
             oracle/corpus/*/run_a.json

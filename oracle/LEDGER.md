@@ -412,20 +412,134 @@ Also pinned:
 
 Outstanding oracle-side TODOs (not blocking Phase 4, but improve coverage):
 
-- Tier-2 (`.avb` manifests + decoded-pixel CRCs) subcommand not yet implemented.
-- Tier-1 unit-level dumps: textpose (DONE --textpose), avatario
-  (DONE --avatario), avatar pose (DONE --avatar-pose). Remaining Tier-1:
-  UDI annotation codec (#4), identity comments (#5), IRC line parse (#6),
-  formatting codec (#7), URL detection (#8), mode maps (#9), .ccc
-  transcript codec (#10).
-- CJK path (jis2sjis/intl.c) deferred — open question whether in MVP scope.
+- Tier-1 scoreboard: #1 textpose, #2 avatar pose, #3 avatario, #6 IRC line
+  parse, #7 formatting codec, #8 URL detection, #9 mode maps, #10 `.ccc`
+  transcript codec, #11 seeded RNG, #12 `CDosKey` ring — all DONE. Remaining:
+  **#4** (UDI annotation codec) and **#5** (identity comments), both of which
+  need a document plus a `CUserInfo`; #4's encode side additionally needs
+  `bInsertAnnotations` un-`static`'d under `ORACLE_HARNESS` and a `MyAvatar()`
+  self-avatar. That would be the first guard to change a symbol's linkage
+  rather than just add an observable, so it wants a deliberate decision.
+- **#13** (CJK jis2sjis/intl.c) deferred — a scope question, not a build task.
+- Tier-2: manifests + pixel CRCs DONE (`--avb`, see below). Remaining Tier-2
+  sub-items are small and listed in that section.
 - Pixel-level (Tier-3 #8 raster hash) goldens deferred until Tiers 1-7 green.
-- More corpus cases could be added for deeper Tier-1/3 coverage (the 10 cases
-  are a happy-path baseline; the completeness critic in `oracle/scripts/critic.mjs`
-  can identify gaps). The current 10 corpus cases don't exercise non-zero
-  emotion dumps — consider adding cases that trigger SHOUT, WAVE, etc. to
-  give the avatar port a real corpus golden (open question #4 from the
-  handoff).
+- Corpus is at 15 cases (001-015). The emotion gap called out here originally is
+  closed by 011 (needs `bbCooked: 0`), the overflow-shrink branch by 014, and
+  box balloons by 015.
+
+## Tier-2: `.avb`/`.bgb` manifests + decoded-pixel CRCs (2026-07-27)
+
+`--avb <outDir> [artDir]` writes one manifest per ComicArt asset plus an
+`index.json`, frozen as `oracle/avb/<stem>.golden.json`.
+
+Sharded per asset rather than one dump. A single golden covering 32 assets and
+~1500 poses would be multi-megabyte and its diff would name nothing useful;
+per-asset, a mismatch names the asset that moved.
+
+Each manifest has two deliberately separate layers:
+
+- **Pre-load** — per pose, the three `(offset, format, paletteType)` triples
+  straight out of the pose record. No decode involved, so these stay meaningful
+  even when an image fails to decode.
+- **Post-load** — per image slot, the `BITMAPINFOHEADER` scalars, the colour
+  table CRC, and a CRC32 over the pixel bytes.
+
+Both are in one dump because the load call is the same; the split is in the JSON,
+not in the CI round. A per-pose exception guard degrades a decode fault to a
+`loadStatus` field instead of killing the run, so one bad pose still yields a
+freezable dump naming the pose that faulted (the lesson `--codecs` cost two CI
+rounds to learn).
+
+`--avb` runs on `AfxWinInit` alone — no DC, no fonts, no emotion table, no avatar
+registry. `avbfile.cpp` and `dib.cpp` reference `theApp` only for the `#include`,
+never for state, so the dump cannot be perturbed by anything outside the two
+files under test. Worth preserving.
+
+Decisions worth knowing:
+
+- **CRCs are hex strings, not numbers.** ojson emits integers with `%ld`, so any
+  CRC with the top bit set would land in the golden as a negative number.
+- **`m_avatarID` is deliberately not dumped.** It is assigned by the registry at
+  load time, so including it would make the golden depend on load order.
+- **Poses are walked by array index, not by `GetPoseFromID`.** Index `i` *is*
+  poseID `i+1` (`m_arrPoses[nID - 1]`, avatar.cpp:135), and the public
+  `GetPoseFromID` overloads on the derived classes fall back to *searching* for a
+  nearby pose on a miss — which would silently substitute a different pose. The
+  dump calls `CPose::Load` itself so a miss is reported as a miss.
+- **Loaded via `CAvatarX::LoadAvatar`, not the engine's `LoadAvatar(name)`.**
+  `LoadAvatarInfo` derives its path from `theApp.GetAvatarDir()` and then calls
+  `SetNewName`, which overwrites `m_name` with the *filename* — exactly the field
+  a format manifest wants to pin from the `AK_NAME` record.
+- **`biSizeImage` cannot be trusted as the pixel length.** It is documented as
+  "may be 0" for uncompressed DIBs and `dib.cpp` does set it to 0 on the paths
+  that build headers by hand (dib.cpp:295, 377). For `BI_RGB` the length is
+  `StorageWidth() * abs(biHeight)`; for the RLE compressions `biSizeImage` IS the
+  length and the stride formula does not apply. Both are recorded so a port that
+  picks the wrong one shows up as a length mismatch, not a silent CRC drift.
+
+### Port trap: the record tables are not initialised on construction
+
+`CAvatarX::Initialize` (avatar.cpp:886) covers only base-class members.
+`CAvatarComplex()` sets just `m_lastFace`/`m_lastTorso` and `CAvatarSimple()`
+just `m_lastBody`, so **`fRec`, `bRec`, `nFaces`, `nTorsos` and `m_nBodies` are
+indeterminate** until `LoadFaceRecs`/`LoadTorsoRecs`/`LoadBodyRecs` writes the
+pointer and the count as a pair (avbfile.cpp:1077, 1181, 1255).
+
+An `.avb` missing its `AK_NFACES`/`AK_NTORSOS`/`AK_NBODIES` record therefore
+leaves *both* garbage — so a NULL check on the pointer is not enough, and
+iterating `count` entries reads out of bounds. Every shipped asset has the
+records, which is why the engine gets away with it.
+
+**The port must zero-initialise these fields rather than mirror the C++
+constructors.** The dump carries a plausibility guard (`RecCountPlausible`) that
+emits `faceRecsUnreadable`/`torsoRecsUnreadable`/`bodyRecsUnreadable` instead of
+hashing stack garbage; it should never fire on the shipped corpus.
+
+### Measured: what the shipped corpus does NOT cover
+
+From the asset headers directly (25 `.avb` + 7 `.bgb`, all in
+`v2.5-beta-1-modern/ComicArt`):
+
+| Fact | Count |
+| --- | --- |
+| magic `0x8181` (`AF_MAGICNUM_NEW`), version 2 | 32 of 32 |
+| magic `0x81` (`AF_MAGICNUM`, old format) | **0** |
+| `AT_COMPLEX` avatars | 18 |
+| `AT_SIMPLE` avatars | 7 |
+| `AT_BACKDROP` | 7 |
+| `.bgb` via the `0x8181` container branch | 7 |
+| `.bgb` via the plain-DIB `'BM'` branch (avbfile.cpp:1669) | **0** |
+| `.bmp` backdrops | **0** |
+
+So three format branches have **no possible golden from this corpus**: the old
+`0x81` magic, the old record tags (`AK_NFACES`=4 / `AK_NTORSOS`=5 / `AK_NBODIES`=9
+and the `olddata` struct layouts with their padding bytes), and the `'BM'`
+backdrop branch. They exist for backwards compatibility with files that no longer
+ship. The port should either omit them or reproduce them knowing they are
+untested — but not believe a green Tier-2 covers them.
+
+**Asset-count discrepancy with the plan.** TEST-ORACLE-PLAN.md §Tier 2 says
+"45 `.avb` + 9 `.bgb` + 2 `.bmp` in `comicart/` + `artpack1/` (~5 MB)". This repo
+has **25 `.avb` + 7 `.bgb` + 0 `.bmp`, 1.5 MB**, and no `artpack1/` at all. The
+plan's free cross-check — "four characters (bolo, cro, denise, lynnea) exist in
+two independent encodings" — is therefore **not available**: each of those four
+appears exactly once here. Plan corrected to match the tree.
+
+### Remaining Tier-2 sub-items
+
+- **Backdrop world constants.** `SetBackDropAux` (backdrop.cpp:91-95) hardcodes
+  `xdim = ydim = 315`, world `(0, 0, 4860, -4860)`, `normHeight = 100` for every
+  backdrop — the metadata is *not* in the file, as the plan notes. Pinning it
+  through `LoadBackDropArt` -> `CBackDropArt::m_worldCoords` needs the backdrop
+  registry set up, i.e. `InitHarness`-level state, so it does not belong in
+  `--avb`'s deliberately minimal mode. Own dump, small.
+- **Record-tag inventory.** The manifest pins the *results* of the tag walk but
+  not the tag sequence itself, so it cannot say which of `AK_*` a given file
+  exercises. Getting that means an `ORACLE_HARNESS` trace in
+  `HandleLoadTag` — kept out of this round so a red CI round would have one
+  cause, not two.
+- **`.ccr` locator parse** (setupdlg.cpp:892-980) — untouched.
 
 ## Branches (as of 2026-07-27)
 

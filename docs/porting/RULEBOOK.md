@@ -603,3 +603,102 @@ must reproduce:
 These are all pinned in the dump; deviating from any of them
 will surface as a golden mismatch in `port/test/engine/
 avatar_oracle.test.ts` and `port/test/engine/avatario_oracle.test.ts`.
+## 15. `.avb` / DIB asset-format port idioms (Tier-2)
+
+Pinned by `--avb`, frozen as `oracle/avb/<stem>.golden.json` (one manifest per
+ComicArt asset). The manifest has a pre-load half (per pose, the three
+`(offset, format, paletteType)` triples) and a post-load half (per image slot,
+the `BITMAPINFOHEADER` scalars plus a CRC32 of the decoded pixels), so a
+divergence tells you *which* layer broke.
+
+### 15.1 Zero-initialise the record tables — do NOT mirror the constructors
+
+`CAvatarX::Initialize` (avatar.cpp:886) covers only base-class members.
+`CAvatarComplex()` sets just `m_lastFace`/`m_lastTorso`, `CAvatarSimple()` just
+`m_lastBody`. So `fRec`, `bRec`, `nFaces`, `nTorsos` and `m_nBodies` are
+**indeterminate** until `LoadFaceRecs` / `LoadTorsoRecs` / `LoadBodyRecs` writes
+the pointer and the count as a pair (avbfile.cpp:1077, 1181, 1255).
+
+The engine gets away with it because every shipped asset carries the
+`AK_NFACES`/`AK_NTORSOS`/`AK_NBODIES` record. A file missing one leaves *both*
+the pointer and the count garbage — so a null check on the pointer is not enough,
+and iterating `count` entries is an out-of-bounds read.
+
+**Port rule:** initialise these to `null` / `0` and treat a missing record as
+"no table", not as "trust the count". This is one of the few places the port must
+be *safer* than the original rather than bug-for-bug: the C behaviour here is
+undefined, not a quirk with an observable to reproduce.
+
+### 15.2 `biSizeImage` is not the pixel length
+
+It is documented as "may be 0" for uncompressed DIBs, and `dib.cpp` does set it
+to 0 on the paths that build headers by hand (dib.cpp:295, 377).
+
+- `BI_RGB` → length is `StorageWidth() * abs(biHeight)`; ignore `biSizeImage`.
+- `BI_RLE4` / `BI_RLE8` → `biSizeImage` **is** the length and the stride formula
+  does not apply (`Convert4ToNonRLE`/`Convert8ToNonRLE` walk to
+  `m_pBits + biSizeImage`, dib.cpp:892, 957).
+
+Both the length and `biSizeImage` are in the manifest, so picking the wrong one
+surfaces as a length mismatch rather than a silent CRC drift.
+
+Note `biHeight` may be negative (top-down DIB) — take the absolute value for the
+byte extent, and keep the sign as row order.
+
+### 15.3 `DIBStorageWidth` rounds before it divides
+
+    if (nBitCount < 8) nWidth += (8 / nBitCount) - 1;
+    return (((nWidth * nBitCount) / 8) + 3) & ~3;
+
+(dib.cpp:1027.) The pre-round makes the integer division behave as a ceiling, so
+this is arithmetically `align4(ceil(width * bpp / 8))` — but transliterate the
+original rather than the simplification, and check the result against the
+manifest's `storageWidth` instead of trusting either derivation.
+
+### 15.4 `COLORREF` is `0x00BBGGRR` — byte 0 is RED
+
+`RGB(r,g,b)` is `r | (g << 8) | (b << 16)`, so the **low** byte of a `COLORREF`
+is red, while an `RGBQUAD` is laid out B, G, R, reserved — the reverse. A port
+that treats `COLORREF` as `0xRRGGBB`, or that copies `RGBQUAD` bytes straight
+into one, gets channel-swapped avatars. Manifest palettes are emitted as hex so a
+swap is visible on sight.
+
+The two conversion macros (avbfile.h:8-11) look inconsistent but are a correct
+round-trip, and only one of them is safe to transliterate:
+
+    GET_COLORREF_FROM_RGBQUAD(prgb)  RGB((prgb)->rgbRed, ->rgbGreen, ->rgbBlue)
+    SET_RGBQUAD_FROM_COLORREF(prgb, c)  *(COLORREF*)(prgb) =
+                                          RGB(GetBValue(c), GetGValue(c), GetRValue(c))
+
+GET reads named fields — port it as written. SET looks like it swaps the channels,
+but it does not: it builds `B | (G << 8) | (R << 16)` and **type-puns it as a
+DWORD store into the `RGBQUAD`**, which on little-endian lands B in `rgbBlue`, G
+in `rgbGreen`, R in `rgbRed`, 0 in `rgbReserved` — the exact inverse of GET. The
+inverted argument order is compensating for the punned store, not reordering
+channels.
+
+**Port rule:** assign the named fields (`rgbBlue = b` …). Transliterating SET's
+argument order into a field-wise assignment channel-swaps the palette, and the
+DWORD-store trick has no meaning in TS anyway. Note it also zeroes
+`rgbReserved` as a side effect, which a field-wise version must do explicitly.
+
+### 15.5 Three format branches have no golden — by corpus, not by omission
+
+Every shipped asset is magic `0x8181` (`AF_MAGICNUM_NEW`) version 2. So the
+following have **no possible Tier-2 golden from this tree**:
+
+- the old `0x81` (`AF_MAGICNUM`) container,
+- the old record tags (`AK_NAME`=1 … `AK_NBODIES2`=12 under 256) and the
+  `olddata` struct layouts with their `byPadding[16]`,
+- the plain-DIB `'BM'` backdrop branch (avbfile.cpp:1669), and `.bmp`
+  backdrops generally.
+
+Port them if you like, but do not read a green Tier-2 as covering them. See
+oracle/LEDGER.md "Measured: what the shipped corpus does NOT cover".
+
+### 15.6 Backdrop world metadata is hardcoded, not in the file
+
+`SetBackDropAux` (backdrop.cpp:91-95) stamps every backdrop with
+`xdim = ydim = 315`, world `(0, 0, 4860, -4860)`, `normHeight = 100`. Nothing in
+the `.bgb` carries it. Port the constants; the `.bgb` manifest deliberately does
+not include them because they are not a property of the asset.

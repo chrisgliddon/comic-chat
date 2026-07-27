@@ -135,9 +135,20 @@ footer `GetLocalTime` pageview.cpp:514.
 
 ### Tier 2 — Asset/format golden tests (the shipped corpus is the fixture set)
 
-45 `.avb` avatars + 9 `.bgb` + 2 `.bmp` ship in `comicart/` + `artpack1/` (~5 MB).
-Four characters (bolo, cro, denise, lynnea) exist in **two independent encodings** —
-free cross-checks. `artpack1/archive/` holds uncompressed pre-pack sources.
+**Corrected 2026-07-27 against the actual tree.** This section originally read
+"45 `.avb` + 9 `.bgb` + 2 `.bmp` in `comicart/` + `artpack1/` (~5 MB)" and
+promised free cross-checks from four characters (bolo, cro, denise, lynnea)
+existing in two independent encodings. That counted `artpack1/`, which **is not
+in this repo**. What actually ships:
+
+**25 `.avb` + 7 `.bgb` + 0 `.bmp`, 1.5 MB, all in `v2.5-beta-1-modern/ComicArt/`**
+— 18 `AT_COMPLEX` + 7 `AT_SIMPLE` avatars + 7 backdrops, every one of them magic
+`0x8181` version 2. Each of the four named characters appears exactly once, so
+the two-encoding cross-check is **not available**. Three format branches
+consequently have no possible golden here: the old `0x81` magic, the old record
+tags (`AK_NFACES`/`AK_NTORSOS`/`AK_NBODIES` + `olddata` layouts), and the plain-DIB
+`'BM'` backdrop branch. See oracle/LEDGER.md "Measured: what the shipped corpus
+does NOT cover".
 
 - **`.avb` parse → canonical JSON manifest**, frozen as snapshots: header, name/flags/URLs,
   global palette, face/torso/body tables (poseID, emotion idx, intensity, x/y, cx/cy,

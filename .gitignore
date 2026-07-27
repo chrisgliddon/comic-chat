@@ -455,3 +455,9 @@ oracle/corpus/*/run_a.json
 oracle/corpus/*/run_b.json
 oracle/codecs/codecs.json
 oracle/ccc/ccc.json
+# Tier-2 manifests are sharded one per asset, so the capture and the golden are
+# distinguished only by the .golden infix and both live in oracle/avb/. Exclude
+# every capture, then re-include the frozen set - without the negation a
+# `git add -A` would drop 32 captures in alongside the goldens.
+oracle/avb/*.json
+!oracle/avb/*.golden.json
