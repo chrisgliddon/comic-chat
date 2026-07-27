@@ -1,0 +1,262 @@
+{
+  "avatarCount": 25,
+  "backdropCount": 7,
+  "assets": [
+    {
+      "file": "anna.avb",
+      "manifest": "anna.json",
+      "kind": "avatar",
+      "bytes": 39944,
+      "fileCrc32": "0x197867c9",
+      "manifestCrc32": "0x20a3f152"
+    },
+    {
+      "file": "armando.avb",
+      "manifest": "armando.json",
+      "kind": "avatar",
+      "bytes": 29386,
+      "fileCrc32": "0x9ef74c51",
+      "manifestCrc32": "0xcd053894"
+    },
+    {
+      "file": "bolo.avb",
+      "manifest": "bolo.json",
+      "kind": "avatar",
+      "bytes": 95460,
+      "fileCrc32": "0x292c5e80",
+      "manifestCrc32": "0xa22b388d"
+    },
+    {
+      "file": "buck.avb",
+      "manifest": "buck.json",
+      "kind": "avatar",
+      "bytes": 73792,
+      "fileCrc32": "0x9ffb74c1",
+      "manifestCrc32": "0xcb8b582c"
+    },
+    {
+      "file": "connor.avb",
+      "manifest": "connor.json",
+      "kind": "avatar",
+      "bytes": 33691,
+      "fileCrc32": "0x41f04d67",
+      "manifestCrc32": "0x1e8bd35f"
+    },
+    {
+      "file": "cro.avb",
+      "manifest": "cro.json",
+      "kind": "avatar",
+      "bytes": 124107,
+      "fileCrc32": "0xc58dcc4c",
+      "manifestCrc32": "0xb7a43a8e"
+    },
+    {
+      "file": "dan.avb",
+      "manifest": "dan.json",
+      "kind": "avatar",
+      "bytes": 40685,
+      "fileCrc32": "0x81bd52fd",
+      "manifestCrc32": "0x511edd91"
+    },
+    {
+      "file": "denise.avb",
+      "manifest": "denise.json",
+      "kind": "avatar",
+      "bytes": 71703,
+      "fileCrc32": "0x943fafd6",
+      "manifestCrc32": "0xc9922001"
+    },
+    {
+      "file": "glenda.avb",
+      "manifest": "glenda.json",
+      "kind": "avatar",
+      "bytes": 4713,
+      "fileCrc32": "0x57b90757",
+      "manifestCrc32": "0x4be64ace"
+    },
+    {
+      "file": "hugh.avb",
+      "manifest": "hugh.json",
+      "kind": "avatar",
+      "bytes": 58699,
+      "fileCrc32": "0xe671fa97",
+      "manifestCrc32": "0xabb2c6aa"
+    },
+    {
+      "file": "jordan.avb",
+      "manifest": "jordan.json",
+      "kind": "avatar",
+      "bytes": 48973,
+      "fileCrc32": "0x5935f4e6",
+      "manifestCrc32": "0x0f1a4424"
+    },
+    {
+      "file": "kirby.avb",
+      "manifest": "kirby.json",
+      "kind": "avatar",
+      "bytes": 85933,
+      "fileCrc32": "0x1155bb14",
+      "manifestCrc32": "0x809fadee"
+    },
+    {
+      "file": "lance.avb",
+      "manifest": "lance.json",
+      "kind": "avatar",
+      "bytes": 34813,
+      "fileCrc32": "0x741b379b",
+      "manifestCrc32": "0xc3f1bae9"
+    },
+    {
+      "file": "lynnea.avb",
+      "manifest": "lynnea.json",
+      "kind": "avatar",
+      "bytes": 117236,
+      "fileCrc32": "0xcc5081f7",
+      "manifestCrc32": "0xeaad9fec"
+    },
+    {
+      "file": "margaret.avb",
+      "manifest": "margaret.json",
+      "kind": "avatar",
+      "bytes": 46802,
+      "fileCrc32": "0x97767940",
+      "manifestCrc32": "0x874ddac3"
+    },
+    {
+      "file": "mike.avb",
+      "manifest": "mike.json",
+      "kind": "avatar",
+      "bytes": 36956,
+      "fileCrc32": "0x286c3de5",
+      "manifestCrc32": "0x08af9201"
+    },
+    {
+      "file": "pedagog.avb",
+      "manifest": "pedagog.json",
+      "kind": "avatar",
+      "bytes": 3799,
+      "fileCrc32": "0x6fa21832",
+      "manifestCrc32": "0x1182136f"
+    },
+    {
+      "file": "rainbow.avb",
+      "manifest": "rainbow.json",
+      "kind": "avatar",
+      "bytes": 4415,
+      "fileCrc32": "0xcab8a109",
+      "manifestCrc32": "0x7f91ab4d"
+    },
+    {
+      "file": "susan.avb",
+      "manifest": "susan.json",
+      "kind": "avatar",
+      "bytes": 50892,
+      "fileCrc32": "0xa5dd63a6",
+      "manifestCrc32": "0x8f331753"
+    },
+    {
+      "file": "tiki.avb",
+      "manifest": "tiki.json",
+      "kind": "avatar",
+      "bytes": 52378,
+      "fileCrc32": "0x497b01e9",
+      "manifestCrc32": "0x35dfd1d7"
+    },
+    {
+      "file": "tongtyed.avb",
+      "manifest": "tongtyed.json",
+      "kind": "avatar",
+      "bytes": 46508,
+      "fileCrc32": "0xe51fa20f",
+      "manifestCrc32": "0x4d68d6e3"
+    },
+    {
+      "file": "tux.avb",
+      "manifest": "tux.json",
+      "kind": "avatar",
+      "bytes": 3583,
+      "fileCrc32": "0x17a7c1a6",
+      "manifestCrc32": "0xb6958d6b"
+    },
+    {
+      "file": "veronica.avb",
+      "manifest": "veronica.json",
+      "kind": "avatar",
+      "bytes": 94939,
+      "fileCrc32": "0x84a61fc1",
+      "manifestCrc32": "0x5732cfdb"
+    },
+    {
+      "file": "waf.avb",
+      "manifest": "waf.json",
+      "kind": "avatar",
+      "bytes": 3758,
+      "fileCrc32": "0x9974bbc4",
+      "manifestCrc32": "0xbc552ff7"
+    },
+    {
+      "file": "xeno.avb",
+      "manifest": "xeno.json",
+      "kind": "avatar",
+      "bytes": 35789,
+      "fileCrc32": "0x415bebba",
+      "manifestCrc32": "0x97c4e998"
+    },
+    {
+      "file": "buckroom.bgb",
+      "manifest": "buckroom.json",
+      "kind": "backdrop",
+      "bytes": 17289,
+      "fileCrc32": "0x5bce3c89",
+      "manifestCrc32": "0xc1705bf5"
+    },
+    {
+      "file": "clouds.bgb",
+      "manifest": "clouds.json",
+      "kind": "backdrop",
+      "bytes": 108500,
+      "fileCrc32": "0x7917650b",
+      "manifestCrc32": "0x541688bf"
+    },
+    {
+      "file": "field.bgb",
+      "manifest": "field.json",
+      "kind": "backdrop",
+      "bytes": 25983,
+      "fileCrc32": "0xf2f134db",
+      "manifestCrc32": "0xd197b089"
+    },
+    {
+      "file": "pastoral.bgb",
+      "manifest": "pastoral.json",
+      "kind": "backdrop",
+      "bytes": 36990,
+      "fileCrc32": "0xd879aabc",
+      "manifestCrc32": "0x43760e8b"
+    },
+    {
+      "file": "room.bgb",
+      "manifest": "room.json",
+      "kind": "backdrop",
+      "bytes": 28038,
+      "fileCrc32": "0x3a6f9ef4",
+      "manifestCrc32": "0x87cd18ea"
+    },
+    {
+      "file": "space.bgb",
+      "manifest": "space.json",
+      "kind": "backdrop",
+      "bytes": 47288,
+      "fileCrc32": "0xace608db",
+      "manifestCrc32": "0xb00b9979"
+    },
+    {
+      "file": "yellow.bgb",
+      "manifest": "yellow.json",
+      "kind": "backdrop",
+      "bytes": 1307,
+      "fileCrc32": "0xf7e51ad6",
+      "manifestCrc32": "0x3e3e9236"
+    }
+  ]
+}

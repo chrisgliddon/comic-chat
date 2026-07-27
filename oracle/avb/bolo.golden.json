@@ -1,0 +1,2436 @@
+{
+  "file": "bolo.avb",
+  "kind": "avatar",
+  "identity": {
+    "bytes": 95460,
+    "crc32": "0x292c5e80"
+  },
+  "loadStatus": "ok",
+  "name": "Bolo",
+  "style": 1,
+  "flags": 5,
+  "freeze": 1,
+  "icon": 1,
+  "originalURL": null,
+  "newURL": null,
+  "copyright": "Copyright \u00a9 1996, 1997, 1998 Microsoft Corporation\\nJim Woodring",
+  "poseCount": 24,
+  "palette": {
+    "colorCount": 0,
+    "crc32": null,
+    "colors": null
+  },
+  "class": "complex",
+  "nFaces": 12,
+  "nTorsos": 11,
+  "faceRecs": [
+    {
+      "index": 0,
+      "poseID": 2,
+      "emotionPair": {
+        "emotion": 0,
+        "intensity": 0
+      },
+      "xCX": 97,
+      "yCX": 128,
+      "delta_xCX": 2,
+      "delta_yCX": -5,
+      "faceX": 105,
+      "faceY": 97
+    },
+    {
+      "index": 1,
+      "poseID": 3,
+      "emotionPair": {
+        "emotion": 0,
+        "intensity": 0.20000000298023224
+      },
+      "xCX": 97,
+      "yCX": 128,
+      "delta_xCX": 2,
+      "delta_yCX": -5,
+      "faceX": 105,
+      "faceY": 97
+    },
+    {
+      "index": 2,
+      "poseID": 4,
+      "emotionPair": {
+        "emotion": 1.5707963705062866,
+        "intensity": 0.29803922772407532
+      },
+      "xCX": 97,
+      "yCX": 128,
+      "delta_xCX": 2,
+      "delta_yCX": -5,
+      "faceX": 105,
+      "faceY": 97
+    },
+    {
+      "index": 3,
+      "poseID": 5,
+      "emotionPair": {
+        "emotion": 0,
+        "intensity": 0.60000002384185791
+      },
+      "xCX": 95,
+      "yCX": 131,
+      "delta_xCX": 3,
+      "delta_yCX": -5,
+      "faceX": 100,
+      "faceY": 100
+    },
+    {
+      "index": 4,
+      "poseID": 6,
+      "emotionPair": {
+        "emotion": 0,
+        "intensity": 0
+      },
+      "xCX": 95,
+      "yCX": 131,
+      "delta_xCX": 3,
+      "delta_yCX": -5,
+      "faceX": 100,
+      "faceY": 100
+    },
+    {
+      "index": 5,
+      "poseID": 7,
+      "emotionPair": {
+        "emotion": 0,
+        "intensity": 1
+      },
+      "xCX": 86,
+      "yCX": 135,
+      "delta_xCX": 0,
+      "delta_yCX": -3,
+      "faceX": 99,
+      "faceY": 102
+    },
+    {
+      "index": 6,
+      "poseID": 8,
+      "emotionPair": {
+        "emotion": 0.78539818525314331,
+        "intensity": 1
+      },
+      "xCX": 93,
+      "yCX": 126,
+      "delta_xCX": 0,
+      "delta_yCX": -6,
+      "faceX": 107,
+      "faceY": 100
+    },
+    {
+      "index": 7,
+      "poseID": 9,
+      "emotionPair": {
+        "emotion": 3.1415927410125732,
+        "intensity": 1
+      },
+      "xCX": 97,
+      "yCX": 123,
+      "delta_xCX": 6,
+      "delta_yCX": -3,
+      "faceX": 107,
+      "faceY": 93
+    },
+    {
+      "index": 8,
+      "poseID": 10,
+      "emotionPair": {
+        "emotion": 3.9269907474517822,
+        "intensity": 1
+      },
+      "xCX": 95,
+      "yCX": 129,
+      "delta_xCX": -1,
+      "delta_yCX": -5,
+      "faceX": 105,
+      "faceY": 99
+    },
+    {
+      "index": 9,
+      "poseID": 11,
+      "emotionPair": {
+        "emotion": 4.7123889923095703,
+        "intensity": 1
+      },
+      "xCX": 95,
+      "yCX": 131,
+      "delta_xCX": 3,
+      "delta_yCX": 0,
+      "faceX": 101,
+      "faceY": 92
+    },
+    {
+      "index": 10,
+      "poseID": 12,
+      "emotionPair": {
+        "emotion": 2.3561944961547852,
+        "intensity": 1
+      },
+      "xCX": 97,
+      "yCX": 128,
+      "delta_xCX": 1,
+      "delta_yCX": -3,
+      "faceX": 106,
+      "faceY": 95
+    },
+    {
+      "index": 11,
+      "poseID": 13,
+      "emotionPair": {
+        "emotion": 5.4977869987487793,
+        "intensity": 1
+      },
+      "xCX": 93,
+      "yCX": 131,
+      "delta_xCX": 1,
+      "delta_yCX": -4,
+      "faceX": 103,
+      "faceY": 98
+    }
+  ],
+  "torsoRecs": [
+    {
+      "index": 0,
+      "poseID": 14,
+      "emotionPair": {
+        "emotion": 0,
+        "intensity": 0
+      },
+      "xCX": 107,
+      "yCX": 27
+    },
+    {
+      "index": 1,
+      "poseID": 15,
+      "emotionPair": {
+        "emotion": 1002,
+        "intensity": 1
+      },
+      "xCX": 89,
+      "yCX": 36
+    },
+    {
+      "index": 2,
+      "poseID": 16,
+      "emotionPair": {
+        "emotion": 1003,
+        "intensity": 1
+      },
+      "xCX": 120,
+      "yCX": 35
+    },
+    {
+      "index": 3,
+      "poseID": 17,
+      "emotionPair": {
+        "emotion": 0.78539818525314331,
+        "intensity": 1
+      },
+      "xCX": 94,
+      "yCX": 32
+    },
+    {
+      "index": 4,
+      "poseID": 18,
+      "emotionPair": {
+        "emotion": 0,
+        "intensity": 0
+      },
+      "xCX": 94,
+      "yCX": 32
+    },
+    {
+      "index": 5,
+      "poseID": 19,
+      "emotionPair": {
+        "emotion": 3.1415927410125732,
+        "intensity": 1
+      },
+      "xCX": 111,
+      "yCX": 30
+    },
+    {
+      "index": 6,
+      "poseID": 20,
+      "emotionPair": {
+        "emotion": 0,
+        "intensity": 0
+      },
+      "xCX": 113,
+      "yCX": 28
+    },
+    {
+      "index": 7,
+      "poseID": 21,
+      "emotionPair": {
+        "emotion": 3.9269907474517822,
+        "intensity": 0.20000000298023224
+      },
+      "xCX": 113,
+      "yCX": 28
+    },
+    {
+      "index": 8,
+      "poseID": 22,
+      "emotionPair": {
+        "emotion": 3.9269907474517822,
+        "intensity": 1
+      },
+      "xCX": 108,
+      "yCX": 30
+    },
+    {
+      "index": 9,
+      "poseID": 23,
+      "emotionPair": {
+        "emotion": 1.5707963705062866,
+        "intensity": 1
+      },
+      "xCX": 167,
+      "yCX": 33
+    },
+    {
+      "index": 10,
+      "poseID": 24,
+      "emotionPair": {
+        "emotion": 1001,
+        "intensity": 1
+      },
+      "xCX": 95,
+      "yCX": 58
+    }
+  ],
+  "poses": [
+    {
+      "index": 0,
+      "poseID": 1,
+      "records": [
+        {
+          "slot": "drawing",
+          "offset": 789,
+          "format": 1,
+          "paletteType": 2
+        },
+        {
+          "slot": "mask",
+          "offset": 0,
+          "format": 0,
+          "paletteType": 0
+        },
+        {
+          "slot": "aura",
+          "offset": 0,
+          "format": 0,
+          "paletteType": 0
+        }
+      ],
+      "loadStatus": "ok",
+      "slots": [
+        {
+          "slot": "drawing",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 40,
+            "biHeight": 40,
+            "biPlanes": 1,
+            "biBitCount": 4,
+            "biCompression": 0,
+            "biSizeImage": 800,
+            "biClrUsed": 16,
+            "biClrImportant": 16,
+            "getWidth": 40,
+            "getHeight": 40,
+            "storageWidth": 20,
+            "numClrEntries": 16,
+            "clrTabCrc32": "0x84e8d22a",
+            "pixelBytes": 800,
+            "pixelCrc32": "0x721c7b87"
+          }
+        },
+        {
+          "slot": "mask",
+          "dib": null
+        },
+        {
+          "slot": "aura",
+          "dib": null
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "poseID": 2,
+      "records": [
+        {
+          "slot": "drawing",
+          "offset": 1188,
+          "format": 1,
+          "paletteType": 2
+        },
+        {
+          "slot": "mask",
+          "offset": 2934,
+          "format": 1,
+          "paletteType": 5
+        },
+        {
+          "slot": "aura",
+          "offset": 0,
+          "format": 1,
+          "paletteType": 3
+        }
+      ],
+      "loadStatus": "ok",
+      "slots": [
+        {
+          "slot": "drawing",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 192,
+            "biHeight": 156,
+            "biPlanes": 1,
+            "biBitCount": 4,
+            "biCompression": 0,
+            "biSizeImage": 14976,
+            "biClrUsed": 16,
+            "biClrImportant": 16,
+            "getWidth": 192,
+            "getHeight": 156,
+            "storageWidth": 96,
+            "numClrEntries": 16,
+            "clrTabCrc32": "0x84e8d22a",
+            "pixelBytes": 14976,
+            "pixelCrc32": "0xcf83e0ae"
+          }
+        },
+        {
+          "slot": "mask",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 192,
+            "biHeight": 156,
+            "biPlanes": 1,
+            "biBitCount": 1,
+            "biCompression": 0,
+            "biSizeImage": 0,
+            "biClrUsed": 2,
+            "biClrImportant": 2,
+            "getWidth": 192,
+            "getHeight": 156,
+            "storageWidth": 24,
+            "numClrEntries": 2,
+            "clrTabCrc32": "0x359b3873",
+            "pixelBytes": 3744,
+            "pixelCrc32": "0xe96d723f"
+          }
+        },
+        {
+          "slot": "aura",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 192,
+            "biHeight": 156,
+            "biPlanes": 1,
+            "biBitCount": 1,
+            "biCompression": 0,
+            "biSizeImage": 0,
+            "biClrUsed": 2,
+            "biClrImportant": 2,
+            "getWidth": 192,
+            "getHeight": 156,
+            "storageWidth": 24,
+            "numClrEntries": 2,
+            "clrTabCrc32": "0x359b3873",
+            "pixelBytes": 3744,
+            "pixelCrc32": "0xc5de706c"
+          }
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "poseID": 3,
+      "records": [
+        {
+          "slot": "drawing",
+          "offset": 1188,
+          "format": 1,
+          "paletteType": 2
+        },
+        {
+          "slot": "mask",
+          "offset": 2934,
+          "format": 1,
+          "paletteType": 5
+        },
+        {
+          "slot": "aura",
+          "offset": 0,
+          "format": 1,
+          "paletteType": 3
+        }
+      ],
+      "loadStatus": "ok",
+      "slots": [
+        {
+          "slot": "drawing",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 192,
+            "biHeight": 156,
+            "biPlanes": 1,
+            "biBitCount": 4,
+            "biCompression": 0,
+            "biSizeImage": 14976,
+            "biClrUsed": 16,
+            "biClrImportant": 16,
+            "getWidth": 192,
+            "getHeight": 156,
+            "storageWidth": 96,
+            "numClrEntries": 16,
+            "clrTabCrc32": "0x84e8d22a",
+            "pixelBytes": 14976,
+            "pixelCrc32": "0xcf83e0ae"
+          }
+        },
+        {
+          "slot": "mask",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 192,
+            "biHeight": 156,
+            "biPlanes": 1,
+            "biBitCount": 1,
+            "biCompression": 0,
+            "biSizeImage": 0,
+            "biClrUsed": 2,
+            "biClrImportant": 2,
+            "getWidth": 192,
+            "getHeight": 156,
+            "storageWidth": 24,
+            "numClrEntries": 2,
+            "clrTabCrc32": "0x359b3873",
+            "pixelBytes": 3744,
+            "pixelCrc32": "0xe96d723f"
+          }
+        },
+        {
+          "slot": "aura",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 192,
+            "biHeight": 156,
+            "biPlanes": 1,
+            "biBitCount": 1,
+            "biCompression": 0,
+            "biSizeImage": 0,
+            "biClrUsed": 2,
+            "biClrImportant": 2,
+            "getWidth": 192,
+            "getHeight": 156,
+            "storageWidth": 24,
+            "numClrEntries": 2,
+            "clrTabCrc32": "0x359b3873",
+            "pixelBytes": 3744,
+            "pixelCrc32": "0xc5de706c"
+          }
+        }
+      ]
+    },
+    {
+      "index": 3,
+      "poseID": 4,
+      "records": [
+        {
+          "slot": "drawing",
+          "offset": 1188,
+          "format": 1,
+          "paletteType": 2
+        },
+        {
+          "slot": "mask",
+          "offset": 2934,
+          "format": 1,
+          "paletteType": 5
+        },
+        {
+          "slot": "aura",
+          "offset": 0,
+          "format": 1,
+          "paletteType": 3
+        }
+      ],
+      "loadStatus": "ok",
+      "slots": [
+        {
+          "slot": "drawing",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 192,
+            "biHeight": 156,
+            "biPlanes": 1,
+            "biBitCount": 4,
+            "biCompression": 0,
+            "biSizeImage": 14976,
+            "biClrUsed": 16,
+            "biClrImportant": 16,
+            "getWidth": 192,
+            "getHeight": 156,
+            "storageWidth": 96,
+            "numClrEntries": 16,
+            "clrTabCrc32": "0x84e8d22a",
+            "pixelBytes": 14976,
+            "pixelCrc32": "0xcf83e0ae"
+          }
+        },
+        {
+          "slot": "mask",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 192,
+            "biHeight": 156,
+            "biPlanes": 1,
+            "biBitCount": 1,
+            "biCompression": 0,
+            "biSizeImage": 0,
+            "biClrUsed": 2,
+            "biClrImportant": 2,
+            "getWidth": 192,
+            "getHeight": 156,
+            "storageWidth": 24,
+            "numClrEntries": 2,
+            "clrTabCrc32": "0x359b3873",
+            "pixelBytes": 3744,
+            "pixelCrc32": "0xe96d723f"
+          }
+        },
+        {
+          "slot": "aura",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 192,
+            "biHeight": 156,
+            "biPlanes": 1,
+            "biBitCount": 1,
+            "biCompression": 0,
+            "biSizeImage": 0,
+            "biClrUsed": 2,
+            "biClrImportant": 2,
+            "getWidth": 192,
+            "getHeight": 156,
+            "storageWidth": 24,
+            "numClrEntries": 2,
+            "clrTabCrc32": "0x359b3873",
+            "pixelBytes": 3744,
+            "pixelCrc32": "0xc5de706c"
+          }
+        }
+      ]
+    },
+    {
+      "index": 4,
+      "poseID": 5,
+      "records": [
+        {
+          "slot": "drawing",
+          "offset": 3673,
+          "format": 1,
+          "paletteType": 2
+        },
+        {
+          "slot": "mask",
+          "offset": 5540,
+          "format": 1,
+          "paletteType": 5
+        },
+        {
+          "slot": "aura",
+          "offset": 0,
+          "format": 1,
+          "paletteType": 3
+        }
+      ],
+      "loadStatus": "ok",
+      "slots": [
+        {
+          "slot": "drawing",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 189,
+            "biHeight": 159,
+            "biPlanes": 1,
+            "biBitCount": 4,
+            "biCompression": 0,
+            "biSizeImage": 15264,
+            "biClrUsed": 16,
+            "biClrImportant": 16,
+            "getWidth": 189,
+            "getHeight": 159,
+            "storageWidth": 96,
+            "numClrEntries": 16,
+            "clrTabCrc32": "0x84e8d22a",
+            "pixelBytes": 15264,
+            "pixelCrc32": "0x8af54170"
+          }
+        },
+        {
+          "slot": "mask",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 189,
+            "biHeight": 159,
+            "biPlanes": 1,
+            "biBitCount": 1,
+            "biCompression": 0,
+            "biSizeImage": 0,
+            "biClrUsed": 2,
+            "biClrImportant": 2,
+            "getWidth": 189,
+            "getHeight": 159,
+            "storageWidth": 24,
+            "numClrEntries": 2,
+            "clrTabCrc32": "0x359b3873",
+            "pixelBytes": 3816,
+            "pixelCrc32": "0x009a62c7"
+          }
+        },
+        {
+          "slot": "aura",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 189,
+            "biHeight": 159,
+            "biPlanes": 1,
+            "biBitCount": 1,
+            "biCompression": 0,
+            "biSizeImage": 0,
+            "biClrUsed": 2,
+            "biClrImportant": 2,
+            "getWidth": 189,
+            "getHeight": 159,
+            "storageWidth": 24,
+            "numClrEntries": 2,
+            "clrTabCrc32": "0x359b3873",
+            "pixelBytes": 3816,
+            "pixelCrc32": "0xc6a50650"
+          }
+        }
+      ]
+    },
+    {
+      "index": 5,
+      "poseID": 6,
+      "records": [
+        {
+          "slot": "drawing",
+          "offset": 3673,
+          "format": 1,
+          "paletteType": 2
+        },
+        {
+          "slot": "mask",
+          "offset": 5540,
+          "format": 1,
+          "paletteType": 5
+        },
+        {
+          "slot": "aura",
+          "offset": 0,
+          "format": 1,
+          "paletteType": 3
+        }
+      ],
+      "loadStatus": "ok",
+      "slots": [
+        {
+          "slot": "drawing",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 189,
+            "biHeight": 159,
+            "biPlanes": 1,
+            "biBitCount": 4,
+            "biCompression": 0,
+            "biSizeImage": 15264,
+            "biClrUsed": 16,
+            "biClrImportant": 16,
+            "getWidth": 189,
+            "getHeight": 159,
+            "storageWidth": 96,
+            "numClrEntries": 16,
+            "clrTabCrc32": "0x84e8d22a",
+            "pixelBytes": 15264,
+            "pixelCrc32": "0x8af54170"
+          }
+        },
+        {
+          "slot": "mask",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 189,
+            "biHeight": 159,
+            "biPlanes": 1,
+            "biBitCount": 1,
+            "biCompression": 0,
+            "biSizeImage": 0,
+            "biClrUsed": 2,
+            "biClrImportant": 2,
+            "getWidth": 189,
+            "getHeight": 159,
+            "storageWidth": 24,
+            "numClrEntries": 2,
+            "clrTabCrc32": "0x359b3873",
+            "pixelBytes": 3816,
+            "pixelCrc32": "0x009a62c7"
+          }
+        },
+        {
+          "slot": "aura",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 189,
+            "biHeight": 159,
+            "biPlanes": 1,
+            "biBitCount": 1,
+            "biCompression": 0,
+            "biSizeImage": 0,
+            "biClrUsed": 2,
+            "biClrImportant": 2,
+            "getWidth": 189,
+            "getHeight": 159,
+            "storageWidth": 24,
+            "numClrEntries": 2,
+            "clrTabCrc32": "0x359b3873",
+            "pixelBytes": 3816,
+            "pixelCrc32": "0xc6a50650"
+          }
+        }
+      ]
+    },
+    {
+      "index": 6,
+      "poseID": 7,
+      "records": [
+        {
+          "slot": "drawing",
+          "offset": 6293,
+          "format": 1,
+          "paletteType": 2
+        },
+        {
+          "slot": "mask",
+          "offset": 8452,
+          "format": 1,
+          "paletteType": 5
+        },
+        {
+          "slot": "aura",
+          "offset": 0,
+          "format": 1,
+          "paletteType": 3
+        }
+      ],
+      "loadStatus": "ok",
+      "slots": [
+        {
+          "slot": "drawing",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 182,
+            "biHeight": 169,
+            "biPlanes": 1,
+            "biBitCount": 4,
+            "biCompression": 0,
+            "biSizeImage": 15548,
+            "biClrUsed": 16,
+            "biClrImportant": 16,
+            "getWidth": 182,
+            "getHeight": 169,
+            "storageWidth": 92,
+            "numClrEntries": 16,
+            "clrTabCrc32": "0x84e8d22a",
+            "pixelBytes": 15548,
+            "pixelCrc32": "0xc3fd59dd"
+          }
+        },
+        {
+          "slot": "mask",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 182,
+            "biHeight": 169,
+            "biPlanes": 1,
+            "biBitCount": 1,
+            "biCompression": 0,
+            "biSizeImage": 0,
+            "biClrUsed": 2,
+            "biClrImportant": 2,
+            "getWidth": 182,
+            "getHeight": 169,
+            "storageWidth": 24,
+            "numClrEntries": 2,
+            "clrTabCrc32": "0x359b3873",
+            "pixelBytes": 4056,
+            "pixelCrc32": "0x7a79cac3"
+          }
+        },
+        {
+          "slot": "aura",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 182,
+            "biHeight": 169,
+            "biPlanes": 1,
+            "biBitCount": 1,
+            "biCompression": 0,
+            "biSizeImage": 0,
+            "biClrUsed": 2,
+            "biClrImportant": 2,
+            "getWidth": 182,
+            "getHeight": 169,
+            "storageWidth": 24,
+            "numClrEntries": 2,
+            "clrTabCrc32": "0x359b3873",
+            "pixelBytes": 4056,
+            "pixelCrc32": "0xaf035b15"
+          }
+        }
+      ]
+    },
+    {
+      "index": 7,
+      "poseID": 8,
+      "records": [
+        {
+          "slot": "drawing",
+          "offset": 9311,
+          "format": 1,
+          "paletteType": 2
+        },
+        {
+          "slot": "mask",
+          "offset": 11240,
+          "format": 1,
+          "paletteType": 5
+        },
+        {
+          "slot": "aura",
+          "offset": 0,
+          "format": 1,
+          "paletteType": 3
+        }
+      ],
+      "loadStatus": "ok",
+      "slots": [
+        {
+          "slot": "drawing",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 199,
+            "biHeight": 161,
+            "biPlanes": 1,
+            "biBitCount": 4,
+            "biCompression": 0,
+            "biSizeImage": 16100,
+            "biClrUsed": 16,
+            "biClrImportant": 16,
+            "getWidth": 199,
+            "getHeight": 161,
+            "storageWidth": 100,
+            "numClrEntries": 16,
+            "clrTabCrc32": "0x84e8d22a",
+            "pixelBytes": 16100,
+            "pixelCrc32": "0x1176ade7"
+          }
+        },
+        {
+          "slot": "mask",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 199,
+            "biHeight": 161,
+            "biPlanes": 1,
+            "biBitCount": 1,
+            "biCompression": 0,
+            "biSizeImage": 0,
+            "biClrUsed": 2,
+            "biClrImportant": 2,
+            "getWidth": 199,
+            "getHeight": 161,
+            "storageWidth": 28,
+            "numClrEntries": 2,
+            "clrTabCrc32": "0x359b3873",
+            "pixelBytes": 4508,
+            "pixelCrc32": "0x0a9c5d4e"
+          }
+        },
+        {
+          "slot": "aura",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 199,
+            "biHeight": 161,
+            "biPlanes": 1,
+            "biBitCount": 1,
+            "biCompression": 0,
+            "biSizeImage": 0,
+            "biClrUsed": 2,
+            "biClrImportant": 2,
+            "getWidth": 199,
+            "getHeight": 161,
+            "storageWidth": 28,
+            "numClrEntries": 2,
+            "clrTabCrc32": "0x359b3873",
+            "pixelBytes": 4508,
+            "pixelCrc32": "0x50650c21"
+          }
+        }
+      ]
+    },
+    {
+      "index": 8,
+      "poseID": 9,
+      "records": [
+        {
+          "slot": "drawing",
+          "offset": 12152,
+          "format": 1,
+          "paletteType": 2
+        },
+        {
+          "slot": "mask",
+          "offset": 13926,
+          "format": 1,
+          "paletteType": 5
+        },
+        {
+          "slot": "aura",
+          "offset": 0,
+          "format": 1,
+          "paletteType": 3
+        }
+      ],
+      "loadStatus": "ok",
+      "slots": [
+        {
+          "slot": "drawing",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 191,
+            "biHeight": 153,
+            "biPlanes": 1,
+            "biBitCount": 4,
+            "biCompression": 0,
+            "biSizeImage": 14688,
+            "biClrUsed": 16,
+            "biClrImportant": 16,
+            "getWidth": 191,
+            "getHeight": 153,
+            "storageWidth": 96,
+            "numClrEntries": 16,
+            "clrTabCrc32": "0x84e8d22a",
+            "pixelBytes": 14688,
+            "pixelCrc32": "0x0806d7be"
+          }
+        },
+        {
+          "slot": "mask",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 191,
+            "biHeight": 153,
+            "biPlanes": 1,
+            "biBitCount": 1,
+            "biCompression": 0,
+            "biSizeImage": 0,
+            "biClrUsed": 2,
+            "biClrImportant": 2,
+            "getWidth": 191,
+            "getHeight": 153,
+            "storageWidth": 24,
+            "numClrEntries": 2,
+            "clrTabCrc32": "0x359b3873",
+            "pixelBytes": 3672,
+            "pixelCrc32": "0x3ff04ac7"
+          }
+        },
+        {
+          "slot": "aura",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 191,
+            "biHeight": 153,
+            "biPlanes": 1,
+            "biBitCount": 1,
+            "biCompression": 0,
+            "biSizeImage": 0,
+            "biClrUsed": 2,
+            "biClrImportant": 2,
+            "getWidth": 191,
+            "getHeight": 153,
+            "storageWidth": 24,
+            "numClrEntries": 2,
+            "clrTabCrc32": "0x359b3873",
+            "pixelBytes": 3672,
+            "pixelCrc32": "0x6300b3bd"
+          }
+        }
+      ]
+    },
+    {
+      "index": 9,
+      "poseID": 10,
+      "records": [
+        {
+          "slot": "drawing",
+          "offset": 14700,
+          "format": 1,
+          "paletteType": 2
+        },
+        {
+          "slot": "mask",
+          "offset": 16725,
+          "format": 1,
+          "paletteType": 5
+        },
+        {
+          "slot": "aura",
+          "offset": 0,
+          "format": 1,
+          "paletteType": 3
+        }
+      ],
+      "loadStatus": "ok",
+      "slots": [
+        {
+          "slot": "drawing",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 196,
+            "biHeight": 158,
+            "biPlanes": 1,
+            "biBitCount": 4,
+            "biCompression": 0,
+            "biSizeImage": 15800,
+            "biClrUsed": 16,
+            "biClrImportant": 16,
+            "getWidth": 196,
+            "getHeight": 158,
+            "storageWidth": 100,
+            "numClrEntries": 16,
+            "clrTabCrc32": "0x84e8d22a",
+            "pixelBytes": 15800,
+            "pixelCrc32": "0x1d0668a6"
+          }
+        },
+        {
+          "slot": "mask",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 196,
+            "biHeight": 158,
+            "biPlanes": 1,
+            "biBitCount": 1,
+            "biCompression": 0,
+            "biSizeImage": 0,
+            "biClrUsed": 2,
+            "biClrImportant": 2,
+            "getWidth": 196,
+            "getHeight": 158,
+            "storageWidth": 28,
+            "numClrEntries": 2,
+            "clrTabCrc32": "0x359b3873",
+            "pixelBytes": 4424,
+            "pixelCrc32": "0x63178e54"
+          }
+        },
+        {
+          "slot": "aura",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 196,
+            "biHeight": 158,
+            "biPlanes": 1,
+            "biBitCount": 1,
+            "biCompression": 0,
+            "biSizeImage": 0,
+            "biClrUsed": 2,
+            "biClrImportant": 2,
+            "getWidth": 196,
+            "getHeight": 158,
+            "storageWidth": 28,
+            "numClrEntries": 2,
+            "clrTabCrc32": "0x359b3873",
+            "pixelBytes": 4424,
+            "pixelCrc32": "0xfb924e43"
+          }
+        }
+      ]
+    },
+    {
+      "index": 10,
+      "poseID": 11,
+      "records": [
+        {
+          "slot": "drawing",
+          "offset": 17558,
+          "format": 1,
+          "paletteType": 2
+        },
+        {
+          "slot": "mask",
+          "offset": 19489,
+          "format": 1,
+          "paletteType": 5
+        },
+        {
+          "slot": "aura",
+          "offset": 0,
+          "format": 1,
+          "paletteType": 3
+        }
+      ],
+      "loadStatus": "ok",
+      "slots": [
+        {
+          "slot": "drawing",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 196,
+            "biHeight": 161,
+            "biPlanes": 1,
+            "biBitCount": 4,
+            "biCompression": 0,
+            "biSizeImage": 16100,
+            "biClrUsed": 16,
+            "biClrImportant": 16,
+            "getWidth": 196,
+            "getHeight": 161,
+            "storageWidth": 100,
+            "numClrEntries": 16,
+            "clrTabCrc32": "0x84e8d22a",
+            "pixelBytes": 16100,
+            "pixelCrc32": "0xbb42cd5d"
+          }
+        },
+        {
+          "slot": "mask",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 196,
+            "biHeight": 161,
+            "biPlanes": 1,
+            "biBitCount": 1,
+            "biCompression": 0,
+            "biSizeImage": 0,
+            "biClrUsed": 2,
+            "biClrImportant": 2,
+            "getWidth": 196,
+            "getHeight": 161,
+            "storageWidth": 28,
+            "numClrEntries": 2,
+            "clrTabCrc32": "0x359b3873",
+            "pixelBytes": 4508,
+            "pixelCrc32": "0xfbe07778"
+          }
+        },
+        {
+          "slot": "aura",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 196,
+            "biHeight": 161,
+            "biPlanes": 1,
+            "biBitCount": 1,
+            "biCompression": 0,
+            "biSizeImage": 0,
+            "biClrUsed": 2,
+            "biClrImportant": 2,
+            "getWidth": 196,
+            "getHeight": 161,
+            "storageWidth": 28,
+            "numClrEntries": 2,
+            "clrTabCrc32": "0x359b3873",
+            "pixelBytes": 4508,
+            "pixelCrc32": "0xdeeb0147"
+          }
+        }
+      ]
+    },
+    {
+      "index": 11,
+      "poseID": 12,
+      "records": [
+        {
+          "slot": "drawing",
+          "offset": 20382,
+          "format": 1,
+          "paletteType": 2
+        },
+        {
+          "slot": "mask",
+          "offset": 22320,
+          "format": 1,
+          "paletteType": 5
+        },
+        {
+          "slot": "aura",
+          "offset": 0,
+          "format": 1,
+          "paletteType": 3
+        }
+      ],
+      "loadStatus": "ok",
+      "slots": [
+        {
+          "slot": "drawing",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 193,
+            "biHeight": 158,
+            "biPlanes": 1,
+            "biBitCount": 4,
+            "biCompression": 0,
+            "biSizeImage": 15800,
+            "biClrUsed": 16,
+            "biClrImportant": 16,
+            "getWidth": 193,
+            "getHeight": 158,
+            "storageWidth": 100,
+            "numClrEntries": 16,
+            "clrTabCrc32": "0x84e8d22a",
+            "pixelBytes": 15800,
+            "pixelCrc32": "0x9efb41c0"
+          }
+        },
+        {
+          "slot": "mask",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 193,
+            "biHeight": 158,
+            "biPlanes": 1,
+            "biBitCount": 1,
+            "biCompression": 0,
+            "biSizeImage": 0,
+            "biClrUsed": 2,
+            "biClrImportant": 2,
+            "getWidth": 193,
+            "getHeight": 158,
+            "storageWidth": 28,
+            "numClrEntries": 2,
+            "clrTabCrc32": "0x359b3873",
+            "pixelBytes": 4424,
+            "pixelCrc32": "0xfb7065f4"
+          }
+        },
+        {
+          "slot": "aura",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 193,
+            "biHeight": 158,
+            "biPlanes": 1,
+            "biBitCount": 1,
+            "biCompression": 0,
+            "biSizeImage": 0,
+            "biClrUsed": 2,
+            "biClrImportant": 2,
+            "getWidth": 193,
+            "getHeight": 158,
+            "storageWidth": 28,
+            "numClrEntries": 2,
+            "clrTabCrc32": "0x359b3873",
+            "pixelBytes": 4424,
+            "pixelCrc32": "0x4925391f"
+          }
+        }
+      ]
+    },
+    {
+      "index": 12,
+      "poseID": 13,
+      "records": [
+        {
+          "slot": "drawing",
+          "offset": 23211,
+          "format": 1,
+          "paletteType": 2
+        },
+        {
+          "slot": "mask",
+          "offset": 25310,
+          "format": 1,
+          "paletteType": 5
+        },
+        {
+          "slot": "aura",
+          "offset": 0,
+          "format": 1,
+          "paletteType": 3
+        }
+      ],
+      "loadStatus": "ok",
+      "slots": [
+        {
+          "slot": "drawing",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 188,
+            "biHeight": 160,
+            "biPlanes": 1,
+            "biBitCount": 4,
+            "biCompression": 0,
+            "biSizeImage": 15360,
+            "biClrUsed": 16,
+            "biClrImportant": 16,
+            "getWidth": 188,
+            "getHeight": 160,
+            "storageWidth": 96,
+            "numClrEntries": 16,
+            "clrTabCrc32": "0x84e8d22a",
+            "pixelBytes": 15360,
+            "pixelCrc32": "0x75c77986"
+          }
+        },
+        {
+          "slot": "mask",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 188,
+            "biHeight": 160,
+            "biPlanes": 1,
+            "biBitCount": 1,
+            "biCompression": 0,
+            "biSizeImage": 0,
+            "biClrUsed": 2,
+            "biClrImportant": 2,
+            "getWidth": 188,
+            "getHeight": 160,
+            "storageWidth": 24,
+            "numClrEntries": 2,
+            "clrTabCrc32": "0x359b3873",
+            "pixelBytes": 3840,
+            "pixelCrc32": "0x408be161"
+          }
+        },
+        {
+          "slot": "aura",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 188,
+            "biHeight": 160,
+            "biPlanes": 1,
+            "biBitCount": 1,
+            "biCompression": 0,
+            "biSizeImage": 0,
+            "biClrUsed": 2,
+            "biClrImportant": 2,
+            "getWidth": 188,
+            "getHeight": 160,
+            "storageWidth": 24,
+            "numClrEntries": 2,
+            "clrTabCrc32": "0x359b3873",
+            "pixelBytes": 3840,
+            "pixelCrc32": "0x6bea4af6"
+          }
+        }
+      ]
+    },
+    {
+      "index": 13,
+      "poseID": 14,
+      "records": [
+        {
+          "slot": "drawing",
+          "offset": 26150,
+          "format": 1,
+          "paletteType": 2
+        },
+        {
+          "slot": "mask",
+          "offset": 32258,
+          "format": 1,
+          "paletteType": 5
+        },
+        {
+          "slot": "aura",
+          "offset": 0,
+          "format": 1,
+          "paletteType": 3
+        }
+      ],
+      "loadStatus": "ok",
+      "slots": [
+        {
+          "slot": "drawing",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 211,
+            "biHeight": 363,
+            "biPlanes": 1,
+            "biBitCount": 4,
+            "biCompression": 0,
+            "biSizeImage": 39204,
+            "biClrUsed": 16,
+            "biClrImportant": 16,
+            "getWidth": 211,
+            "getHeight": 363,
+            "storageWidth": 108,
+            "numClrEntries": 16,
+            "clrTabCrc32": "0x84e8d22a",
+            "pixelBytes": 39204,
+            "pixelCrc32": "0xcb8bac1a"
+          }
+        },
+        {
+          "slot": "mask",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 211,
+            "biHeight": 363,
+            "biPlanes": 1,
+            "biBitCount": 1,
+            "biCompression": 0,
+            "biSizeImage": 0,
+            "biClrUsed": 2,
+            "biClrImportant": 2,
+            "getWidth": 211,
+            "getHeight": 363,
+            "storageWidth": 28,
+            "numClrEntries": 2,
+            "clrTabCrc32": "0x359b3873",
+            "pixelBytes": 10164,
+            "pixelCrc32": "0x600d8c3c"
+          }
+        },
+        {
+          "slot": "aura",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 211,
+            "biHeight": 363,
+            "biPlanes": 1,
+            "biBitCount": 1,
+            "biCompression": 0,
+            "biSizeImage": 0,
+            "biClrUsed": 2,
+            "biClrImportant": 2,
+            "getWidth": 211,
+            "getHeight": 363,
+            "storageWidth": 28,
+            "numClrEntries": 2,
+            "clrTabCrc32": "0x359b3873",
+            "pixelBytes": 10164,
+            "pixelCrc32": "0xa849fb78"
+          }
+        }
+      ]
+    },
+    {
+      "index": 14,
+      "poseID": 15,
+      "records": [
+        {
+          "slot": "drawing",
+          "offset": 34049,
+          "format": 1,
+          "paletteType": 2
+        },
+        {
+          "slot": "mask",
+          "offset": 39677,
+          "format": 1,
+          "paletteType": 5
+        },
+        {
+          "slot": "aura",
+          "offset": 0,
+          "format": 1,
+          "paletteType": 3
+        }
+      ],
+      "loadStatus": "ok",
+      "slots": [
+        {
+          "slot": "drawing",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 189,
+            "biHeight": 373,
+            "biPlanes": 1,
+            "biBitCount": 4,
+            "biCompression": 0,
+            "biSizeImage": 35808,
+            "biClrUsed": 16,
+            "biClrImportant": 16,
+            "getWidth": 189,
+            "getHeight": 373,
+            "storageWidth": 96,
+            "numClrEntries": 16,
+            "clrTabCrc32": "0x84e8d22a",
+            "pixelBytes": 35808,
+            "pixelCrc32": "0x2a1ac0ae"
+          }
+        },
+        {
+          "slot": "mask",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 189,
+            "biHeight": 373,
+            "biPlanes": 1,
+            "biBitCount": 1,
+            "biCompression": 0,
+            "biSizeImage": 0,
+            "biClrUsed": 2,
+            "biClrImportant": 2,
+            "getWidth": 189,
+            "getHeight": 373,
+            "storageWidth": 24,
+            "numClrEntries": 2,
+            "clrTabCrc32": "0x359b3873",
+            "pixelBytes": 8952,
+            "pixelCrc32": "0x355d8dae"
+          }
+        },
+        {
+          "slot": "aura",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 189,
+            "biHeight": 373,
+            "biPlanes": 1,
+            "biBitCount": 1,
+            "biCompression": 0,
+            "biSizeImage": 0,
+            "biClrUsed": 2,
+            "biClrImportant": 2,
+            "getWidth": 189,
+            "getHeight": 373,
+            "storageWidth": 24,
+            "numClrEntries": 2,
+            "clrTabCrc32": "0x359b3873",
+            "pixelBytes": 8952,
+            "pixelCrc32": "0x0c19fed8"
+          }
+        }
+      ]
+    },
+    {
+      "index": 15,
+      "poseID": 16,
+      "records": [
+        {
+          "slot": "drawing",
+          "offset": 40979,
+          "format": 1,
+          "paletteType": 2
+        },
+        {
+          "slot": "mask",
+          "offset": 46680,
+          "format": 1,
+          "paletteType": 5
+        },
+        {
+          "slot": "aura",
+          "offset": 0,
+          "format": 1,
+          "paletteType": 3
+        }
+      ],
+      "loadStatus": "ok",
+      "slots": [
+        {
+          "slot": "drawing",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 239,
+            "biHeight": 371,
+            "biPlanes": 1,
+            "biBitCount": 4,
+            "biCompression": 0,
+            "biSizeImage": 44520,
+            "biClrUsed": 16,
+            "biClrImportant": 16,
+            "getWidth": 239,
+            "getHeight": 371,
+            "storageWidth": 120,
+            "numClrEntries": 16,
+            "clrTabCrc32": "0x84e8d22a",
+            "pixelBytes": 44520,
+            "pixelCrc32": "0x37f0dc04"
+          }
+        },
+        {
+          "slot": "mask",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 239,
+            "biHeight": 371,
+            "biPlanes": 1,
+            "biBitCount": 1,
+            "biCompression": 0,
+            "biSizeImage": 0,
+            "biClrUsed": 2,
+            "biClrImportant": 2,
+            "getWidth": 239,
+            "getHeight": 371,
+            "storageWidth": 32,
+            "numClrEntries": 2,
+            "clrTabCrc32": "0x359b3873",
+            "pixelBytes": 11872,
+            "pixelCrc32": "0x91c0d74d"
+          }
+        },
+        {
+          "slot": "aura",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 239,
+            "biHeight": 371,
+            "biPlanes": 1,
+            "biBitCount": 1,
+            "biCompression": 0,
+            "biSizeImage": 0,
+            "biClrUsed": 2,
+            "biClrImportant": 2,
+            "getWidth": 239,
+            "getHeight": 371,
+            "storageWidth": 32,
+            "numClrEntries": 2,
+            "clrTabCrc32": "0x359b3873",
+            "pixelBytes": 11872,
+            "pixelCrc32": "0x6b17234b"
+          }
+        }
+      ]
+    },
+    {
+      "index": 16,
+      "poseID": 17,
+      "records": [
+        {
+          "slot": "drawing",
+          "offset": 48496,
+          "format": 1,
+          "paletteType": 2
+        },
+        {
+          "slot": "mask",
+          "offset": 54057,
+          "format": 1,
+          "paletteType": 5
+        },
+        {
+          "slot": "aura",
+          "offset": 0,
+          "format": 1,
+          "paletteType": 3
+        }
+      ],
+      "loadStatus": "ok",
+      "slots": [
+        {
+          "slot": "drawing",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 188,
+            "biHeight": 366,
+            "biPlanes": 1,
+            "biBitCount": 4,
+            "biCompression": 0,
+            "biSizeImage": 35136,
+            "biClrUsed": 16,
+            "biClrImportant": 16,
+            "getWidth": 188,
+            "getHeight": 366,
+            "storageWidth": 96,
+            "numClrEntries": 16,
+            "clrTabCrc32": "0x84e8d22a",
+            "pixelBytes": 35136,
+            "pixelCrc32": "0x4f86287b"
+          }
+        },
+        {
+          "slot": "mask",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 188,
+            "biHeight": 366,
+            "biPlanes": 1,
+            "biBitCount": 1,
+            "biCompression": 0,
+            "biSizeImage": 0,
+            "biClrUsed": 2,
+            "biClrImportant": 2,
+            "getWidth": 188,
+            "getHeight": 366,
+            "storageWidth": 24,
+            "numClrEntries": 2,
+            "clrTabCrc32": "0x359b3873",
+            "pixelBytes": 8784,
+            "pixelCrc32": "0xbca6cde1"
+          }
+        },
+        {
+          "slot": "aura",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 188,
+            "biHeight": 366,
+            "biPlanes": 1,
+            "biBitCount": 1,
+            "biCompression": 0,
+            "biSizeImage": 0,
+            "biClrUsed": 2,
+            "biClrImportant": 2,
+            "getWidth": 188,
+            "getHeight": 366,
+            "storageWidth": 24,
+            "numClrEntries": 2,
+            "clrTabCrc32": "0x359b3873",
+            "pixelBytes": 8784,
+            "pixelCrc32": "0x57c45126"
+          }
+        }
+      ]
+    },
+    {
+      "index": 17,
+      "poseID": 18,
+      "records": [
+        {
+          "slot": "drawing",
+          "offset": 48496,
+          "format": 1,
+          "paletteType": 2
+        },
+        {
+          "slot": "mask",
+          "offset": 54057,
+          "format": 1,
+          "paletteType": 5
+        },
+        {
+          "slot": "aura",
+          "offset": 0,
+          "format": 1,
+          "paletteType": 3
+        }
+      ],
+      "loadStatus": "ok",
+      "slots": [
+        {
+          "slot": "drawing",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 188,
+            "biHeight": 366,
+            "biPlanes": 1,
+            "biBitCount": 4,
+            "biCompression": 0,
+            "biSizeImage": 35136,
+            "biClrUsed": 16,
+            "biClrImportant": 16,
+            "getWidth": 188,
+            "getHeight": 366,
+            "storageWidth": 96,
+            "numClrEntries": 16,
+            "clrTabCrc32": "0x84e8d22a",
+            "pixelBytes": 35136,
+            "pixelCrc32": "0x4f86287b"
+          }
+        },
+        {
+          "slot": "mask",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 188,
+            "biHeight": 366,
+            "biPlanes": 1,
+            "biBitCount": 1,
+            "biCompression": 0,
+            "biSizeImage": 0,
+            "biClrUsed": 2,
+            "biClrImportant": 2,
+            "getWidth": 188,
+            "getHeight": 366,
+            "storageWidth": 24,
+            "numClrEntries": 2,
+            "clrTabCrc32": "0x359b3873",
+            "pixelBytes": 8784,
+            "pixelCrc32": "0xbca6cde1"
+          }
+        },
+        {
+          "slot": "aura",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 188,
+            "biHeight": 366,
+            "biPlanes": 1,
+            "biBitCount": 1,
+            "biCompression": 0,
+            "biSizeImage": 0,
+            "biClrUsed": 2,
+            "biClrImportant": 2,
+            "getWidth": 188,
+            "getHeight": 366,
+            "storageWidth": 24,
+            "numClrEntries": 2,
+            "clrTabCrc32": "0x359b3873",
+            "pixelBytes": 8784,
+            "pixelCrc32": "0x57c45126"
+          }
+        }
+      ]
+    },
+    {
+      "index": 18,
+      "poseID": 19,
+      "records": [
+        {
+          "slot": "drawing",
+          "offset": 55503,
+          "format": 1,
+          "paletteType": 2
+        },
+        {
+          "slot": "mask",
+          "offset": 61436,
+          "format": 1,
+          "paletteType": 5
+        },
+        {
+          "slot": "aura",
+          "offset": 0,
+          "format": 1,
+          "paletteType": 3
+        }
+      ],
+      "loadStatus": "ok",
+      "slots": [
+        {
+          "slot": "drawing",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 189,
+            "biHeight": 366,
+            "biPlanes": 1,
+            "biBitCount": 4,
+            "biCompression": 0,
+            "biSizeImage": 35136,
+            "biClrUsed": 16,
+            "biClrImportant": 16,
+            "getWidth": 189,
+            "getHeight": 366,
+            "storageWidth": 96,
+            "numClrEntries": 16,
+            "clrTabCrc32": "0x84e8d22a",
+            "pixelBytes": 35136,
+            "pixelCrc32": "0x58310ac2"
+          }
+        },
+        {
+          "slot": "mask",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 189,
+            "biHeight": 366,
+            "biPlanes": 1,
+            "biBitCount": 1,
+            "biCompression": 0,
+            "biSizeImage": 0,
+            "biClrUsed": 2,
+            "biClrImportant": 2,
+            "getWidth": 189,
+            "getHeight": 366,
+            "storageWidth": 24,
+            "numClrEntries": 2,
+            "clrTabCrc32": "0x359b3873",
+            "pixelBytes": 8784,
+            "pixelCrc32": "0x09c95150"
+          }
+        },
+        {
+          "slot": "aura",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 189,
+            "biHeight": 366,
+            "biPlanes": 1,
+            "biBitCount": 1,
+            "biCompression": 0,
+            "biSizeImage": 0,
+            "biClrUsed": 2,
+            "biClrImportant": 2,
+            "getWidth": 189,
+            "getHeight": 366,
+            "storageWidth": 24,
+            "numClrEntries": 2,
+            "clrTabCrc32": "0x359b3873",
+            "pixelBytes": 8784,
+            "pixelCrc32": "0x130858e4"
+          }
+        }
+      ]
+    },
+    {
+      "index": 19,
+      "poseID": 20,
+      "records": [
+        {
+          "slot": "drawing",
+          "offset": 62799,
+          "format": 1,
+          "paletteType": 2
+        },
+        {
+          "slot": "mask",
+          "offset": 69270,
+          "format": 1,
+          "paletteType": 5
+        },
+        {
+          "slot": "aura",
+          "offset": 0,
+          "format": 1,
+          "paletteType": 3
+        }
+      ],
+      "loadStatus": "ok",
+      "slots": [
+        {
+          "slot": "drawing",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 220,
+            "biHeight": 351,
+            "biPlanes": 1,
+            "biBitCount": 4,
+            "biCompression": 0,
+            "biSizeImage": 39312,
+            "biClrUsed": 16,
+            "biClrImportant": 16,
+            "getWidth": 220,
+            "getHeight": 351,
+            "storageWidth": 112,
+            "numClrEntries": 16,
+            "clrTabCrc32": "0x84e8d22a",
+            "pixelBytes": 39312,
+            "pixelCrc32": "0xabf9b466"
+          }
+        },
+        {
+          "slot": "mask",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 220,
+            "biHeight": 351,
+            "biPlanes": 1,
+            "biBitCount": 1,
+            "biCompression": 0,
+            "biSizeImage": 0,
+            "biClrUsed": 2,
+            "biClrImportant": 2,
+            "getWidth": 220,
+            "getHeight": 351,
+            "storageWidth": 28,
+            "numClrEntries": 2,
+            "clrTabCrc32": "0x359b3873",
+            "pixelBytes": 9828,
+            "pixelCrc32": "0x45983a5a"
+          }
+        },
+        {
+          "slot": "aura",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 220,
+            "biHeight": 351,
+            "biPlanes": 1,
+            "biBitCount": 1,
+            "biCompression": 0,
+            "biSizeImage": 0,
+            "biClrUsed": 2,
+            "biClrImportant": 2,
+            "getWidth": 220,
+            "getHeight": 351,
+            "storageWidth": 28,
+            "numClrEntries": 2,
+            "clrTabCrc32": "0x359b3873",
+            "pixelBytes": 9828,
+            "pixelCrc32": "0x4f5e7c9f"
+          }
+        }
+      ]
+    },
+    {
+      "index": 20,
+      "poseID": 21,
+      "records": [
+        {
+          "slot": "drawing",
+          "offset": 62799,
+          "format": 1,
+          "paletteType": 2
+        },
+        {
+          "slot": "mask",
+          "offset": 69270,
+          "format": 1,
+          "paletteType": 5
+        },
+        {
+          "slot": "aura",
+          "offset": 0,
+          "format": 1,
+          "paletteType": 3
+        }
+      ],
+      "loadStatus": "ok",
+      "slots": [
+        {
+          "slot": "drawing",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 220,
+            "biHeight": 351,
+            "biPlanes": 1,
+            "biBitCount": 4,
+            "biCompression": 0,
+            "biSizeImage": 39312,
+            "biClrUsed": 16,
+            "biClrImportant": 16,
+            "getWidth": 220,
+            "getHeight": 351,
+            "storageWidth": 112,
+            "numClrEntries": 16,
+            "clrTabCrc32": "0x84e8d22a",
+            "pixelBytes": 39312,
+            "pixelCrc32": "0xabf9b466"
+          }
+        },
+        {
+          "slot": "mask",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 220,
+            "biHeight": 351,
+            "biPlanes": 1,
+            "biBitCount": 1,
+            "biCompression": 0,
+            "biSizeImage": 0,
+            "biClrUsed": 2,
+            "biClrImportant": 2,
+            "getWidth": 220,
+            "getHeight": 351,
+            "storageWidth": 28,
+            "numClrEntries": 2,
+            "clrTabCrc32": "0x359b3873",
+            "pixelBytes": 9828,
+            "pixelCrc32": "0x45983a5a"
+          }
+        },
+        {
+          "slot": "aura",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 220,
+            "biHeight": 351,
+            "biPlanes": 1,
+            "biBitCount": 1,
+            "biCompression": 0,
+            "biSizeImage": 0,
+            "biClrUsed": 2,
+            "biClrImportant": 2,
+            "getWidth": 220,
+            "getHeight": 351,
+            "storageWidth": 28,
+            "numClrEntries": 2,
+            "clrTabCrc32": "0x359b3873",
+            "pixelBytes": 9828,
+            "pixelCrc32": "0x4f5e7c9f"
+          }
+        }
+      ]
+    },
+    {
+      "index": 21,
+      "poseID": 22,
+      "records": [
+        {
+          "slot": "drawing",
+          "offset": 71180,
+          "format": 1,
+          "paletteType": 2
+        },
+        {
+          "slot": "mask",
+          "offset": 76889,
+          "format": 1,
+          "paletteType": 5
+        },
+        {
+          "slot": "aura",
+          "offset": 0,
+          "format": 1,
+          "paletteType": 3
+        }
+      ],
+      "loadStatus": "ok",
+      "slots": [
+        {
+          "slot": "drawing",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 222,
+            "biHeight": 361,
+            "biPlanes": 1,
+            "biBitCount": 4,
+            "biCompression": 0,
+            "biSizeImage": 40432,
+            "biClrUsed": 16,
+            "biClrImportant": 16,
+            "getWidth": 222,
+            "getHeight": 361,
+            "storageWidth": 112,
+            "numClrEntries": 16,
+            "clrTabCrc32": "0x84e8d22a",
+            "pixelBytes": 40432,
+            "pixelCrc32": "0x79d115ae"
+          }
+        },
+        {
+          "slot": "mask",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 222,
+            "biHeight": 361,
+            "biPlanes": 1,
+            "biBitCount": 1,
+            "biCompression": 0,
+            "biSizeImage": 0,
+            "biClrUsed": 2,
+            "biClrImportant": 2,
+            "getWidth": 222,
+            "getHeight": 361,
+            "storageWidth": 28,
+            "numClrEntries": 2,
+            "clrTabCrc32": "0x359b3873",
+            "pixelBytes": 10108,
+            "pixelCrc32": "0xf0b46126"
+          }
+        },
+        {
+          "slot": "aura",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 222,
+            "biHeight": 361,
+            "biPlanes": 1,
+            "biBitCount": 1,
+            "biCompression": 0,
+            "biSizeImage": 0,
+            "biClrUsed": 2,
+            "biClrImportant": 2,
+            "getWidth": 222,
+            "getHeight": 361,
+            "storageWidth": 28,
+            "numClrEntries": 2,
+            "clrTabCrc32": "0x359b3873",
+            "pixelBytes": 10108,
+            "pixelCrc32": "0xbc1c505d"
+          }
+        }
+      ]
+    },
+    {
+      "index": 22,
+      "poseID": 23,
+      "records": [
+        {
+          "slot": "drawing",
+          "offset": 78524,
+          "format": 1,
+          "paletteType": 2
+        },
+        {
+          "slot": "mask",
+          "offset": 85211,
+          "format": 1,
+          "paletteType": 5
+        },
+        {
+          "slot": "aura",
+          "offset": 0,
+          "format": 1,
+          "paletteType": 3
+        }
+      ],
+      "loadStatus": "ok",
+      "slots": [
+        {
+          "slot": "drawing",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 331,
+            "biHeight": 379,
+            "biPlanes": 1,
+            "biBitCount": 4,
+            "biCompression": 0,
+            "biSizeImage": 63672,
+            "biClrUsed": 16,
+            "biClrImportant": 16,
+            "getWidth": 331,
+            "getHeight": 379,
+            "storageWidth": 168,
+            "numClrEntries": 16,
+            "clrTabCrc32": "0x84e8d22a",
+            "pixelBytes": 63672,
+            "pixelCrc32": "0x9650848f"
+          }
+        },
+        {
+          "slot": "mask",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 331,
+            "biHeight": 379,
+            "biPlanes": 1,
+            "biBitCount": 1,
+            "biCompression": 0,
+            "biSizeImage": 0,
+            "biClrUsed": 2,
+            "biClrImportant": 2,
+            "getWidth": 331,
+            "getHeight": 379,
+            "storageWidth": 44,
+            "numClrEntries": 2,
+            "clrTabCrc32": "0x359b3873",
+            "pixelBytes": 16676,
+            "pixelCrc32": "0x0f89685f"
+          }
+        },
+        {
+          "slot": "aura",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 331,
+            "biHeight": 379,
+            "biPlanes": 1,
+            "biBitCount": 1,
+            "biCompression": 0,
+            "biSizeImage": 0,
+            "biClrUsed": 2,
+            "biClrImportant": 2,
+            "getWidth": 331,
+            "getHeight": 379,
+            "storageWidth": 44,
+            "numClrEntries": 2,
+            "clrTabCrc32": "0x359b3873",
+            "pixelBytes": 16676,
+            "pixelCrc32": "0xde57f3c0"
+          }
+        }
+      ]
+    },
+    {
+      "index": 23,
+      "poseID": 24,
+      "records": [
+        {
+          "slot": "drawing",
+          "offset": 87261,
+          "format": 1,
+          "paletteType": 2
+        },
+        {
+          "slot": "mask",
+          "offset": 93476,
+          "format": 1,
+          "paletteType": 5
+        },
+        {
+          "slot": "aura",
+          "offset": 0,
+          "format": 1,
+          "paletteType": 3
+        }
+      ],
+      "loadStatus": "ok",
+      "slots": [
+        {
+          "slot": "drawing",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 215,
+            "biHeight": 395,
+            "biPlanes": 1,
+            "biBitCount": 4,
+            "biCompression": 0,
+            "biSizeImage": 42660,
+            "biClrUsed": 16,
+            "biClrImportant": 16,
+            "getWidth": 215,
+            "getHeight": 395,
+            "storageWidth": 108,
+            "numClrEntries": 16,
+            "clrTabCrc32": "0x84e8d22a",
+            "pixelBytes": 42660,
+            "pixelCrc32": "0xe788a669"
+          }
+        },
+        {
+          "slot": "mask",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 215,
+            "biHeight": 395,
+            "biPlanes": 1,
+            "biBitCount": 1,
+            "biCompression": 0,
+            "biSizeImage": 0,
+            "biClrUsed": 2,
+            "biClrImportant": 2,
+            "getWidth": 215,
+            "getHeight": 395,
+            "storageWidth": 28,
+            "numClrEntries": 2,
+            "clrTabCrc32": "0x359b3873",
+            "pixelBytes": 11060,
+            "pixelCrc32": "0x72b42435"
+          }
+        },
+        {
+          "slot": "aura",
+          "dib": {
+            "biSize": 40,
+            "biWidth": 215,
+            "biHeight": 395,
+            "biPlanes": 1,
+            "biBitCount": 1,
+            "biCompression": 0,
+            "biSizeImage": 0,
+            "biClrUsed": 2,
+            "biClrImportant": 2,
+            "getWidth": 215,
+            "getHeight": 395,
+            "storageWidth": 28,
+            "numClrEntries": 2,
+            "clrTabCrc32": "0x359b3873",
+            "pixelBytes": 11060,
+            "pixelCrc32": "0x6f4c3c40"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -471,6 +471,13 @@ Decisions worth knowing:
   `LoadAvatarInfo` derives its path from `theApp.GetAvatarDir()` and then calls
   `SetNewName`, which overwrites `m_name` with the *filename* — exactly the field
   a format manifest wants to pin from the `AK_NAME` record.
+- **`AK_COPYRIGHT` stores a literal two-character `\n` escape, not a newline.**
+  bolo's is `Copyright © 1996, 1997, 1998 Microsoft Corporation\nJim Woodring`
+  where `\n` is backslash-then-n in the file bytes. The codec passes it through
+  verbatim; interpreting the escape is a *rendering* concern, so a port that
+  un-escapes on read will not match the golden. The `©` is a single byte 0xA9
+  (CP-1252), which is why the goldens carry it as `©` per ojson's
+  byte-oriented string contract.
 - **`biSizeImage` cannot be trusted as the pixel length.** It is documented as
   "may be 0" for uncompressed DIBs and `dib.cpp` does set it to 0 on the paths
   that build headers by hand (dib.cpp:295, 377). For `BI_RGB` the length is
@@ -519,7 +526,47 @@ constructors.** The dump carries a plausibility guard (`RecCountPlausible`) that
 emits `faceRecsUnreadable`/`torsoRecsUnreadable`/`bodyRecsUnreadable` instead of
 hashing stack garbage; it should never fire on the shipped corpus.
 
+### Measured: what the frozen manifests DO cover
+
+From the 33 frozen goldens (run 30297033114, all 32 assets `loadStatus: ok`,
+all 552 poses `ok`):
+
+| | |
+| --- | --- |
+| assets | 32 (18 complex + 7 simple avatars, 7 backdrops) |
+| poses | 552 |
+| decoded image slots hashed | 1612 |
+| decoded pixel bytes hashed | 13,780,864 (9x the 1.5 MB on disk) |
+| stored image records | 745 |
+
+1612 decoded slots from 745 stored images is the **2-bpp expansion working**: one
+`AIP_MASKEDMONO`/`AIP_DUALMASK` source becomes two or three 1-bpp DIBs via
+`ConvertFromMaskedMono`/`ConvertFromDualMask`. The decoded bpp histogram agrees —
+1387 slots at 1bpp against 136 at 4bpp and 89 at 8bpp.
+
+**143 repeated image offsets within an avatar**, so the ditto-optimization
+(equal `dwImageOffset` reuses a pose, avbfile.cpp:1093+) is genuinely exercised.
+
+Palette types across the 745 records: `AIP_MASKEDMONO` 334, `AIP_LOCALPALETTE`
+218, `AIP_DUALMASK` 192, `AIP_MONOCHROME` **1**.
+
 ### Measured: what the shipped corpus does NOT cover
+
+Four more gaps beyond the format-version ones below, all from the frozen
+manifests rather than guessed:
+
+- **`AIF_DIB` is never used.** All 745 image records are `AIF_LZDEFLATE`, so
+  `CAvatarFileDIBImage::Read` has no golden — only the zlib path is exercised.
+  The plan lists both.
+- **`AIP_GLOBALPALETTE` is never used, and no avatar has a non-empty global
+  palette** (`m_nColorCount == 0` for all 25). So the `AK_COLORPALETTE` record and
+  `GetProperPalette`'s global branch are untested; every image carries its own
+  local palette instead.
+- **`AIP_NOPALETTE` is never used** in an avatar pose record.
+- **`AIP_MONOCHROME` appears exactly once** in the whole corpus — pinned, but a
+  single sample is thin evidence for that branch.
+
+
 
 From the asset headers directly (25 `.avb` + 7 `.bgb`, all in
 `v2.5-beta-1-modern/ComicArt`):
