@@ -169,6 +169,50 @@ Judge validation §6: all three gates PASSED.
 | 2026-07-24 | 30131585125 | After freezing avatario.golden.json | All green ✓ avatario GOLDEN MATCH ✓ textpose GOLDEN MATCH ✓ |
 | 2026-07-24 | 30131970285 | After --avatar-pose dump mode + avatar port | All green ✓ avatar captured ✓ avatario GOLDEN MATCH ✓ |
 | 2026-07-24 | 30132205263 | After freezing avatar.golden.json + fixing m_last* writes | All green ✓ avatar GOLDEN MATCH ✓ avatario GOLDEN MATCH ✓ textpose GOLDEN MATCH ✓ |
+| 2026-07-27 | 30277135600 | Balloon tails + zoom decision dumps, corpus 011-013 | RED as designed: 10 GOLDEN MISMATCH (added fields), 3 unfrozen, 0 crashed. Produced the full actual.json set to freeze from |
+| 2026-07-27 | 30277833899 | After re-freezing all 13 goldens | All green ✓ 13/13 GOLDEN MATCH ✓ glyphs + textpose + avatario + avatar all still MATCH (engine change was observation-only) ✓ |
+
+### Round of 2026-07-27: tails, zoom, and three new cases
+
+Closed the two gaps that would have let the balloon/panel unit be ported with
+no referee, and the corpus thinness Phase 2's benchmark called for.
+
+- **Tier-3 #5 tail/arrow now pinned.** `m_traj` is NULL after layout because
+  the app only builds it in `Draw` (balloon.cpp:1788), so no golden had ever
+  contained a tail point. The harness calls `SetBalloonTraj` itself and walks
+  `CTraj::m_segs` (`CArc`/`CLine`/`CSpline` via `dynamic_cast`). Safe because
+  `SetBalloonTraj` works on a clone of `m_spline` and no layout path reads
+  `m_traj`. 313/313 balloons produced one: 313 outline splines + 618 arcs
+  (the two `AddArrow` strokes each).
+- **Tier-3 #3 zoom decision now pinned.** `zoomFactor` was a local and
+  `Establishing()` reads view state, so `panel.cpp` records both at the
+  decision site under `ORACLE_HARNESS` (initialised in both ctors, copied by
+  the copy ctor, because `Clone()` runs during pagination). 113/267 panels
+  zoom, factors 1.30-2.95; `establishing` splits 190 FALSE / 77 TRUE.
+- **Verified observation-only:** stripping the new fields from each dump
+  reproduces the old golden exactly in all 10 pre-existing cases.
+- **Corpus 011-013:** emotion/pose battery, panel-break drivers at
+  `panelsWide=3`, and text edge cases. Each uses a seed other than 42.
+- **Corpus runner** no longer stops at the first failure - it reports every
+  case and fails at the end, so a deliberate re-freeze costs one round instead
+  of one per case.
+
+Newly measured gaps (were suspicions, now numbers):
+
+- `reduction` is 1.0 across all 267 panels, so the avatar-overflow shrink
+  branch (panel.cpp:784, `sumWidth > m_unitWidth`) is never exercised. Needs a
+  case that packs enough avatars into one panel to overflow it.
+- No `traj` segment is a `line`, so `CBWoodringBox` (four-`CLine` box balloon)
+  is never instantiated by the corpus.
+- **`faceEmotion`/`torsoEmotion` dump as `{0,0}` on every body in every case,
+  including 011** - yet 011's pose indices vary far more than any other case
+  (faceIdx 0,3,4,5,10,12 vs 001's 0,2,4). So the emotion→pose path *is*
+  firing and this is a dump defect, not corpus thinness as previously recorded
+  here: `DumpAvatarState` is reading emotion state that `GetBodyFromEmotion`
+  does not leave on `CBody`. Worth fixing before the balloon/panel port, since
+  it is the same field family that unit leans on.
+- Mid-text `<Brk>` (012 msg8) does not set the page's `newPanel` flag while a
+  standalone `<Brk>` (003 msg5) does. Now pinned; the port must match.
 
 ## Remaining / next-phase work
 
@@ -181,11 +225,15 @@ Phases 0-3 are complete. Per the plan doc, the next phases are:
   per-module golden test of the same form as `port/test/engine/spline.test.ts`
   (load corpus `expected.json`, reproduce the dumped struct, assert exact
   equality) so every module gets its own two-agent check.
-- **Status as of 2026-07-24:** textpose + avatario + avatar are ported and
+- **Status as of 2026-07-27:** textpose + avatario + avatar are ported and
   oracle-golden-verified. The next port unit is `balloon.cpp`/`panel.cpp`
   (Tier-3 #4 line breaks + Tier-3 #5/#6 balloon outlines — these are the
   big ones; they pull in the GDI glyph-table consumer + the spline
-  consumer both).
+  consumer both). The oracle side of that unit is now ready: line breaks,
+  outline splines, tails, and the zoom decision are all pinned across 13
+  cases (see the 2026-07-27 round below). Two things to settle first: the
+  `faceEmotion`/`torsoEmotion` dump defect, and whether to add a case that
+  overflows a panel so the shrink branch gets a golden.
 
 ### Phase 3 outcomes (2026-07-24)
 
