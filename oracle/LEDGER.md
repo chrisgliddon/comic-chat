@@ -531,14 +531,43 @@ appears exactly once here. Plan corrected to match the tree.
 - **Backdrop world constants.** `SetBackDropAux` (backdrop.cpp:91-95) hardcodes
   `xdim = ydim = 315`, world `(0, 0, 4860, -4860)`, `normHeight = 100` for every
   backdrop — the metadata is *not* in the file, as the plan notes. Pinning it
-  through `LoadBackDropArt` -> `CBackDropArt::m_worldCoords` needs the backdrop
-  registry set up, i.e. `InitHarness`-level state, so it does not belong in
-  `--avb`'s deliberately minimal mode. Own dump, small.
+  through `BackDropArtFromBackID` -> `CBackDropArt::m_worldCoords` needs the
+  backdrop registry set up (`SetBackDropAux` then `GetBackDropArtFromID`), i.e.
+  `InitHarness`-level state, so it does not belong in `--avb`'s deliberately
+  minimal mode. Own dump, small.
+
+  Established while scoping it: **the printer-side backdrop array is entirely
+  vestigial.** `backRecP` is only ever `SetSize`d and `Add(NULL)`'d
+  (backdrop.cpp:170-171, 327) — nothing ever puts a real `BDFileRec` in it, since
+  `SetBackDropAux` adds only to `backRecS`. `NotifyDownloadedBackdrop` does
+  iterate it (backdrop.cpp:380) but every element is NULL so the
+  `if (pRec && ...)` guard skips them all. And the one place that would index it,
+  `BackDropArtFromBackID`, is guarded by `(SCREENPRINT || toScreen)` where
+  `#define SCREENPRINT 1` (backdrop.cpp:239) makes the condition a constant true,
+  so the `backRecP[backID]` branch is unreachable. The `BDFileRec backRecP[]`
+  table at backdrop.cpp:214 is inside the `#if 0` block.
+
+  **Port guidance: implement the screen array only; do not port `backRecP` /
+  `backMapP`.** Note this is not a working print path that merely happens to be
+  disabled — if `SCREENPRINT` were ever set to 0, `backRecP[backID]` would index
+  past the array's single NULL element. Same category as the `urlfind.cpp`
+  `IHexToInteger` bug: dead code whose defects must not be faithfully reproduced.
 - **Record-tag inventory.** The manifest pins the *results* of the tag walk but
   not the tag sequence itself, so it cannot say which of `AK_*` a given file
   exercises. Getting that means an `ORACLE_HARNESS` trace in
   `HandleLoadTag` — kept out of this round so a red CI round would have one
   cause, not two.
+- **Pre-conversion `biCompression` is unobservable.** `CAvatarDIB::Load` ends with
+  an unconditional `ConvertToNonRLE()` (avbfile.cpp:462), so every DIB the dump
+  can reach is already `BI_RGB` and the manifest cannot say whether an asset was
+  RLE4/RLE8 on disk. The RLE expanders *are* covered — the `pixelCrc32` is taken
+  post-expansion, so a port that skips expansion diverges — but **whether any
+  shipped asset exercises them at all is currently unmeasured**, and the images
+  are zlib-framed inside the `.avb` so it cannot be checked from outside either.
+  The only hint in the manifest is indirect: the expanders set
+  `biSizeImage = newSize` (dib.cpp:931, 1012) whereas a file-native `BI_RGB` DIB
+  may carry 0. Wants the same `ORACLE_HARNESS` hook as the tag inventory, in the
+  same round.
 - **`.ccr` locator parse** (setupdlg.cpp:892-980) — untouched.
 
 ## Branches (as of 2026-07-27)

@@ -629,18 +629,34 @@ and iterating `count` entries is an out-of-bounds read.
 be *safer* than the original rather than bug-for-bug: the C behaviour here is
 undefined, not a quirk with an observable to reproduce.
 
-### 15.2 `biSizeImage` is not the pixel length
+### 15.2 RLE is expanded during load; the manifest CRC is over expanded pixels
 
-It is documented as "may be 0" for uncompressed DIBs, and `dib.cpp` does set it
-to 0 on the paths that build headers by hand (dib.cpp:295, 377).
+`CAvatarDIB::Load` ends with an unconditional `ConvertToNonRLE()`
+(avbfile.cpp:462 — the comment blames "a bug in windows that mandates drawing be
+confined to non-rle bitmaps"). So **no caller ever sees an RLE DIB**: by the time
+a `CPose` hands out `GetDrawing()`/`GetMask()`/`GetAura()`, `biCompression` is
+`BI_RGB` and the bits are expanded.
 
-- `BI_RGB` → length is `StorageWidth() * abs(biHeight)`; ignore `biSizeImage`.
-- `BI_RLE4` / `BI_RLE8` → `biSizeImage` **is** the length and the stride formula
-  does not apply (`Convert4ToNonRLE`/`Convert8ToNonRLE` walk to
-  `m_pBits + biSizeImage`, dib.cpp:892, 957).
+**Port rule:** expand RLE4/RLE8 at load time, not lazily at draw time. The
+Tier-2 `pixelCrc32` is taken over *expanded* pixels, so a port that keeps the
+compressed bytes and hashes those diverges on every RLE asset even though its
+decoder is correct.
 
-Both the length and `biSizeImage` are in the manifest, so picking the wrong one
-surfaces as a length mismatch rather than a silent CRC drift.
+Then, on the length:
+
+- `biSizeImage` is documented as "may be 0" for uncompressed DIBs, and `dib.cpp`
+  sets it to 0 on the paths that build headers by hand (dib.cpp:295, 377). So for
+  a DIB that was already `BI_RGB` in the file, it may be 0 and must not be used
+  as the length — that is `StorageWidth() * abs(biHeight)`.
+- The RLE expanders *do* set it: `biSizeImage = newSize` alongside
+  `biCompression = BI_RGB` (dib.cpp:930-931, 1011-1012). They also *read* it as
+  the input length, walking to `m_pBits + biSizeImage` (dib.cpp:892, 957).
+
+Both the computed length and `biSizeImage` are in the manifest, so picking the
+wrong one surfaces as a length mismatch rather than a silent CRC drift. A
+non-zero `biSizeImage` equal to `storageWidth * abs(biHeight)` is also the only
+hint the manifest currently carries that an asset *was* RLE on disk — see the
+observability gap noted in oracle/LEDGER.md.
 
 Note `biHeight` may be negative (top-down DIB) — take the absolute value for the
 byte extent, and keep the sign as row order.
