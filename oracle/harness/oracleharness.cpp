@@ -1009,7 +1009,18 @@ static ojson::Value RoundTripEntry(const char* keyword, HistoryEntry* live,
     }
 
     fprintf(stderr, "ORACLE: ccc - %s reparse\n", keyword); fflush(stderr);
-    CString line(first.c_str());
+    // Strip the record terminator before re-parsing. A .ccc reader consumes
+    // whole lines and hands over the content without the CRLF; feeding it back
+    // in makes the terminator part of the final field, so every entry came back
+    // with a doubled CRLF and the say variants had theirs re-quoted as a
+    // literal \r\n by QuoteReturns. That was the harness misreading the format,
+    // not the codec failing to round-trip.
+    std::string body = first;
+    while (!body.empty() && (body[body.size() - 1] == '\n' || body[body.size() - 1] == '\r')) {
+        body.erase(body.size() - 1);
+    }
+    e.Set("reparsedFrom", ojson::Value::Str(body));
+    CString line(body.c_str());
     HistoryEntry* again = parse(line, doc);
     if (!again) {
         e.Set("reparseFailed", ojson::Value::Bool(true));
