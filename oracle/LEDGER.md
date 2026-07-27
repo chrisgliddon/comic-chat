@@ -201,26 +201,37 @@ Newly measured gaps (were suspicions, now numbers):
 
 - `reduction` is 1.0 across all 267 panels, so the avatar-overflow shrink
   branch (panel.cpp:784, `sumWidth > m_unitWidth`) is never exercised.
-  `panelsWide` cannot reach it: in the harness that call only sets
-  panels-per-row, because the real narrowing path
+  Two things blocked it. `panelsWide` cannot reach it - in the harness that
+  call only sets panels-per-row, because the real narrowing path
   (`CPageView::SetPanelsWide` → `GetProspectivePanelWidth`) needs a window, so
-  panel width sat pinned at 4860 for every case. Addressed by a `panelWidth`
-  corpus input (floor `MINUNITPANELWIDTH` = 2300, the same clamp the app
-  applies) plus case 014.
+  panel width sat pinned at 4860 for every case. And narrowing width *and*
+  height together is self-defeating: bodies scale to
+  `maxBodyHeight = m_unitHeight / 1.9` (panel.cpp:755) with their widths
+  following, so a square 2300 panel shrank the avatars just as much and still
+  reported `reduction` 1.0 (measured, CI 30279392189). Addressed by separate
+  `panelWidth`/`panelHeight` inputs (floor `MINUNITPANELWIDTH` = 2300, the
+  app's own clamp) and case 014 at 2300x4860 - full-height bodies in a narrow
+  frame.
 - No `traj` segment is a `line`, so `CBWoodringBox` (four-`CLine` box balloon)
   is never instantiated by the corpus.
-- **`faceEmotion`/`torsoEmotion` dump as `{0,0}` on every body in every case,
-  including 011.** First recorded here as corpus thinness, then as a dump
-  defect; both were wrong. `CAvatarX::GetEmotions` reads the *pose record's*
-  catalogued emotion, and by dump time `ResetAvatar` has called `SetNeutral`.
-  `SetFaceNeutral`/`SetTorsoNeutral` (avatar.cpp:419/433) scan round-robin from
-  `m_lastFace`/`m_lastTorso` for the *next* neutral pose, so the avatar's
-  indices legitimately keep moving while its emotion stays `EM_NEUTRAL` (0.0).
-  The `avatarStates` dump is therefore faithful - it pins the post-message
-  neutral, which is itself load-bearing state - but it was the only place pose
-  data appeared, and the *emotional* pose lives on the panel's own `CBody`.
-  Fixed by dumping per-panel-body pose (index, emotion, poseID) in `DumpPanel`;
-  `avatarStates` is unchanged.
+- **`faceEmotion`/`torsoEmotion` dumped `{0,0}` on every body in every case.**
+  Root cause, after two wrong diagnoses recorded here (corpus thinness, then a
+  dump defect): **`bbCooked`**. It defaults to 1, and
+  `CChatDoc::ProcessLine` only calls `ChatPreSendText` when `!bbCooked`
+  (chatdoc.cpp:480) - and that is the sole path running
+  `GetEmotionsFromString` → `GetBodyFromEmotion` → `UpdateBody`
+  (textpose.cpp:120). So the entire text→emotion→pose pipeline was bypassed
+  corpus-wide and every pose in every case was a neutral. Case 011 now sets
+  `bbCooked: 0`. The other cases keep 1 deliberately: that is the pre-cooked
+  replay path a `.ccc` transcript takes, and it is worth pinning too.
+
+  The two earlier diagnoses were still each half-useful. The neutral
+  round-robin is real - `SetFaceNeutral`/`SetTorsoNeutral` (avatar.cpp:419/433)
+  scan from `m_lastFace`/`m_lastTorso` for the *next* neutral pose, which is
+  why avatar indices kept moving while the emotion stayed `EM_NEUTRAL` - and
+  the emotional pose really does live on the panel's own `CBody`, so
+  `DumpPanel` now dumps per-body pose (index, emotion, poseID) regardless.
+  `avatarStates` is unchanged and still pins the post-message neutral.
 - Mid-text `<Brk>` (012 msg8) does not set the page's `newPanel` flag while a
   standalone `<Brk>` (003 msg5) does. Now pinned; the port must match.
 

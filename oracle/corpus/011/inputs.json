@@ -1,22 +1,73 @@
 {
-  "description": "Emotion battery. The existing 10 cases are emotionally flat (every dump has zero emotion), so the avatar pose port had probe goldens but no corpus-level exercise. This drives the textpose rules that actually fire - caps->SHOUT, !!!, greetings->WAVE, I/You->POINT, LOL/ROTFL, smileys - as a *sequence*, because GetBodyFromEmotion carries m_lastBody/Face/Torso history between messages (Tier-1 #2, Tier-3 #7). Seed differs from the 42 used by 001-010 so the LCG stream itself gets fresh coverage.",
+  "description": "Emotion battery. Every other case leaves bbCooked at its default of 1, which makes CChatDoc::ProcessLine skip ChatPreSendText (chatdoc.cpp:480) - and that is the ONLY path that runs GetEmotionsFromString -> GetBodyFromEmotion -> UpdateBody. So the whole text->emotion->pose pipeline was bypassed corpus-wide and every pose was a neutral. This case sets bbCooked: 0 so the rules actually fire: caps->SHOUT, !!!, greetings->WAVE, I/You->POINT, LOL/ROTFL, smileys. Driven as a sequence because GetBodyFromEmotion carries m_lastBody/Face/Torso history between messages (Tier-1 #2, Tier-3 #7). Seed differs from the 42 that 001-010 share.",
   "seed": 1337,
   "tickSeedBase": 1000,
   "panelsWide": 2,
   "treeDir": ".",
   "avatars": [
-    { "name": "bolo", "speakerId": 1 },
-    { "name": "denise", "speakerId": 2 }
+    {
+      "name": "bolo",
+      "speakerId": 1
+    },
+    {
+      "name": "denise",
+      "speakerId": 2
+    }
   ],
   "messages": [
-    { "speakerId": 1, "text": "hi there everyone", "mode": 0 },
-    { "speakerId": 2, "text": "HELLO BOLO", "mode": 0 },
-    { "speakerId": 1, "text": "I think you are wrong about that", "mode": 0 },
-    { "speakerId": 2, "text": "LOL", "mode": 0 },
-    { "speakerId": 1, "text": "that is not funny!!!", "mode": 0 },
-    { "speakerId": 2, "text": "sorry :)", "mode": 0 },
-    { "speakerId": 1, "text": "hmmm :(", "mode": 0 },
-    { "speakerId": 2, "text": "ROTFL you are too much", "mode": 0 },
-    { "speakerId": 1, "text": "bye", "mode": 0 }
+    {
+      "speakerId": 1,
+      "text": "hi there everyone",
+      "mode": 0,
+      "bbCooked": 0
+    },
+    {
+      "speakerId": 2,
+      "text": "HELLO BOLO",
+      "mode": 0,
+      "bbCooked": 0
+    },
+    {
+      "speakerId": 1,
+      "text": "I think you are wrong about that",
+      "mode": 0,
+      "bbCooked": 0
+    },
+    {
+      "speakerId": 2,
+      "text": "LOL",
+      "mode": 0,
+      "bbCooked": 0
+    },
+    {
+      "speakerId": 1,
+      "text": "that is not funny!!!",
+      "mode": 0,
+      "bbCooked": 0
+    },
+    {
+      "speakerId": 2,
+      "text": "sorry :)",
+      "mode": 0,
+      "bbCooked": 0
+    },
+    {
+      "speakerId": 1,
+      "text": "hmmm :(",
+      "mode": 0,
+      "bbCooked": 0
+    },
+    {
+      "speakerId": 2,
+      "text": "ROTFL you are too much",
+      "mode": 0,
+      "bbCooked": 0
+    },
+    {
+      "speakerId": 1,
+      "text": "bye",
+      "mode": 0,
+      "bbCooked": 0
+    }
   ]
 }

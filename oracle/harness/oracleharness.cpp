@@ -1239,16 +1239,23 @@ int main(int argc, char** argv) {
     // makes panel geometry an explicit corpus input; MINUNITPANELWIDTH (2300)
     // is the floor the real SetPanelsWide clamps to, so values below it would
     // not be reachable in the app either.
+    // Width and height are separate knobs on purpose. Bodies are scaled to
+    // maxBodyHeight = m_unitHeight / 1.9 (panel.cpp:755) and their widths scale
+    // with that ratio, so shrinking width and height together shrinks the
+    // avatars just as much and sumWidth can never overtake m_unitWidth - which
+    // is why a square 2300 panel still reported reduction 1.0. A narrow *tall*
+    // panel is what overflows: full-height bodies in a narrow frame.
     int panelWidth = (int)inputs.GetInt("panelWidth", 4860);
-    if (panelWidth < MINUNITPANELWIDTH) {
-        fprintf(stderr, "ORACLE: panelWidth %d is below MINUNITPANELWIDTH %d\n",
-                panelWidth, MINUNITPANELWIDTH);
+    int panelHeight = (int)inputs.GetInt("panelHeight", 4860);
+    if (panelWidth < MINUNITPANELWIDTH || panelHeight < MINUNITPANELHEIGHT) {
+        fprintf(stderr, "ORACLE: panel %dx%d is below the MINUNITPANEL floor %dx%d\n",
+                panelWidth, panelHeight, MINUNITPANELWIDTH, MINUNITPANELHEIGHT);
         return 2;
     }
-    if (panelWidth != 4860) {
+    if (panelWidth != 4860 || panelHeight != 4860) {
         CUnitPanelPage::SetUnitPanelWidth(panelWidth);
-        CUnitPanelPage::SetUnitPanelHeight(panelWidth);
-        fprintf(stderr, "ORACLE: panel geometry overridden to %d\n", panelWidth);
+        CUnitPanelPage::SetUnitPanelHeight(panelHeight);
+        fprintf(stderr, "ORACLE: panel geometry overridden to %dx%d\n", panelWidth, panelHeight);
     }
 
     // Activate the oracle determinism layer
