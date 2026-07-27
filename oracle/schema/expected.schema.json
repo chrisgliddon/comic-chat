@@ -86,6 +86,13 @@
           }
         }
       }
+    },
+    "panelWidth": {
+      "type": "integer",
+      "description": "Panel width in world units actually used by the run. Every world coordinate in this dump is relative to it."
+    },
+    "panelHeight": {
+      "type": "integer"
     }
   },
   "$defs": {
@@ -283,6 +290,39 @@
         },
         "class": {
           "type": "integer"
+        },
+        "faceIndex": {
+          "type": "integer",
+          "description": "Index of the face record this panel body drew, relative to the avatar's fRec. Distinct from avatarStates' faceIndex, which is the post-message neutral."
+        },
+        "torsoIndex": {
+          "type": "integer",
+          "description": "Index of the torso record this panel body drew, relative to the avatar's bRec."
+        },
+        "bodyIndex": {
+          "type": "integer",
+          "description": "Simple (BC_BODYSINGLE) avatars only: index of the single body record drawn."
+        },
+        "faceEmotion": {
+          "$ref": "#/$defs/emotionPair"
+        },
+        "torsoEmotion": {
+          "$ref": "#/$defs/emotionPair"
+        },
+        "bodyEmotion": {
+          "$ref": "#/$defs/emotionPair"
+        },
+        "facePoseID": {
+          "type": "integer",
+          "description": "poseID from the drawn record; note the ditto optimisation makes poseIDs repeat across poses (avbfile.cpp:1093)."
+        },
+        "torsoPoseID": {
+          "type": "integer",
+          "description": "poseID from the drawn record; note the ditto optimisation makes poseIDs repeat across poses (avbfile.cpp:1093)."
+        },
+        "bodyPoseID": {
+          "type": "integer",
+          "description": "poseID from the drawn record; note the ditto optimisation makes poseIDs repeat across poses (avbfile.cpp:1093)."
         }
       }
     },
@@ -445,6 +485,18 @@
           "items": {
             "$ref": "#/$defs/trajSeg"
           }
+        }
+      }
+    },
+    "emotionPair": {
+      "type": "object",
+      "description": "An {emotion, intensity} pair straight off a pose record, emitted at %.17g.",
+      "properties": {
+        "emotion": {
+          "type": "number"
+        },
+        "intensity": {
+          "type": "number"
         }
       }
     }

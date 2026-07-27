@@ -575,6 +575,18 @@ static ojson::Value DumpRECT(const RECT& r) {
 }
 
 // ---------------------------------------------------------------------------
+// Dump an {emotion, intensity} pair. FACEREC/BODYREC/RBODYREC all store these
+// as floats; widened to double so ojson emits them at %.17g, matching how the
+// textpose and avatario dumps express their emotion floats.
+// ---------------------------------------------------------------------------
+static ojson::Value DumpEmotionPair(float emotion, float intensity) {
+    ojson::Value v = ojson::Value::Obj();
+    v.Set("emotion", ojson::Value::Dbl((double)emotion));
+    v.Set("intensity", ojson::Value::Dbl((double)intensity));
+    return v;
+}
+
+// ---------------------------------------------------------------------------
 // Dump a POINT as a JSON object (spline cps, traj segment endpoints)
 // ---------------------------------------------------------------------------
 static ojson::Value DumpPOINT(const POINT& p) {
@@ -795,6 +807,43 @@ static ojson::Value DumpPanel(CPanel* panel) {
         b.Set("bbox", DumpSRECT(body->m_bbox));
         b.Set("arrowX", ojson::Value::Int(body->m_arrowX));
         b.Set("class", ojson::Value::Int(body->GetClass()));
+
+        // The pose this panel actually drew (Tier-3 #7 for the panel path).
+        //
+        // This is NOT the same as the pose in avatarStates. That one comes from
+        // CAvatarX after the message, by which point ResetAvatar has called
+        // SetNeutral - and SetFaceNeutral/SetTorsoNeutral scan round-robin from
+        // m_lastFace/m_lastTorso for the *next* neutral pose, so the avatar's
+        // indices legitimately keep changing while its emotion stays
+        // EM_NEUTRAL (0.0). That is why every avatarStates emotion reads {0,0}:
+        // faithful, but the post-message neutral, not the pose the reader sees.
+        // The emotional pose selected by GetBodyFromEmotion lives here, on the
+        // panel's own CBody, and until now nothing dumped it.
+        CAvatarX* bodyAv = GetAvatar(body->m_avatarID);
+        if (body->GetClass() == BC_BODYDOUBLE) {
+            CBodyDouble* bd = (CBodyDouble*)body;
+            CAvatarComplex* ac = dynamic_cast<CAvatarComplex*>(bodyAv);
+            if (bd->m_faceRec && ac && ac->fRec) {
+                b.Set("faceIndex", ojson::Value::Int((long)(bd->m_faceRec - ac->fRec)));
+                b.Set("faceEmotion", DumpEmotionPair(bd->m_faceRec->emotion, bd->m_faceRec->intensity));
+                b.Set("facePoseID", ojson::Value::Int(bd->m_faceRec->poseID));
+            }
+            if (bd->m_torsoRec && ac && ac->bRec) {
+                b.Set("torsoIndex", ojson::Value::Int((long)(bd->m_torsoRec - ac->bRec)));
+                b.Set("torsoEmotion", DumpEmotionPair(bd->m_torsoRec->emotion, bd->m_torsoRec->intensity));
+                b.Set("torsoPoseID", ojson::Value::Int(bd->m_torsoRec->poseID));
+            }
+        } else if (body->GetClass() == BC_BODYSINGLE) {
+            // Simple avatars carry one record; CAvatarSimple::GetEmotions
+            // reports it as the face and forces the torso to zero.
+            CBodySingle* bs = (CBodySingle*)body;
+            CAvatarSimple* as = dynamic_cast<CAvatarSimple*>(bodyAv);
+            if (bs->m_bodyRec && as && as->bRec) {
+                b.Set("bodyIndex", ojson::Value::Int((long)(bs->m_bodyRec - as->bRec)));
+                b.Set("bodyEmotion", DumpEmotionPair(bs->m_bodyRec->emotion, bs->m_bodyRec->intensity));
+                b.Set("bodyPoseID", ojson::Value::Int(bs->m_bodyRec->poseID));
+            }
+        }
         bodies.Push(b);
     }
     v.Set("bodies", bodies);
@@ -1182,6 +1231,26 @@ int main(int argc, char** argv) {
     // Panel dimensions already set in InitHarness (before SetFonts)
     CUnitPanelPage::SetUnitPanelsPerRow(panelsWide);  // override from inputs
 
+    // panelsWide alone only sets panels-per-row here: the real client sizes the
+    // panel via CPageView::SetPanelsWide -> GetProspectivePanelWidth, which
+    // needs a window. So a narrow panel was unreachable from the corpus, and
+    // with it the avatar-overflow branch in LayoutAvatars (sumWidth >
+    // m_unitWidth) - measured as never taken across all 267 panels. This knob
+    // makes panel geometry an explicit corpus input; MINUNITPANELWIDTH (2300)
+    // is the floor the real SetPanelsWide clamps to, so values below it would
+    // not be reachable in the app either.
+    int panelWidth = (int)inputs.GetInt("panelWidth", 4860);
+    if (panelWidth < MINUNITPANELWIDTH) {
+        fprintf(stderr, "ORACLE: panelWidth %d is below MINUNITPANELWIDTH %d\n",
+                panelWidth, MINUNITPANELWIDTH);
+        return 2;
+    }
+    if (panelWidth != 4860) {
+        CUnitPanelPage::SetUnitPanelWidth(panelWidth);
+        CUnitPanelPage::SetUnitPanelHeight(panelWidth);
+        fprintf(stderr, "ORACLE: panel geometry overridden to %d\n", panelWidth);
+    }
+
     // Activate the oracle determinism layer
     OracleSeedActivate(seed, tickBase);
     fprintf(stderr, "ORACLE: seed activated (seed=%u, tickBase=%u)\n", seed, tickBase);
@@ -1336,6 +1405,10 @@ int main(int argc, char** argv) {
     dumpRoot.Set("seed", ojson::Value::Int((long)seed));
     dumpRoot.Set("tickSeedBase", ojson::Value::Int((long)tickBase));
     dumpRoot.Set("panelsWide", ojson::Value::Int(panelsWide));
+    // Record the geometry the run actually used, not just what was requested -
+    // every world-unit coordinate below is relative to it.
+    dumpRoot.Set("panelWidth", ojson::Value::Int(CUnitPanelPage::m_unitWidth));
+    dumpRoot.Set("panelHeight", ojson::Value::Int(CUnitPanelPage::m_unitHeight));
     dumpRoot.Set("messages", perMessageDumps);
 
     // Dump seed ledger (Phase 0 determinism verification)

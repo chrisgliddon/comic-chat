@@ -88,6 +88,11 @@
           }
         }
       }
+    },
+    "panelWidth": {
+      "type": "integer",
+      "minimum": 2300,
+      "description": "Panel width AND height in world units (SetUnitPanelWidth/Height). Default 4860. Floor is MINUNITPANELWIDTH=2300, the same clamp CPageView::SetPanelsWide applies. Narrow panels are how the avatar-overflow shrink branch is reached; panelsWide alone cannot, since in the harness it only sets panels-per-row."
     }
   }
 }

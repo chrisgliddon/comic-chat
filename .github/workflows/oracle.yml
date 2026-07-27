@@ -11,9 +11,22 @@ on:
     branches:
       - staging
       - production
+    # Deliberately NOT "oracle/**": that spent a 3-minute Windows run on every
+    # LEDGER edit. The subdirectories below are the ones that can actually move
+    # a golden. Keep this list in sync when adding an oracle subdirectory - a
+    # new dump directory left off this list would go unguarded.
     paths:
       - ".github/workflows/oracle.yml"
-      - "oracle/**"
+      - "oracle/harness/**"
+      - "oracle/scripts/**"
+      - "oracle/schema/**"
+      - "oracle/corpus/**"
+      - "oracle/glyphs/**"
+      - "oracle/textpose/**"
+      - "oracle/avatario/**"
+      - "oracle/avatar/**"
+      - "oracle/package.json"
+      - "oracle/pnpm-lock.yaml"
       # oracle.mak links essentially the whole v2.5 tree (avatario.obj,
       # textpose.obj, panel.obj, ...), so any engine source can move a
       # golden. Watch the tree, not a hand-picked file list.
@@ -36,7 +49,7 @@ jobs:
       # pnpm/action-setup must precede setup-node so that `cache: pnpm` can
       # locate the pnpm store. Version comes from oracle/package.json.
       - name: Set up pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           package_json_file: oracle/package.json
 
@@ -168,6 +181,24 @@ jobs:
           )
           echo "Determinism check passed: two runs are byte-identical."
 
+      # Runs BEFORE the corpus comparison on purpose: it used to follow it, so a
+      # red corpus round skipped schema validation entirely - exactly the round
+      # whose dumps you are about to freeze from. It needs no harness output.
+      # ajv comes from oracle/package.json (pinned + lockfile) rather than an
+      # unpinned ad-hoc install. node resolves it from oracle/node_modules
+      # because validate.mjs lives in oracle/scripts/, so the validator can be
+      # invoked from the repo root as before. CI=true makes validate.mjs fail
+      # rather than silently degrade to structural checks if ajv is missing.
+      - name: Validate corpus against schemas
+        shell: pwsh
+        run: |
+          pnpm install --frozen-lockfile --dir oracle
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          node oracle/scripts/validate.mjs --corpus oracle/corpus
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+        env:
+          CI: "true"
+
       # Every case runs even after one fails, then the step fails at the end.
       # Exiting on the first mismatch hid the state of every later case, which
       # made a deliberate re-freeze (adding a dump field invalidates all
@@ -218,20 +249,6 @@ jobs:
           Write-Host "unfrozen  : $($unfrozen.Count) [$($unfrozen -join ' ')]"
           if ($crashed.Count -gt 0 -or $mismatched.Count -gt 0) { exit 1 }
 
-      # ajv comes from oracle/package.json (pinned + lockfile) rather than an
-      # unpinned ad-hoc install. node resolves it from oracle/node_modules
-      # because validate.mjs lives in oracle/scripts/, so the validator can be
-      # invoked from the repo root as before. CI=true makes validate.mjs fail
-      # rather than silently degrade to structural checks if ajv is missing.
-      - name: Validate corpus against schemas
-        shell: pwsh
-        run: |
-          pnpm install --frozen-lockfile --dir oracle
-          if ($LASTEXITCODE -ne 0) { exit 1 }
-          node oracle/scripts/validate.mjs --corpus oracle/corpus
-          if ($LASTEXITCODE -ne 0) { exit 1 }
-        env:
-          CI: "true"
 
       - name: Upload oracle artifacts
         if: always()

@@ -200,17 +200,27 @@ no referee, and the corpus thinness Phase 2's benchmark called for.
 Newly measured gaps (were suspicions, now numbers):
 
 - `reduction` is 1.0 across all 267 panels, so the avatar-overflow shrink
-  branch (panel.cpp:784, `sumWidth > m_unitWidth`) is never exercised. Needs a
-  case that packs enough avatars into one panel to overflow it.
+  branch (panel.cpp:784, `sumWidth > m_unitWidth`) is never exercised.
+  `panelsWide` cannot reach it: in the harness that call only sets
+  panels-per-row, because the real narrowing path
+  (`CPageView::SetPanelsWide` → `GetProspectivePanelWidth`) needs a window, so
+  panel width sat pinned at 4860 for every case. Addressed by a `panelWidth`
+  corpus input (floor `MINUNITPANELWIDTH` = 2300, the same clamp the app
+  applies) plus case 014.
 - No `traj` segment is a `line`, so `CBWoodringBox` (four-`CLine` box balloon)
   is never instantiated by the corpus.
 - **`faceEmotion`/`torsoEmotion` dump as `{0,0}` on every body in every case,
-  including 011** - yet 011's pose indices vary far more than any other case
-  (faceIdx 0,3,4,5,10,12 vs 001's 0,2,4). So the emotion→pose path *is*
-  firing and this is a dump defect, not corpus thinness as previously recorded
-  here: `DumpAvatarState` is reading emotion state that `GetBodyFromEmotion`
-  does not leave on `CBody`. Worth fixing before the balloon/panel port, since
-  it is the same field family that unit leans on.
+  including 011.** First recorded here as corpus thinness, then as a dump
+  defect; both were wrong. `CAvatarX::GetEmotions` reads the *pose record's*
+  catalogued emotion, and by dump time `ResetAvatar` has called `SetNeutral`.
+  `SetFaceNeutral`/`SetTorsoNeutral` (avatar.cpp:419/433) scan round-robin from
+  `m_lastFace`/`m_lastTorso` for the *next* neutral pose, so the avatar's
+  indices legitimately keep moving while its emotion stays `EM_NEUTRAL` (0.0).
+  The `avatarStates` dump is therefore faithful - it pins the post-message
+  neutral, which is itself load-bearing state - but it was the only place pose
+  data appeared, and the *emotional* pose lives on the panel's own `CBody`.
+  Fixed by dumping per-panel-body pose (index, emotion, poseID) in `DumpPanel`;
+  `avatarStates` is unchanged.
 - Mid-text `<Brk>` (012 msg8) does not set the page's `newPanel` flag while a
   standalone `<Brk>` (003 msg5) does. Now pinned; the port must match.
 

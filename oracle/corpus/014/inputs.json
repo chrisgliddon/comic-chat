@@ -1,0 +1,22 @@
+{
+  "description": "Avatar-overflow shrink branch. Across cases 001-013 the reduction factor was 1.0 in all 267 panels, i.e. the sumWidth > m_unitWidth branch of CUnitPanel::LayoutAvatars (panel.cpp:784) was never taken and would have been ported with no golden behind it. panelsWide cannot cause it - in the harness that only sets panels-per-row, because the real narrowing path (CPageView::SetPanelsWide -> GetProspectivePanelWidth) needs a window. So this case uses the new panelWidth knob at MINUNITPANELWIDTH (2300), the same floor the app clamps to, and puts four distinct speakers in quick succession so several bodies share one narrow panel.",
+  "seed": 31337,
+  "tickSeedBase": 1000,
+  "panelsWide": 2,
+  "panelWidth": 2300,
+  "treeDir": ".",
+  "avatars": [
+    { "name": "bolo", "speakerId": 1 },
+    { "name": "anna", "speakerId": 2 },
+    { "name": "cro", "speakerId": 3 },
+    { "name": "denise", "speakerId": 4 }
+  ],
+  "messages": [
+    { "speakerId": 1, "text": "a", "mode": 0 },
+    { "speakerId": 2, "text": "b", "mode": 0 },
+    { "speakerId": 3, "text": "c", "mode": 0 },
+    { "speakerId": 4, "text": "d", "mode": 0 },
+    { "speakerId": 1, "text": "e", "mode": 0 },
+    { "speakerId": 2, "text": "f", "mode": 0 }
+  ]
+}
