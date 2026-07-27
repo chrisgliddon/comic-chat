@@ -2,6 +2,8 @@
   "seed": 42,
   "tickSeedBase": 1000,
   "panelsWide": 2,
+  "panelWidth": 4860,
+  "panelHeight": 4860,
   "messages": [
     {
       "messageIndex": 0,
@@ -492,7 +494,19 @@
                   "bottom": -4860
                 },
                 "arrowX": 2493,
-                "class": 1
+                "class": 1,
+                "faceIndex": 0,
+                "faceEmotion": {
+                  "emotion": 0,
+                  "intensity": 0
+                },
+                "facePoseID": 2,
+                "torsoIndex": 0,
+                "torsoEmotion": {
+                  "emotion": 0,
+                  "intensity": 0
+                },
+                "torsoPoseID": 14
               }
             ]
           }
@@ -983,7 +997,19 @@
                     "bottom": -4860
                   },
                   "arrowX": 2493,
-                  "class": 1
+                  "class": 1,
+                  "faceIndex": 0,
+                  "faceEmotion": {
+                    "emotion": 0,
+                    "intensity": 0
+                  },
+                  "facePoseID": 2,
+                  "torsoIndex": 0,
+                  "torsoEmotion": {
+                    "emotion": 0,
+                    "intensity": 0
+                  },
+                  "torsoPoseID": 14
                 }
               ]
             }
@@ -2093,7 +2119,19 @@
                   "bottom": -4860
                 },
                 "arrowX": 1497,
-                "class": 1
+                "class": 1,
+                "faceIndex": 0,
+                "faceEmotion": {
+                  "emotion": 0,
+                  "intensity": 0
+                },
+                "facePoseID": 2,
+                "torsoIndex": 0,
+                "torsoEmotion": {
+                  "emotion": 0,
+                  "intensity": 0
+                },
+                "torsoPoseID": 14
               },
               {
                 "avatarID": 2,
@@ -2106,7 +2144,19 @@
                   "bottom": -4860
                 },
                 "arrowX": 3403,
-                "class": 1
+                "class": 1,
+                "faceIndex": 0,
+                "faceEmotion": {
+                  "emotion": 0,
+                  "intensity": 0
+                },
+                "facePoseID": 2,
+                "torsoIndex": 0,
+                "torsoEmotion": {
+                  "emotion": 0,
+                  "intensity": 0
+                },
+                "torsoPoseID": 20
               }
             ]
           }
@@ -3139,7 +3189,19 @@
                     "bottom": -4860
                   },
                   "arrowX": 1497,
-                  "class": 1
+                  "class": 1,
+                  "faceIndex": 0,
+                  "faceEmotion": {
+                    "emotion": 0,
+                    "intensity": 0
+                  },
+                  "facePoseID": 2,
+                  "torsoIndex": 0,
+                  "torsoEmotion": {
+                    "emotion": 0,
+                    "intensity": 0
+                  },
+                  "torsoPoseID": 14
                 },
                 {
                   "avatarID": 2,
@@ -3152,7 +3214,19 @@
                     "bottom": -4860
                   },
                   "arrowX": 3403,
-                  "class": 1
+                  "class": 1,
+                  "faceIndex": 0,
+                  "faceEmotion": {
+                    "emotion": 0,
+                    "intensity": 0
+                  },
+                  "facePoseID": 2,
+                  "torsoIndex": 0,
+                  "torsoEmotion": {
+                    "emotion": 0,
+                    "intensity": 0
+                  },
+                  "torsoPoseID": 20
                 }
               ]
             }
@@ -4584,7 +4658,13 @@
                   "bottom": -4860
                 },
                 "arrowX": 1200,
-                "class": 2
+                "class": 2,
+                "bodyIndex": 1,
+                "bodyEmotion": {
+                  "emotion": 0,
+                  "intensity": 0
+                },
+                "bodyPoseID": 3
               },
               {
                 "avatarID": 1,
@@ -4597,7 +4677,19 @@
                   "bottom": -4860
                 },
                 "arrowX": 2430,
-                "class": 1
+                "class": 1,
+                "faceIndex": 0,
+                "faceEmotion": {
+                  "emotion": 0,
+                  "intensity": 0
+                },
+                "facePoseID": 2,
+                "torsoIndex": 0,
+                "torsoEmotion": {
+                  "emotion": 0,
+                  "intensity": 0
+                },
+                "torsoPoseID": 14
               },
               {
                 "avatarID": 2,
@@ -4610,7 +4702,19 @@
                   "bottom": -4860
                 },
                 "arrowX": 3869,
-                "class": 1
+                "class": 1,
+                "faceIndex": 0,
+                "faceEmotion": {
+                  "emotion": 0,
+                  "intensity": 0
+                },
+                "facePoseID": 2,
+                "torsoIndex": 0,
+                "torsoEmotion": {
+                  "emotion": 0,
+                  "intensity": 0
+                },
+                "torsoPoseID": 20
               }
             ]
           }
@@ -5965,7 +6069,13 @@
                     "bottom": -4860
                   },
                   "arrowX": 1200,
-                  "class": 2
+                  "class": 2,
+                  "bodyIndex": 1,
+                  "bodyEmotion": {
+                    "emotion": 0,
+                    "intensity": 0
+                  },
+                  "bodyPoseID": 3
                 },
                 {
                   "avatarID": 1,
@@ -5978,7 +6088,19 @@
                     "bottom": -4860
                   },
                   "arrowX": 2430,
-                  "class": 1
+                  "class": 1,
+                  "faceIndex": 0,
+                  "faceEmotion": {
+                    "emotion": 0,
+                    "intensity": 0
+                  },
+                  "facePoseID": 2,
+                  "torsoIndex": 0,
+                  "torsoEmotion": {
+                    "emotion": 0,
+                    "intensity": 0
+                  },
+                  "torsoPoseID": 14
                 },
                 {
                   "avatarID": 2,
@@ -5991,7 +6113,19 @@
                     "bottom": -4860
                   },
                   "arrowX": 3869,
-                  "class": 1
+                  "class": 1,
+                  "faceIndex": 0,
+                  "faceEmotion": {
+                    "emotion": 0,
+                    "intensity": 0
+                  },
+                  "facePoseID": 2,
+                  "torsoIndex": 0,
+                  "torsoEmotion": {
+                    "emotion": 0,
+                    "intensity": 0
+                  },
+                  "torsoPoseID": 20
                 }
               ]
             }
@@ -7423,7 +7557,13 @@
                   "bottom": -4860
                 },
                 "arrowX": 1200,
-                "class": 2
+                "class": 2,
+                "bodyIndex": 1,
+                "bodyEmotion": {
+                  "emotion": 0,
+                  "intensity": 0
+                },
+                "bodyPoseID": 3
               },
               {
                 "avatarID": 1,
@@ -7436,7 +7576,19 @@
                   "bottom": -4860
                 },
                 "arrowX": 2430,
-                "class": 1
+                "class": 1,
+                "faceIndex": 0,
+                "faceEmotion": {
+                  "emotion": 0,
+                  "intensity": 0
+                },
+                "facePoseID": 2,
+                "torsoIndex": 0,
+                "torsoEmotion": {
+                  "emotion": 0,
+                  "intensity": 0
+                },
+                "torsoPoseID": 14
               },
               {
                 "avatarID": 2,
@@ -7449,7 +7601,19 @@
                   "bottom": -4860
                 },
                 "arrowX": 3869,
-                "class": 1
+                "class": 1,
+                "faceIndex": 0,
+                "faceEmotion": {
+                  "emotion": 0,
+                  "intensity": 0
+                },
+                "facePoseID": 2,
+                "torsoIndex": 0,
+                "torsoEmotion": {
+                  "emotion": 0,
+                  "intensity": 0
+                },
+                "torsoPoseID": 20
               }
             ]
           },
@@ -7941,7 +8105,19 @@
                   "bottom": -8602
                 },
                 "arrowX": 2517,
-                "class": 1
+                "class": 1,
+                "faceIndex": 4,
+                "faceEmotion": {
+                  "emotion": 0,
+                  "intensity": 0
+                },
+                "facePoseID": 6,
+                "torsoIndex": 4,
+                "torsoEmotion": {
+                  "emotion": 0,
+                  "intensity": 0
+                },
+                "torsoPoseID": 18
               }
             ]
           }
@@ -9296,7 +9472,13 @@
                     "bottom": -4860
                   },
                   "arrowX": 1200,
-                  "class": 2
+                  "class": 2,
+                  "bodyIndex": 1,
+                  "bodyEmotion": {
+                    "emotion": 0,
+                    "intensity": 0
+                  },
+                  "bodyPoseID": 3
                 },
                 {
                   "avatarID": 1,
@@ -9309,7 +9491,19 @@
                     "bottom": -4860
                   },
                   "arrowX": 2430,
-                  "class": 1
+                  "class": 1,
+                  "faceIndex": 0,
+                  "faceEmotion": {
+                    "emotion": 0,
+                    "intensity": 0
+                  },
+                  "facePoseID": 2,
+                  "torsoIndex": 0,
+                  "torsoEmotion": {
+                    "emotion": 0,
+                    "intensity": 0
+                  },
+                  "torsoPoseID": 14
                 },
                 {
                   "avatarID": 2,
@@ -9322,7 +9516,19 @@
                     "bottom": -4860
                   },
                   "arrowX": 3869,
-                  "class": 1
+                  "class": 1,
+                  "faceIndex": 0,
+                  "faceEmotion": {
+                    "emotion": 0,
+                    "intensity": 0
+                  },
+                  "facePoseID": 2,
+                  "torsoIndex": 0,
+                  "torsoEmotion": {
+                    "emotion": 0,
+                    "intensity": 0
+                  },
+                  "torsoPoseID": 20
                 }
               ]
             },
@@ -9814,7 +10020,19 @@
                     "bottom": -8602
                   },
                   "arrowX": 2517,
-                  "class": 1
+                  "class": 1,
+                  "faceIndex": 4,
+                  "faceEmotion": {
+                    "emotion": 0,
+                    "intensity": 0
+                  },
+                  "facePoseID": 6,
+                  "torsoIndex": 4,
+                  "torsoEmotion": {
+                    "emotion": 0,
+                    "intensity": 0
+                  },
+                  "torsoPoseID": 18
                 }
               ]
             }
@@ -11246,7 +11464,13 @@
                   "bottom": -4860
                 },
                 "arrowX": 1200,
-                "class": 2
+                "class": 2,
+                "bodyIndex": 1,
+                "bodyEmotion": {
+                  "emotion": 0,
+                  "intensity": 0
+                },
+                "bodyPoseID": 3
               },
               {
                 "avatarID": 1,
@@ -11259,7 +11483,19 @@
                   "bottom": -4860
                 },
                 "arrowX": 2430,
-                "class": 1
+                "class": 1,
+                "faceIndex": 0,
+                "faceEmotion": {
+                  "emotion": 0,
+                  "intensity": 0
+                },
+                "facePoseID": 2,
+                "torsoIndex": 0,
+                "torsoEmotion": {
+                  "emotion": 0,
+                  "intensity": 0
+                },
+                "torsoPoseID": 14
               },
               {
                 "avatarID": 2,
@@ -11272,7 +11508,19 @@
                   "bottom": -4860
                 },
                 "arrowX": 3869,
-                "class": 1
+                "class": 1,
+                "faceIndex": 0,
+                "faceEmotion": {
+                  "emotion": 0,
+                  "intensity": 0
+                },
+                "facePoseID": 2,
+                "torsoIndex": 0,
+                "torsoEmotion": {
+                  "emotion": 0,
+                  "intensity": 0
+                },
+                "torsoPoseID": 20
               }
             ]
           },
@@ -12322,7 +12570,19 @@
                   "bottom": -8249
                 },
                 "arrowX": 1290,
-                "class": 1
+                "class": 1,
+                "faceIndex": 4,
+                "faceEmotion": {
+                  "emotion": 0,
+                  "intensity": 0
+                },
+                "facePoseID": 6,
+                "torsoIndex": 4,
+                "torsoEmotion": {
+                  "emotion": 0,
+                  "intensity": 0
+                },
+                "torsoPoseID": 18
               },
               {
                 "avatarID": 2,
@@ -12335,7 +12595,19 @@
                   "bottom": -8249
                 },
                 "arrowX": 3528,
-                "class": 1
+                "class": 1,
+                "faceIndex": 2,
+                "faceEmotion": {
+                  "emotion": 0,
+                  "intensity": 0
+                },
+                "facePoseID": 4,
+                "torsoIndex": 2,
+                "torsoEmotion": {
+                  "emotion": 0,
+                  "intensity": 0
+                },
+                "torsoPoseID": 22
               }
             ]
           }
@@ -13690,7 +13962,13 @@
                     "bottom": -4860
                   },
                   "arrowX": 1200,
-                  "class": 2
+                  "class": 2,
+                  "bodyIndex": 1,
+                  "bodyEmotion": {
+                    "emotion": 0,
+                    "intensity": 0
+                  },
+                  "bodyPoseID": 3
                 },
                 {
                   "avatarID": 1,
@@ -13703,7 +13981,19 @@
                     "bottom": -4860
                   },
                   "arrowX": 2430,
-                  "class": 1
+                  "class": 1,
+                  "faceIndex": 0,
+                  "faceEmotion": {
+                    "emotion": 0,
+                    "intensity": 0
+                  },
+                  "facePoseID": 2,
+                  "torsoIndex": 0,
+                  "torsoEmotion": {
+                    "emotion": 0,
+                    "intensity": 0
+                  },
+                  "torsoPoseID": 14
                 },
                 {
                   "avatarID": 2,
@@ -13716,7 +14006,19 @@
                     "bottom": -4860
                   },
                   "arrowX": 3869,
-                  "class": 1
+                  "class": 1,
+                  "faceIndex": 0,
+                  "faceEmotion": {
+                    "emotion": 0,
+                    "intensity": 0
+                  },
+                  "facePoseID": 2,
+                  "torsoIndex": 0,
+                  "torsoEmotion": {
+                    "emotion": 0,
+                    "intensity": 0
+                  },
+                  "torsoPoseID": 20
                 }
               ]
             },
@@ -14766,7 +15068,19 @@
                     "bottom": -8249
                   },
                   "arrowX": 1290,
-                  "class": 1
+                  "class": 1,
+                  "faceIndex": 4,
+                  "faceEmotion": {
+                    "emotion": 0,
+                    "intensity": 0
+                  },
+                  "facePoseID": 6,
+                  "torsoIndex": 4,
+                  "torsoEmotion": {
+                    "emotion": 0,
+                    "intensity": 0
+                  },
+                  "torsoPoseID": 18
                 },
                 {
                   "avatarID": 2,
@@ -14779,7 +15093,19 @@
                     "bottom": -8249
                   },
                   "arrowX": 3528,
-                  "class": 1
+                  "class": 1,
+                  "faceIndex": 2,
+                  "faceEmotion": {
+                    "emotion": 0,
+                    "intensity": 0
+                  },
+                  "facePoseID": 4,
+                  "torsoIndex": 2,
+                  "torsoEmotion": {
+                    "emotion": 0,
+                    "intensity": 0
+                  },
+                  "torsoPoseID": 22
                 }
               ]
             }
@@ -16211,7 +16537,13 @@
                   "bottom": -4860
                 },
                 "arrowX": 1200,
-                "class": 2
+                "class": 2,
+                "bodyIndex": 1,
+                "bodyEmotion": {
+                  "emotion": 0,
+                  "intensity": 0
+                },
+                "bodyPoseID": 3
               },
               {
                 "avatarID": 1,
@@ -16224,7 +16556,19 @@
                   "bottom": -4860
                 },
                 "arrowX": 2430,
-                "class": 1
+                "class": 1,
+                "faceIndex": 0,
+                "faceEmotion": {
+                  "emotion": 0,
+                  "intensity": 0
+                },
+                "facePoseID": 2,
+                "torsoIndex": 0,
+                "torsoEmotion": {
+                  "emotion": 0,
+                  "intensity": 0
+                },
+                "torsoPoseID": 14
               },
               {
                 "avatarID": 2,
@@ -16237,7 +16581,19 @@
                   "bottom": -4860
                 },
                 "arrowX": 3869,
-                "class": 1
+                "class": 1,
+                "faceIndex": 0,
+                "faceEmotion": {
+                  "emotion": 0,
+                  "intensity": 0
+                },
+                "facePoseID": 2,
+                "torsoIndex": 0,
+                "torsoEmotion": {
+                  "emotion": 0,
+                  "intensity": 0
+                },
+                "torsoPoseID": 20
               }
             ]
           },
@@ -17287,7 +17643,19 @@
                   "bottom": -8249
                 },
                 "arrowX": 1290,
-                "class": 1
+                "class": 1,
+                "faceIndex": 4,
+                "faceEmotion": {
+                  "emotion": 0,
+                  "intensity": 0
+                },
+                "facePoseID": 6,
+                "torsoIndex": 4,
+                "torsoEmotion": {
+                  "emotion": 0,
+                  "intensity": 0
+                },
+                "torsoPoseID": 18
               },
               {
                 "avatarID": 2,
@@ -17300,7 +17668,19 @@
                   "bottom": -8249
                 },
                 "arrowX": 3528,
-                "class": 1
+                "class": 1,
+                "faceIndex": 2,
+                "faceEmotion": {
+                  "emotion": 0,
+                  "intensity": 0
+                },
+                "facePoseID": 4,
+                "torsoIndex": 2,
+                "torsoEmotion": {
+                  "emotion": 0,
+                  "intensity": 0
+                },
+                "torsoPoseID": 22
               }
             ]
           },
@@ -17948,7 +18328,13 @@
                   "bottom": -6563
                 },
                 "arrowX": 2844,
-                "class": 2
+                "class": 2,
+                "bodyIndex": 12,
+                "bodyEmotion": {
+                  "emotion": 0,
+                  "intensity": 0
+                },
+                "bodyPoseID": 14
               }
             ]
           }
@@ -19303,7 +19689,13 @@
                     "bottom": -4860
                   },
                   "arrowX": 1200,
-                  "class": 2
+                  "class": 2,
+                  "bodyIndex": 1,
+                  "bodyEmotion": {
+                    "emotion": 0,
+                    "intensity": 0
+                  },
+                  "bodyPoseID": 3
                 },
                 {
                   "avatarID": 1,
@@ -19316,7 +19708,19 @@
                     "bottom": -4860
                   },
                   "arrowX": 2430,
-                  "class": 1
+                  "class": 1,
+                  "faceIndex": 0,
+                  "faceEmotion": {
+                    "emotion": 0,
+                    "intensity": 0
+                  },
+                  "facePoseID": 2,
+                  "torsoIndex": 0,
+                  "torsoEmotion": {
+                    "emotion": 0,
+                    "intensity": 0
+                  },
+                  "torsoPoseID": 14
                 },
                 {
                   "avatarID": 2,
@@ -19329,7 +19733,19 @@
                     "bottom": -4860
                   },
                   "arrowX": 3869,
-                  "class": 1
+                  "class": 1,
+                  "faceIndex": 0,
+                  "faceEmotion": {
+                    "emotion": 0,
+                    "intensity": 0
+                  },
+                  "facePoseID": 2,
+                  "torsoIndex": 0,
+                  "torsoEmotion": {
+                    "emotion": 0,
+                    "intensity": 0
+                  },
+                  "torsoPoseID": 20
                 }
               ]
             },
@@ -20379,7 +20795,19 @@
                     "bottom": -8249
                   },
                   "arrowX": 1290,
-                  "class": 1
+                  "class": 1,
+                  "faceIndex": 4,
+                  "faceEmotion": {
+                    "emotion": 0,
+                    "intensity": 0
+                  },
+                  "facePoseID": 6,
+                  "torsoIndex": 4,
+                  "torsoEmotion": {
+                    "emotion": 0,
+                    "intensity": 0
+                  },
+                  "torsoPoseID": 18
                 },
                 {
                   "avatarID": 2,
@@ -20392,7 +20820,19 @@
                     "bottom": -8249
                   },
                   "arrowX": 3528,
-                  "class": 1
+                  "class": 1,
+                  "faceIndex": 2,
+                  "faceEmotion": {
+                    "emotion": 0,
+                    "intensity": 0
+                  },
+                  "facePoseID": 4,
+                  "torsoIndex": 2,
+                  "torsoEmotion": {
+                    "emotion": 0,
+                    "intensity": 0
+                  },
+                  "torsoPoseID": 22
                 }
               ]
             },
@@ -21040,7 +21480,13 @@
                     "bottom": -6563
                   },
                   "arrowX": 2844,
-                  "class": 2
+                  "class": 2,
+                  "bodyIndex": 12,
+                  "bodyEmotion": {
+                    "emotion": 0,
+                    "intensity": 0
+                  },
+                  "bodyPoseID": 14
                 }
               ]
             }
@@ -22472,7 +22918,13 @@
                   "bottom": -4860
                 },
                 "arrowX": 1200,
-                "class": 2
+                "class": 2,
+                "bodyIndex": 1,
+                "bodyEmotion": {
+                  "emotion": 0,
+                  "intensity": 0
+                },
+                "bodyPoseID": 3
               },
               {
                 "avatarID": 1,
@@ -22485,7 +22937,19 @@
                   "bottom": -4860
                 },
                 "arrowX": 2430,
-                "class": 1
+                "class": 1,
+                "faceIndex": 0,
+                "faceEmotion": {
+                  "emotion": 0,
+                  "intensity": 0
+                },
+                "facePoseID": 2,
+                "torsoIndex": 0,
+                "torsoEmotion": {
+                  "emotion": 0,
+                  "intensity": 0
+                },
+                "torsoPoseID": 14
               },
               {
                 "avatarID": 2,
@@ -22498,7 +22962,19 @@
                   "bottom": -4860
                 },
                 "arrowX": 3869,
-                "class": 1
+                "class": 1,
+                "faceIndex": 0,
+                "faceEmotion": {
+                  "emotion": 0,
+                  "intensity": 0
+                },
+                "facePoseID": 2,
+                "torsoIndex": 0,
+                "torsoEmotion": {
+                  "emotion": 0,
+                  "intensity": 0
+                },
+                "torsoPoseID": 20
               }
             ]
           },
@@ -23548,7 +24024,19 @@
                   "bottom": -8249
                 },
                 "arrowX": 1290,
-                "class": 1
+                "class": 1,
+                "faceIndex": 4,
+                "faceEmotion": {
+                  "emotion": 0,
+                  "intensity": 0
+                },
+                "facePoseID": 6,
+                "torsoIndex": 4,
+                "torsoEmotion": {
+                  "emotion": 0,
+                  "intensity": 0
+                },
+                "torsoPoseID": 18
               },
               {
                 "avatarID": 2,
@@ -23561,7 +24049,19 @@
                   "bottom": -8249
                 },
                 "arrowX": 3528,
-                "class": 1
+                "class": 1,
+                "faceIndex": 2,
+                "faceEmotion": {
+                  "emotion": 0,
+                  "intensity": 0
+                },
+                "facePoseID": 4,
+                "torsoIndex": 2,
+                "torsoEmotion": {
+                  "emotion": 0,
+                  "intensity": 0
+                },
+                "torsoPoseID": 22
               }
             ]
           },
@@ -24719,7 +25219,13 @@
                   "bottom": -6563
                 },
                 "arrowX": 1647,
-                "class": 2
+                "class": 2,
+                "bodyIndex": 12,
+                "bodyEmotion": {
+                  "emotion": 0,
+                  "intensity": 0
+                },
+                "bodyPoseID": 14
               },
               {
                 "avatarID": 1,
@@ -24732,7 +25238,19 @@
                   "bottom": -6563
                 },
                 "arrowX": 3373,
-                "class": 1
+                "class": 1,
+                "faceIndex": 0,
+                "faceEmotion": {
+                  "emotion": 0,
+                  "intensity": 0
+                },
+                "facePoseID": 2,
+                "torsoIndex": 6,
+                "torsoEmotion": {
+                  "emotion": 0,
+                  "intensity": 0
+                },
+                "torsoPoseID": 20
               }
             ]
           }
@@ -26087,7 +26605,13 @@
                     "bottom": -4860
                   },
                   "arrowX": 1200,
-                  "class": 2
+                  "class": 2,
+                  "bodyIndex": 1,
+                  "bodyEmotion": {
+                    "emotion": 0,
+                    "intensity": 0
+                  },
+                  "bodyPoseID": 3
                 },
                 {
                   "avatarID": 1,
@@ -26100,7 +26624,19 @@
                     "bottom": -4860
                   },
                   "arrowX": 2430,
-                  "class": 1
+                  "class": 1,
+                  "faceIndex": 0,
+                  "faceEmotion": {
+                    "emotion": 0,
+                    "intensity": 0
+                  },
+                  "facePoseID": 2,
+                  "torsoIndex": 0,
+                  "torsoEmotion": {
+                    "emotion": 0,
+                    "intensity": 0
+                  },
+                  "torsoPoseID": 14
                 },
                 {
                   "avatarID": 2,
@@ -26113,7 +26649,19 @@
                     "bottom": -4860
                   },
                   "arrowX": 3869,
-                  "class": 1
+                  "class": 1,
+                  "faceIndex": 0,
+                  "faceEmotion": {
+                    "emotion": 0,
+                    "intensity": 0
+                  },
+                  "facePoseID": 2,
+                  "torsoIndex": 0,
+                  "torsoEmotion": {
+                    "emotion": 0,
+                    "intensity": 0
+                  },
+                  "torsoPoseID": 20
                 }
               ]
             },
@@ -27163,7 +27711,19 @@
                     "bottom": -8249
                   },
                   "arrowX": 1290,
-                  "class": 1
+                  "class": 1,
+                  "faceIndex": 4,
+                  "faceEmotion": {
+                    "emotion": 0,
+                    "intensity": 0
+                  },
+                  "facePoseID": 6,
+                  "torsoIndex": 4,
+                  "torsoEmotion": {
+                    "emotion": 0,
+                    "intensity": 0
+                  },
+                  "torsoPoseID": 18
                 },
                 {
                   "avatarID": 2,
@@ -27176,7 +27736,19 @@
                     "bottom": -8249
                   },
                   "arrowX": 3528,
-                  "class": 1
+                  "class": 1,
+                  "faceIndex": 2,
+                  "faceEmotion": {
+                    "emotion": 0,
+                    "intensity": 0
+                  },
+                  "facePoseID": 4,
+                  "torsoIndex": 2,
+                  "torsoEmotion": {
+                    "emotion": 0,
+                    "intensity": 0
+                  },
+                  "torsoPoseID": 22
                 }
               ]
             },
@@ -28334,7 +28906,13 @@
                     "bottom": -6563
                   },
                   "arrowX": 1647,
-                  "class": 2
+                  "class": 2,
+                  "bodyIndex": 12,
+                  "bodyEmotion": {
+                    "emotion": 0,
+                    "intensity": 0
+                  },
+                  "bodyPoseID": 14
                 },
                 {
                   "avatarID": 1,
@@ -28347,7 +28925,19 @@
                     "bottom": -6563
                   },
                   "arrowX": 3373,
-                  "class": 1
+                  "class": 1,
+                  "faceIndex": 0,
+                  "faceEmotion": {
+                    "emotion": 0,
+                    "intensity": 0
+                  },
+                  "facePoseID": 2,
+                  "torsoIndex": 6,
+                  "torsoEmotion": {
+                    "emotion": 0,
+                    "intensity": 0
+                  },
+                  "torsoPoseID": 20
                 }
               ]
             }

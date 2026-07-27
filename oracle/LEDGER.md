@@ -171,6 +171,8 @@ Judge validation §6: all three gates PASSED.
 | 2026-07-24 | 30132205263 | After freezing avatar.golden.json + fixing m_last* writes | All green ✓ avatar GOLDEN MATCH ✓ avatario GOLDEN MATCH ✓ textpose GOLDEN MATCH ✓ |
 | 2026-07-27 | 30277135600 | Balloon tails + zoom decision dumps, corpus 011-013 | RED as designed: 10 GOLDEN MISMATCH (added fields), 3 unfrozen, 0 crashed. Produced the full actual.json set to freeze from |
 | 2026-07-27 | 30277833899 | After re-freezing all 13 goldens | All green ✓ 13/13 GOLDEN MATCH ✓ glyphs + textpose + avatario + avatar all still MATCH (engine change was observation-only) ✓ |
+| 2026-07-27 | 30279392189 | Per-panel-body pose dump, panelWidth knob, CI fixes | RED as designed (13 mismatch, 014 unfrozen). Revealed BOTH new probes still flat: 0/66 bodies with emotion, reduction 1.0 at square 2300 |
+| 2026-07-27 | 30280033631 | After bbCooked: 0 on 011 + narrow-tall 014 | RED as designed. **45/45 panel bodies now carry real emotions** (EM_WAVE 1001 for greetings, 3π/2 face for caps→SHOUT) and **014 hits the shrink branch** (reduction 0.6432 / 0.5056 across 4 panels) |
 
 ### Round of 2026-07-27: tails, zoom, and three new cases
 
@@ -234,6 +236,20 @@ Newly measured gaps (were suspicions, now numbers):
   `avatarStates` is unchanged and still pins the post-message neutral.
 - Mid-text `<Brk>` (012 msg8) does not set the page's `newPanel` flag while a
   standalone `<Brk>` (003 msg5) does. Now pinned; the port must match.
+
+### Watch out when porting the balloon tail (found 2026-07-27)
+
+`CBWoodringNormal::AddArrow` clamps the tail angle with `PI` (balloon.cpp:1505:
+`if (fabs(ang) - PI/2.0 > PI/4.0)`) and then feeds the clamped angle through
+`cos()` into `xbreak`. The two trees do not share that constant: v1.0-pre's
+`vector2d.h:39` has `PI 3.14159`, the v2.5 oracle tree's `vector2d.h:54` has
+`PI 3.14159265358979323846`. `port/src/core/numeric.ts` deliberately exports the
+low-precision 3.14159 (correct for the v1.0-pre geometry it was written
+against), while `port/src/core/emotion.ts` keeps `PI_V25` for the emotion
+constants. Since the goldens come from the v2.5 tree, the tail port must use the
+v2.5 value: `cos(3*3.14159/4)` and `cos(3*PI_V25/4)` differ by ~1e-6, which
+survives multiplication by a TWIPs-scale `heightDelta` and can move `xbreak` by
+a unit after `ROUND`.
 
 ## Remaining / next-phase work
 
