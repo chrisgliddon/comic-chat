@@ -1039,9 +1039,18 @@ static ojson::Value CaptureCcc(CChatDoc* doc) {
     ojson::Value root = ojson::Value::Obj();
     ojson::Value entries = ojson::Value::Arr();
 
-    // A user info to hang the speaker-bearing entries off. The parse path
-    // builds one exactly this way when a say arrives without a join.
+    // A user info to hang the speaker-bearing entries off.
     CUserInfo* pui = new CUserInfo(CString("oraclenick"));
+
+    // Register it in the doc's nick map so the parse constructors resolve the
+    // speaker through LookupPui. Without this they fall into
+    // CIUserJoin (histent.cpp:236, "got a say without a join -- fake it"),
+    // which is not survivable on a bare doc: it dereferences
+    // doc->m_proto->m_dwModes (protsupp.cpp:577), calls AssignArbitraryAvatar,
+    // and appends to the members list - protocol and UI state a codec dump has
+    // no business standing up. That crashed the first run right after "say
+    // serialise". Registering the nick keeps the dump on the codec path.
+    doc->m_mapNickToPtr.SetAt("oraclenick", (void*)pui);
 
     // say, plain
     {
