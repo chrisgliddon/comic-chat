@@ -375,6 +375,41 @@ strings write through them (`HrIdentifyUrls` stamps a terminator over the
 scheme's colon and restores it; `ParseIt` casts away const via `UnConst`), and
 preconditions live in `ASSERT`s that do not exist in the shipped build.
 
+### Tier-1 #10 (.ccc transcript codec) DONE (2026-07-27, CI 30287420118)
+
+`--ccc` freezes byte-exact `WriteSelf` output for all nine keywords plus a
+parse-then-serialise pass, in `oracle/ccc/ccc.golden.json`. Entries are built
+with their live ctors and round-tripped, so the golden pins the format rather
+than my transcription of it.
+
+**9 of 11 probes round-trip byte-exactly.** The two that do not are correct by
+design, and that is the finding - a port test asserting byte identity on
+re-serialise would be wrong for both:
+
+- **`changeavatar` is not round-trip stable.** `WriteSelf` branches on `m_avID`:
+  a live entry (`m_avID == 0`) writes the requested `m_avName`/`m_avURL`, but a
+  *parsed* entry has `m_avID` set by `GetAvatar3` in the parse ctor, so
+  `WriteSelf` emits `pAv->OriginalName()` and `pAv->Url()` - the resolved
+  avatar's values - and discards what the transcript recorded. A locally loaded
+  avatar has no URL, so re-serialising drops it. The comment states the intent:
+  "we want to restore the same visuals that the user saw if possible".
+- **`starthistory` substitutes a nick.** The parse ctor loads
+  `IDS_DEFAULT_NICK` ("Anonymous") when the nick field is empty, while the live
+  ctor never sets `m_name`, so write and read disagree.
+
+Also pinned:
+
+- **The seed really is absent.** `StartHistoryEntry` reads keyword, nick, avName
+  and title - there is no seed field in either direction. Plan section 4.3 is
+  now confirmed from both sides: a `.ccc` cannot reproduce a comic, and the
+  harness must keep injecting the seed.
+- `comicchar` writes the literal string `(null)`: `ComicCharacterEntry(pui)`
+  passes NULL info to `GetInfoEntry` by design and MSVC's `printf` renders it
+  that way. Shipped behaviour, so the port must emit the same literal.
+- The record terminator is not part of a record. Feeding the CRLF back into a
+  parse ctor makes it part of the final field and `QuoteReturns` re-quotes it as
+  a literal `\r\n`, which is what made all eleven probes look broken at first.
+
 Outstanding oracle-side TODOs (not blocking Phase 4, but improve coverage):
 
 - Tier-2 (`.avb` manifests + decoded-pixel CRCs) subcommand not yet implemented.
