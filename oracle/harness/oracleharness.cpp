@@ -243,7 +243,13 @@ static ojson::Value CaptureGlyphs() {
     static const char* kProbes[] = {
         "AV", "To", "Yo", "WA", "f.", "il", "mm", "MMM",
         "   ", "the quick brown fox", "Hello, world!",
-        "caf\xE9", "na\xEFve", "\xFCber",
+        // Hex escapes are GREEDY: "\xFCber" parses as \xFCBE followed by 'r', which
+        // MSVC rejects outright (C7744, escape sequence out of range) rather than
+        // silently truncating. Split so the escape terminates. "caf\xE9" is safe only
+        // because the escape ends the literal, and "na\xEFve" because 'v' is not a hex
+        // digit - both are accidents of the following character, so any new probe with
+        // a high-bit escape should use the split form too.
+        "caf\xE9", "na\xEFve", "\xFC" "ber",
         "...", "!!!", "1234567890",
         NULL
     };
