@@ -84,6 +84,9 @@ typedef char*               LPTSTR;
 typedef const char*         LPCSTR;
 typedef const char*         LPCTSTR;
 typedef TCHAR               _TCHAR;
+typedef float               FLOAT;
+typedef int (*FARPROC)();
+typedef void*               HHOOK;
 
 // GUID is hoisted here because the OLE typedefs below reference it through
 // REFIID. Defined once; the COM floor further down no longer redeclares it

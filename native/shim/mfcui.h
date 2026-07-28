@@ -201,6 +201,66 @@ typedef struct _findtextex {
 #define FR_WHOLEWORD    0x00000002
 #define FR_MATCHCASE    0x00000004
 
+// Common-control and dialog flags reached from headers.
+#define OFN_HIDEREADONLY        0x00000004
+#define OFN_OVERWRITEPROMPT     0x00000002
+#define OFN_FILEMUSTEXIST       0x00001000
+#define OFN_PATHMUSTEXIST       0x00000800
+#define OFN_NOCHANGEDIR         0x00000008
+#define ES_SAVESEL              0x8000L
+#define ES_NOHIDESEL            0x0100L
+#define ES_DISABLENOSCROLL      0x2000L
+#define CBRS_BORDER_TOP         0x00000001L
+#define CBRS_BORDER_BOTTOM      0x00000002L
+#define CBRS_BORDER_LEFT        0x00000004L
+#define CBRS_BORDER_RIGHT       0x00000008L
+#define CBRS_TOP                0x00000100L
+#define CBRS_BOTTOM             0x00000200L
+#define CBRS_ALIGN_ANY          0x00003C00L
+#define CBRS_TOOLTIPS           0x00010000L
+#define CBRS_FLYBY              0x00020000L
+#define CBRS_SIZE_DYNAMIC       0x00040000L
+#define CBRS_GRIPPER            0x00400000L
+
+typedef struct _LV_ITEM {
+    UINT   mask;
+    int    iItem, iSubItem;
+    UINT   state, stateMask;
+    LPSTR  pszText;
+    int    cchTextMax, iImage;
+    LPARAM lParam;
+} LV_ITEM, LVITEM, *LPLVITEM;
+typedef struct _LV_COLUMN {
+    UINT  mask;
+    int   fmt, cx;
+    LPSTR pszText;
+    int   cchTextMax, iSubItem;
+} LV_COLUMN, LVCOLUMN;
+typedef struct _NM_LISTVIEW {
+    NMHDR hdr;
+    int   iItem, iSubItem;
+    UINT  uNewState, uOldState, uChanged;
+    POINT ptAction;
+    LPARAM lParam;
+} NM_LISTVIEW, NMLISTVIEW;
+typedef struct _enlink { NMHDR nmhdr; UINT msg; WPARAM wParam; LPARAM lParam; ORACLE_CHARRANGE chrg; } ENLINK;
+typedef struct _enprotected { NMHDR nmhdr; UINT msg; WPARAM wParam; LPARAM lParam; ORACLE_CHARRANGE chrg; } ENPROTECTED;
+
+// CPrintInfo - printing is not part of the native app (print.cpp is dropped), but
+// OnPreparePrinting/OnPrint overrides in pageview.h, panel.h and textview.h name it.
+class CPrintInfo {
+public:
+    BOOL m_bPreview, m_bContinuePrinting, m_bDocObject;
+    UINT m_nCurPage, m_nNumPreviewPages;
+    CRect m_rectDraw;
+    CPrintInfo() : m_bPreview(FALSE), m_bContinuePrinting(FALSE), m_bDocObject(FALSE),
+                   m_nCurPage(1), m_nNumPreviewPages(0) {}
+    void SetMaxPage(UINT) {}
+    void SetMinPage(UINT) {}
+    UINT GetMaxPage() const { return 1; }
+    UINT GetMinPage() const { return 1; }
+};
+
 // --- the class hierarchy ---------------------------------------------------
 class CCmdTarget : public CObject {
 public:
@@ -324,6 +384,16 @@ public:
     CPropertyPage(UINT, UINT = 0) {}
     void SetModified(BOOL = TRUE) {}
 };
+
+// CCSPropertyPage is the project's property-page base (chicdial.h), stubbed here
+// alongside CCSDialog and for the same reason: setupdlg.h and friends derive from
+// it, and pulling in the real UI headers drags a large Win32 surface into every
+// translation unit.
+class CCSPropertyPage : public CPropertyPage {
+public:
+    CCSPropertyPage() {}
+    CCSPropertyPage(UINT id, UINT caption = 0) : CPropertyPage(id, caption) {}
+};
 class CPropertySheet : public CWnd {
 public:
     CPropertySheet() {}
@@ -334,7 +404,14 @@ public:
 
 class CView : public CWnd {
 public:
+    // Protected in MFC; pageview.h reads it directly.
+    CDocument* m_pDocument;
+    CView() : m_pDocument(0) {}
     virtual void OnDraw(CDC*) {}
+    virtual BOOL OnPreparePrinting(CPrintInfo*) { return TRUE; }
+    virtual void OnBeginPrinting(CDC*, CPrintInfo*) {}
+    virtual void OnEndPrinting(CDC*, CPrintInfo*) {}
+    virtual void OnPrint(CDC*, CPrintInfo*) {}
     class CDocument* GetDocument() const { return 0; }
 };
 class CScrollView : public CView {};
@@ -396,6 +473,10 @@ public:
 };
 class CEdit : public CWnd {
 public:
+    int LineLength(int = -1) const { return 0; }
+    int LineIndex(int = -1) const { return 0; }
+    int LineFromChar(int = -1) const { return 0; }
+    int GetLine(int, LPTSTR, int) const { return 0; }
     void SetSel(int, int, BOOL = FALSE) {}
     void GetSel(int&, int&) const {}
     void ReplaceSel(LPCTSTR, BOOL = FALSE) {}
@@ -443,6 +524,21 @@ public:
     BOOL SetItemData(int, DWORD) { return TRUE; }
 };
 class CTreeCtrl : public CWnd {};
+class CSpinButtonCtrl : public CWnd {
+public:
+    int SetRange(int, int) { return 0; }
+    int SetPos(int) { return 0; }
+    int GetPos() const { return 0; }
+    CWnd* SetBuddy(CWnd*) { return 0; }
+};
+class CScrollBar : public CWnd {
+public:
+    int SetScrollPos(int, BOOL = TRUE) { return 0; }
+    int GetScrollPos() const { return 0; }
+    void SetScrollRange(int, int, BOOL = TRUE) {}
+    BOOL SetScrollInfo(void*, BOOL = TRUE) { return TRUE; }
+};
+
 typedef struct tagACCEL { BYTE fVirt; WORD key, cmd; } ACCEL, *LPACCEL;
 struct AFX_CMDHANDLERINFO { void* pTarget; void* pmf; };
 

@@ -519,6 +519,63 @@ private:
 };
 
 // ---------------------------------------------------------------------------
+// CTime / CTimeSpan - MFC's time wrappers over time_t. Real implementations
+// (script.h and the history code stamp entries), but note the native app should
+// prefer these only where the engine already does; new code has better options.
+// ---------------------------------------------------------------------------
+#include <time.h>
+
+class CTimeSpan {
+public:
+    CTimeSpan() : m_span(0) {}
+    CTimeSpan(time_t s) : m_span(s) {}
+    CTimeSpan(long days, int h, int m, int sec) : m_span(((days * 24 + h) * 60 + m) * 60 + sec) {}
+    time_t GetTotalSeconds() const { return m_span; }
+    long GetDays() const { return (long)(m_span / 86400); }
+    long GetTotalMinutes() const { return (long)(m_span / 60); }
+    long GetMinutes() const { return (long)((m_span / 60) % 60); }
+    long GetSeconds() const { return (long)(m_span % 60); }
+private:
+    time_t m_span;
+};
+
+class CTime {
+public:
+    CTime() : m_time(0) {}
+    CTime(time_t t) : m_time(t) {}
+    CTime(int y, int mo, int d, int h, int mi, int s) {
+        struct tm tmv;
+        memset(&tmv, 0, sizeof(tmv));
+        tmv.tm_year = y - 1900; tmv.tm_mon = mo - 1; tmv.tm_mday = d;
+        tmv.tm_hour = h; tmv.tm_min = mi; tmv.tm_sec = s;
+        tmv.tm_isdst = -1;
+        m_time = mktime(&tmv);
+    }
+    static CTime GetCurrentTime() { return CTime(time(0)); }
+    time_t GetTime() const { return m_time; }
+    int GetYear() const  { struct tm t; localtime_r(&m_time, &t); return t.tm_year + 1900; }
+    int GetMonth() const { struct tm t; localtime_r(&m_time, &t); return t.tm_mon + 1; }
+    int GetDay() const   { struct tm t; localtime_r(&m_time, &t); return t.tm_mday; }
+    int GetHour() const  { struct tm t; localtime_r(&m_time, &t); return t.tm_hour; }
+    int GetMinute() const{ struct tm t; localtime_r(&m_time, &t); return t.tm_min; }
+    int GetSecond() const{ struct tm t; localtime_r(&m_time, &t); return t.tm_sec; }
+    CTimeSpan operator-(const CTime& o) const { return CTimeSpan(m_time - o.m_time); }
+    CTime operator-(const CTimeSpan& s) const { return CTime(m_time - s.GetTotalSeconds()); }
+    CTime operator+(const CTimeSpan& s) const { return CTime(m_time + s.GetTotalSeconds()); }
+    bool operator<(const CTime& o) const  { return m_time < o.m_time; }
+    bool operator>(const CTime& o) const  { return m_time > o.m_time; }
+    bool operator==(const CTime& o) const { return m_time == o.m_time; }
+    CString Format(const char* fmt) const {
+        struct tm t; localtime_r(&m_time, &t);
+        char buf[256];
+        strftime(buf, sizeof(buf), fmt, &t);
+        return CString(buf);
+    }
+private:
+    time_t m_time;
+};
+
+// ---------------------------------------------------------------------------
 // CRect / CPoint / CSize - thin wrappers over the Win32 structs, as in MFC.
 // ---------------------------------------------------------------------------
 class CPoint : public POINT {

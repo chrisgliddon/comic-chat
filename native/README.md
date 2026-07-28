@@ -17,7 +17,7 @@ That set is the whole `.avb`/DIB asset pipeline (`avbfile` + `dib` + `avatar` +
 geometry core (`vector2d`, `bbox`, `traj`, `arc`, `spline`, `splinutl`) and the
 line-breaking unit (`format`).
 
-Across the whole tree: **19 of 91** `.cpp` files compile. The other 72 are
+Across the whole tree: **22 of 91** `.cpp` files compile (`fonts` joined the set). The other 72 are
 predominantly the MFC dialogs and the OLE/ActiveX embedding that are not being
 ported at all. The engine files still blocked — `balloon`, `panel`, `pageview`,
 `chatdoc`, `histent`, `protsupp`, `ircsock`, `fonts` — all fail on the same kind of

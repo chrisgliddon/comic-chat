@@ -56,6 +56,22 @@
 #define ANSI_CHARSET            0
 #define DEFAULT_CHARSET         1
 #define SHIFTJIS_CHARSET        128
+#define SYMBOL_CHARSET          2
+#define MAC_CHARSET             77
+#define HANGEUL_CHARSET         129
+#define JOHAB_CHARSET           130
+#define GB2312_CHARSET          134
+#define CHINESEBIG5_CHARSET     136
+#define GREEK_CHARSET           161
+#define TURKISH_CHARSET         162
+#define VIETNAMESE_CHARSET      163
+#define HEBREW_CHARSET          177
+#define ARABIC_CHARSET          178
+#define BALTIC_CHARSET          186
+#define RUSSIAN_CHARSET         204
+#define THAI_CHARSET            222
+#define EASTEUROPE_CHARSET      238
+#define OEM_CHARSET             255
 #define OUT_DEFAULT_PRECIS      0
 #define CLIP_DEFAULT_PRECIS     0
 #define DEFAULT_QUALITY         0
@@ -344,6 +360,8 @@ public:
     CDC() : m_hDC(0) {}
     HDC GetSafeHdc() const { return (HDC)m_hDC; }
     CFont* GetCurrentFont() const { return 0; }
+    int GetTextFace(int n, LPTSTR buf) const { if (buf && n > 0) buf[0] = 0; return 0; }
+    int GetTextFace(CString& s) const { s.Empty(); return 0; }
     CPalette* GetCurrentPalette() const { return 0; }
     virtual ~CDC() {}
 
