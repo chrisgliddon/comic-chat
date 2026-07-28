@@ -13,10 +13,15 @@
 // worth having, since it names the font that needs adding to CaptureGlyphs.
 #define GLYPH_WRONG_FONT(what) \
     do { \
-        fprintf(stderr, "native: %s with a font the frozen glyph table does not " \
-                        "cover. Measuring it would be silently wrong; add the font " \
-                        "to CaptureGlyphs in oracle/harness/oracleharness.cpp.\n", \
-                (what)); \
+        fprintf(stderr, "native: %s with a font the frozen glyph table does not cover.\n" \
+                        "  Measuring it would be silently wrong. Add the font to\n" \
+                        "  CaptureGlyphs in oracle/harness/oracleharness.cpp.\n" \
+                        "  The table currently holds:\n", (what)); \
+        for (int _i = 0; _i < GlyphFontCount(); _i++) { \
+            const GlyphMetrics* _m = GlyphFontAt(_i); \
+            fprintf(stderr, "    face='%s' lfHeight=%d italic=%d\n", \
+                    _m->faceName, _m->lfHeight, _m->lfItalic); \
+        } \
         abort(); \
     } while (0)
 
@@ -25,7 +30,11 @@ CFont* CDC::SelectObject(CFont* p) {
     // SelectObject(NULL) to mean "no change" in several engine call sites.
     if (p) {
         GlyphTableLoad();
-        m_pinnedFont = GlyphFontIsPinned(&p->m_lf) ? TRUE : FALSE;
+        // Selects the matching entry in the table, so subsequent measurement uses THIS
+        // font's advances. The engine switches between balloon, whisper (italic), title
+        // and shout repeatedly while laying out a page, and each has different widths -
+        // measuring a title with balloon advances would misplace every title.
+        m_pinnedFont = GlyphSelectFont(&p->m_lf) ? TRUE : FALSE;
     }
     return p;
 }

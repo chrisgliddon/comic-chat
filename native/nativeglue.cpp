@@ -44,20 +44,24 @@ LOGPALETTE *gpLogPal = 0;
 // split a character in half mid-line.
 extern "C" int iBytesofChar(BYTE) { return 1; }
 
-// g_screenDpi backs dpiscale.h's DpiScale(). The original sets it in
-// CChatApp::InitInstance from the display; 96 here, which makes DpiScale the identity
-// and matches the dpi the glyph table was captured at. Those two must agree: a
-// different value would scale pixel surfaces away from the advances they sit beside.
-int g_screenDpi = 96;
+// Also weak. 96 keeps DpiScale as the identity and matches the dpi the glyph table was
+// captured at - those two must agree or pixel surfaces scale away from the advances
+// beside them.
+__attribute__((weak)) int g_screenDpi = 96;
 
 // The WinInet DLL handle, defined in chat.cpp. NULL: nothing loads WinInet, and
 // urlutil.cpp checks it before use.
 HINSTANCE g_hinstWinInet = 0;
 
 // These two have trivial types, so they get honest definitions.
-BOOL g_bCanViewUnrated = FALSE;
+// WEAK definitions. The small dump drivers (verify.sh) link neither protsupp.cpp nor
+// userinfo.cpp, so they need these; the full harness links both and its STRONG
+// definitions win. Without the weak attribute, adding protsupp to one link produced
+// duplicate symbols while removing it from the other produced undefined ones - there is
+// no single non-weak arrangement that satisfies both binaries.
+__attribute__((weak)) BOOL g_bCanViewUnrated = FALSE;
 class CUserInfo;
-CUserInfo* g_puiSelf = 0;
+__attribute__((weak)) CUserInfo* g_puiSelf = 0;
 
 // ===========================================================================
 // Leaf symbols that avatar.o and avatario.o import from engine files not yet in
@@ -91,10 +95,7 @@ CUserInfo* g_puiSelf = 0;
         abort(); \
     } while (0)
 
-// --- panel.cpp ---
-CPanelElement::CPanelElement(const CPanelElement& o) { m_bbox = o.m_bbox; }
-BOOL CPanelElement::SetBBox(int, int, int, int) { NATIVE_UNLINKED("CPanelElement::SetBBox (panel.cpp)"); }
-void CPanelElement::GetBBox(RECT*) { NATIVE_UNLINKED("CPanelElement::GetBBox (panel.cpp)"); }
+// CPanelElement now comes from the real panel.cpp, which links.
 
 // --- bodycam.cpp ---
 BOOL CBodySingle::IsSame(CBody*) { NATIVE_UNLINKED("CBodySingle::IsSame (bodycam.cpp)"); }
@@ -112,29 +113,16 @@ void RefreshBodyPreview(CAvatarX*) { NATIVE_UNLINKED("RefreshBodyPreview (bodyca
 #include "chat.h"
 BOOL CChatApp::StartDownloadingBackdrop(LPCSTR, LPCSTR) { NATIVE_UNLINKED("CChatApp::StartDownloadingBackdrop (chat.cpp)"); }
 
-// --- balloon.cpp: see the RNG note above ---
-double randfloat() { NATIVE_UNLINKED("randfloat (balloon.cpp) - would desync the pinned RNG sequence"); }
+// randfloat now comes from the real balloon.cpp, which links - so the pinned RNG
+// sequence is the engine's own again rather than a guard against using it.
 
-// --- protsupp.cpp: IndexToByte / ByteToIndex ---
-// Transcribed from protsupp.cpp:1023-1032, not stubbed: the avatario dump encodes
-// every emotion through them, so an abort would make milestone 2 unreachable and a
-// wrong value would corrupt the wire bytes.
-//
-// They are two-line ASCII digit conversions and the avatario golden exercises the
-// full table, so a transcription error fails immediately rather than lurking. This
-// is still duplication - DELETE BOTH once protsupp.cpp links natively.
-BYTE IndexToByte(BYTE byteIn) { return byteIn + '0'; }
-BYTE ByteToIndex(BYTE byteIn) { return byteIn - '0'; }
+// IndexToByte / ByteToIndex now come from the real protsupp.cpp, which links, so the
+// transcription that stood here is gone - as its comment said it should be.
 
 // --- protsupp.cpp ---
 void SetMyCharacter(const char*) { NATIVE_UNLINKED("SetMyCharacter (protsupp.cpp)"); }
 
-// --- userinfo.cpp ---
-// Stubbed rather than linking userinfo.o: that object compiles, but it imports the
-// history and protocol layer (AddAndExecute, GetMembers, GetMyNickName, IsIgnored,
-// the HistoryEntry vtables), which would pull most of the tree into a dump that
-// needs none of it.
-void SetMyPUIAvatarID(UINT) { NATIVE_UNLINKED("SetMyPUIAvatarID (userinfo.cpp)"); }
+// SetMyPUIAvatarID now comes from the real userinfo.cpp, which links.
 
 // --- bodycam.cpp: CBodyDouble's virtuals, for its vtable ---
 BOOL CBodyDouble::IsSame(CBody*) { NATIVE_UNLINKED("CBodyDouble::IsSame (bodycam.cpp)"); }

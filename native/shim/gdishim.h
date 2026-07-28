@@ -532,7 +532,7 @@ public:
     // m_pinnedFont starts TRUE: the oracle dumps set up the pinned font before any
     // measurement, and a DC that is never given a font at all is only used for
     // painting. A wrong font is caught at SelectObject time instead.
-    CDC() : m_hDC(0), m_bPrinting(FALSE), m_pinnedFont(TRUE) {}
+    CDC() : m_nDcMapMode(MM_TEXT), m_hDC(0), m_bPrinting(FALSE), m_pinnedFont(TRUE) {}
     HDC GetSafeHdc() const { return (HDC)m_hDC; }
     CFont* GetCurrentFont() const { return 0; }
     int GetTextFace(int n, LPTSTR buf) const { if (buf && n > 0) buf[0] = 0; return 0; }
@@ -541,8 +541,16 @@ public:
     virtual ~CDC() {}
 
     // -- mapping / state (safe no-ops) --
-    int SetMapMode(int) { return MM_TEXT; }
-    int GetMapMode() const { return MM_TWIPS; }
+    // The DC's own map mode. Named m_nDcMapMode, NOT m_nMapMode: MFC has both a map
+    // mode on CDC (private, reached via Set/GetMapMode) and a PUBLIC m_nMapMode member
+    // on CScrollView that pageview.cpp reads directly. Conflating them put the member on
+    // the wrong class once already.
+    int m_nDcMapMode;
+
+    // Records the mode, because LPtoDP/DPtoLP now branch on it rather than being
+    // identity. Returning a fixed value here would silently disable those conversions.
+    int SetMapMode(int mode) { int prev = m_nDcMapMode; m_nDcMapMode = mode; return prev; }
+    int GetMapMode() const { return m_nDcMapMode; }
     int SetBkMode(int) { return TRANSPARENT; }
     COLORREF SetBkColor(COLORREF c) { return c; }
     COLORREF SetTextColor(COLORREF c) { return c; }
@@ -574,15 +582,64 @@ public:
     UINT RealizePalette() { return 0; }
     CGdiObject* SelectStockObject(int) { return 0; }
 
-    // -- coordinate conversion --
-    // Identity for now. These are only reached once a view exists, and a view
-    // brings a real backend with it.
-    void LPtoDP(POINT*, int = 1) const {}
-    void DPtoLP(POINT*, int = 1) const {}
-    void DPtoLP(SIZE*) const {}
-    void LPtoDP(SIZE*) const {}
-    void LPtoDP(RECT*) const {}
-    void DPtoLP(RECT*) const {}
+    // -- coordinate conversion: REAL, not identity --
+    //
+    // These are not painting helpers; the engine COMPUTES with them. PointsToTwips
+    // (pageview.cpp:174) derives the balloon font height by round-tripping a point
+    // through LPtoDP, so the no-op that stood here returned 15 instead of -240. The
+    // font then failed to match the frozen glyph table and measurement refused - which
+    // is how the bug surfaced, and a good argument for making measurement abort.
+    //
+    // MM_TWIPS: a logical unit is 1/1440 inch with y increasing UPWARD, while device
+    // units are pixels with y increasing downward - hence the sign flip on y. At the
+    // pinned 96 dpi that is exactly 15 twips per pixel.
+    //
+    // Verifiable rather than merely plausible: with this mapping PointsToTwips(12)
+    // returns -240, which is the lfHeight the glyph table records. Any other mapping
+    // breaks that identity, so the table is the oracle for this code too.
+    void LPtoDP(POINT* p, int n = 1) const {
+        if (!p || m_nDcMapMode != MM_TWIPS) return;
+        for (int i = 0; i < n; i++) {
+            p[i].x = (LONG)((long long)p[i].x * 96 / 1440);
+            p[i].y = (LONG)(-((long long)p[i].y * 96 / 1440));
+        }
+    }
+    void DPtoLP(POINT* p, int n = 1) const {
+        if (!p || m_nDcMapMode != MM_TWIPS) return;
+        for (int i = 0; i < n; i++) {
+            p[i].x = (LONG)((long long)p[i].x * 1440 / 96);
+            p[i].y = (LONG)(-((long long)p[i].y * 1440 / 96));
+        }
+    }
+    // Extents, not positions: no sign flip, because a height is a magnitude.
+    void LPtoDP(SIZE* z) const {
+        if (!z || m_nDcMapMode != MM_TWIPS) return;
+        z->cx = (LONG)((long long)z->cx * 96 / 1440);
+        z->cy = (LONG)((long long)z->cy * 96 / 1440);
+    }
+    void DPtoLP(SIZE* z) const {
+        if (!z || m_nDcMapMode != MM_TWIPS) return;
+        z->cx = (LONG)((long long)z->cx * 1440 / 96);
+        z->cy = (LONG)((long long)z->cy * 1440 / 96);
+    }
+    void LPtoDP(RECT* r) const {
+        if (!r) return;
+        POINT pts[2];
+        pts[0].x = r->left;  pts[0].y = r->top;
+        pts[1].x = r->right; pts[1].y = r->bottom;
+        LPtoDP(pts, 2);
+        r->left = pts[0].x; r->top = pts[0].y;
+        r->right = pts[1].x; r->bottom = pts[1].y;
+    }
+    void DPtoLP(RECT* r) const {
+        if (!r) return;
+        POINT pts[2];
+        pts[0].x = r->left;  pts[0].y = r->top;
+        pts[1].x = r->right; pts[1].y = r->bottom;
+        DPtoLP(pts, 2);
+        r->left = pts[0].x; r->top = pts[0].y;
+        r->right = pts[1].x; r->bottom = pts[1].y;
+    }
 
     // -- painting (no-ops) --
     BOOL MoveTo(int, int) { return TRUE; }
@@ -765,7 +822,7 @@ inline BOOL CArchive::ReadString(CString& s) {
 // ---------------------------------------------------------------------------
 // Late additions. Appended rather than slotted into the sections above because
 // insertion-point mistakes in these headers have twice produced a silent no-op
-// (a replace whose anchor did not match) and once a semantic error (m_nMapMode put
+// (a replace whose anchor did not match) and once a semantic error (m_nDcMapMode put
 // on CDC instead of CScrollView). Appending is verifiable at a glance.
 // ---------------------------------------------------------------------------
 

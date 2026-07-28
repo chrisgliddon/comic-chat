@@ -15,13 +15,15 @@
 // rather than reasoning: had it failed, the goldens would still have agreed with a
 // wrong port, because both sides would have come from the same wrong model.
 //
-// SCOPE: the table pins exactly one font - Comic Sans MS at 12pt, 96 dpi, MM_TWIPS.
-// Measuring any other font from it would be silently wrong, so requests for a font
-// that does not match the pinned one ABORT rather than answer. That is deliberate:
-// the engine does use other fonts (titles, UI), and aborting names which ones so
-// they can be added to the capture. A guess here is indistinguishable from a
-// correct answer until a golden fails, which is the failure mode this whole
-// approach exists to avoid.
+// SCOPE: the table pins a SET of fonts, keyed by (face, lfHeight, italic). fonts.cpp
+// creates four per page - balloon, whisper (italic), title and shout - and
+// UpdateTitleFonts scales the last two by panel width, so the set is panel-dependent.
+//
+// A request for a font the table does not contain ABORTS rather than being answered
+// from a near neighbour. That is deliberate, and it is how the set was discovered: the
+// corpus replay aborted naming lfHeight -576, the title font, which the original
+// single-font table had no entry for. A guess would have been indistinguishable from a
+// correct answer until a golden failed several layers downstream.
 
 #ifndef NATIVE_SHIM_GLYPHTABLE_H
 #define NATIVE_SHIM_GLYPHTABLE_H
@@ -39,12 +41,16 @@ bool GlyphTableLoad(const char* path = 0);
 // True once a table is loaded.
 bool GlyphTableReady();
 
-// Advance width in TWIPS for a single byte, or -1 if that byte has no pinned entry.
-// The table covers 0x20-0xFF, the whole single-byte MBCS range.
+// Selects the active font by (face, |lfHeight|, italic). Returns false if the table has
+// no such entry; the caller is expected to refuse to measure rather than fall back.
+bool GlyphSelectFont(const LOGFONT* lf);
+
+// Advance width in TWIPS for a single byte in the ACTIVE font, or -1 if unpinned.
+// Each font covers 0x20-0xFF, the whole single-byte MBCS range.
 int GlyphAdvance(unsigned char ch);
 
-// Sums advances over len bytes. Aborts if any byte is unpinned, rather than
-// skipping it - a silently short string is a wrong line break.
+// Sums advances over len bytes in the active font. Aborts if any byte is unpinned,
+// rather than skipping it - a silently short string is a wrong line break.
 long GlyphTextWidth(const char* s, int len);
 
 // The pinned TEXTMETRIC scalars.
@@ -56,14 +62,24 @@ struct GlyphMetrics {
     // The five CFontInfo values the engine reads (balloon.h:47-56). Pinned rather
     // than recomputed from the metrics, per RULEBOOK 5.
     int m_leading, m_baseAdd, m_lineHeight, m_continuationWidth, m_topOffset;
+    // tmCharSet matters: fonts.cpp italicises the whisper font only when it is < 3 or
+    // one of the European sets, so a wrong value italicises the wrong balloons.
+    int tmCharSet;
+    int lfItalic;
     const char* faceName;
 };
+
+// Metrics for the ACTIVE font (whatever GlyphSelectFont last accepted).
 const GlyphMetrics* GlyphTableMetrics();
 
-// Does a LOGFONT match the pinned font? Compared on face name and |lfHeight| only:
-// those are what determine the advances, and the engine varies the other fields
-// (weight, italic) without the capture covering them - so a match on those two with
-// a difference elsewhere is still a request the table cannot honestly answer.
+// How many fonts the table holds, and a description of one - for diagnostics when a
+// lookup fails, so the message can list what IS available.
+int GlyphFontCount();
+const GlyphMetrics* GlyphFontAt(int i);
+
+// Is there an entry for this LOGFONT? Matched on face name, |lfHeight| and italic -
+// the three things that change the advances. Other fields (weight, underline) are not
+// varied by the engine and are not captured, so they are not compared.
 bool GlyphFontIsPinned(const LOGFONT* lf);
 
 #endif // NATIVE_SHIM_GLYPHTABLE_H

@@ -29,59 +29,27 @@ set -e
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 cd "$ROOT"
 
-CXXFLAGS="-std=c++14 -O1 -w -Wno-error=non-pod-varargs -fms-extensions -DORACLE_HARNESS -I native/shim -I artifacts/inc"
+. ./native/units.sh
+
 BUILD=native/build
 OUT=$BUILD/avbout
-
-# ORACLE_HARNESS is defined on purpose: it activates the observability hooks in
-# avbfile.cpp (tag stream, image reader, pre-convert compression) whose output is
-# part of the frozen manifests. Without it the native dump would legitimately
-# differ - recordTags and the histograms would be empty.
-
-./native/stage.sh > /dev/null
-for c in avbmain posemain nativeglue nativeapp glyphmain; do
-    ln -sf "$ROOT/native/$c.cpp" "native/stage/$c.cpp"
-done
-
 mkdir -p "$BUILD"
 
-# Engine objects the dump needs, plus the harness dump itself. Deliberately NOT
-# userinfo.o: it compiles, but importing it drags in the history and protocol layer
-# (AddAndExecute, GetMembers, the HistoryEntry vtables) for a dump that needs none
-# of it - native/nativeglue.cpp stubs the one symbol it was wanted for.
-# doskey is LINKED rather than stubbed: it compiles, and CChatApp holds a CDosKey
-# by value so its ctor runs.
-# format is linked for CopyFormatting/FreeAndNullFormatting, which CChatApp's
-# member teardown reaches.
-# urlutil is linked for CUrlRec, which format.cpp's URL detection uses.
-ENGINE="avbfile dib avatar backdrop avatario vector2d bbox doskey format urlutil"
-SHARED="avbdump posedump ojson oracleseed nativeglue nativeapp"
-# The measurement layer: the frozen glyph table plus CDC's measurement methods.
-GLYPH="glyphtable glyphtable_cdc"
-DRIVERS="avbmain posemain"
+# ORACLE_HARNESS is defined on purpose (see units.sh): it activates the observability
+# hooks in avbfile.cpp whose output is part of the frozen manifests. Without it
+# recordTags and the histograms would be empty and every manifest would differ.
+native_stage
+native_compile $NATIVE_UNITS avbmain posemain glyphmain || exit 1
+clang++ -c -std=c++14 -O1 -w -o "$BUILD/uistubs.o" native/uistubs.cpp
 
-for c in glyphtable glyphtable_cdc; do
-    ln -sf "$ROOT/native/shim/$c.cpp" "native/stage/$c.cpp"
-done
+# One object set, several entry points.
+clang++ -o "$BUILD/avbdump"  $(native_objs) "$BUILD/avbmain.o"  "$BUILD/uistubs.o" native/shim/msvcrand.cpp -lz
+clang++ -o "$BUILD/posedump" $(native_objs) "$BUILD/posemain.o" "$BUILD/uistubs.o" native/shim/msvcrand.cpp -lz
 
-for u in $ENGINE $SHARED $GLYPH $DRIVERS glyphmain; do
-    clang++ -c $CXXFLAGS -o "$BUILD/$u.o" "native/stage/$u.cpp"
-done
-
-# posedump links avbdump.o for the OracleAvb* observability sinks: avbfile.cpp calls
-# them under ORACLE_HARNESS whether or not this binary dumps assets.
-OBJS=$(for u in $ENGINE $SHARED $GLYPH; do printf '%s ' "$BUILD/$u.o"; done)
-
-clang++ -o "$BUILD/avbdump"  "$BUILD/avbmain.o"  $OBJS native/shim/msvcrand.cpp -lz
-clang++ -o "$BUILD/posedump" "$BUILD/posemain.o" $OBJS native/shim/msvcrand.cpp -lz
-
-# --- text measurement, before the dumps: if the frozen glyph table or the CDC
-# wiring is wrong, everything downstream of line breaking is wrong too, and the
-# per-check output here says which part rather than leaving a golden diff to
-# interpret. Its own binary because it needs no engine objects.
-clang++ -o "$BUILD/glyphcheck" \
-    "$BUILD/glyphmain.o" "$BUILD/glyphtable.o" "$BUILD/glyphtable_cdc.o" \
-    "$BUILD/ojson.o" native/shim/msvcrand.cpp
+# glyphcheck stays standalone: it exercises the measurement layer through the CDC API and
+# needs no engine object, so a failure there cannot be blamed on the engine.
+clang++ -o "$BUILD/glyphcheck" "$BUILD/glyphmain.o" "$BUILD/glyphtable.o" \
+    "$BUILD/glyphtable_cdc.o" "$BUILD/ojson.o" native/shim/msvcrand.cpp
 "$BUILD/glyphcheck" oracle/glyphs/glyphs.json
 
 rm -rf "$OUT"

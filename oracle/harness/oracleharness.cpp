@@ -134,23 +134,52 @@ static int g_screenDpi = 96;
 // ---------------------------------------------------------------------------
 // Glyph capture: dump advance widths + CFontInfo scalars
 // ---------------------------------------------------------------------------
-static ojson::Value CaptureGlyphs() {
-    ojson::Value root = ojson::Value::Obj();
+// ---------------------------------------------------------------------------
+// Glyph capture.
+//
+// Captures EVERY font the engine creates, not just the balloon font. fonts.cpp makes
+// four per page - balloon, whisper (italic), title and shout - and UpdateTitleFonts
+// scales the last two by m_unitWidth/4860, so the set depends on panel width:
+//
+//   nFontHeightTitle = -576, nFontHeightShout = -252 (defines.h:137-138), each
+//   multiplied by the reduction and then clamped against m_iFontHeightBalloon:
+//     title = min((int)(-576 * r), (int)(1.2 * balloonHeight))
+//     shout = min((int)(-252 * r), balloonHeight)
+//
+// At the corpus's two panel widths (4860 -> r = 1.0, and 2300 for case 014) that gives
+// title -576 / shout -252, and title -288 / shout -240 respectively. The whisper font is
+// the balloon size in ITALIC, which has different advances entirely.
+//
+// This matters because the native port measures from this table and REFUSES to measure
+// a font it does not cover - which is how the omission was found: the corpus replay
+// aborted naming lfHeight -576. A table with only the balloon font cannot reproduce any
+// golden that draws a title or a shout.
+//
+// Emits both shapes: the top-level `font` object stays exactly as it was (the TS port
+// and RULEBOOK 5 consume it, and the balloon font is what they need), plus a `fonts`
+// array carrying all five keyed by lfHeight and lfItalic.
+// ---------------------------------------------------------------------------
 
-    // Create a desktop DC with MM_TWIPS, same as pageview.cpp:994
-    CClientDC dc(CWnd::FromHandle(::GetDesktopWindow()));
-    dc.SetMapMode(MM_TWIPS);
+// The probe strings for the sum-of-advances check. See CaptureOneFont.
+static const char* kExtentProbes[] = {
+    "AV", "To", "Yo", "WA", "f.", "il", "mm", "MMM",
+    "   ", "the quick brown fox", "Hello, world!",
+    "caf\xE9", "na\xEFve", "\xFC" "ber",
+    "...", "!!!", "1234567890",
+    NULL
+};
 
-    // Pin the font: Comic Sans MS at the default balloon size
-    // From chat.cpp:381, m_iFontHeightBalloon = PointsToTwips(atoi(strDefaultFontHeight))
-    // IDS_DFLT_COMICSPNTSIZE = "12" in the modern tree (chat.rc:2336)
-    int fontHeight = PointsToTwips(12);
+// Captures one font: its TEXTMETRIC scalars, the 0x20-0xFF advances, and the extent
+// probes. cFontInfo is only meaningful for the balloon font (the engine derives the
+// other CFontInfos with different leading/baseAdd), so it is emitted separately by the
+// caller rather than here.
+static ojson::Value CaptureOneFont(CDC& dc, int lfHeight, BOOL italic, const char* role) {
     LOGFONT lf;
     memset(&lf, 0, sizeof(lf));
-    lf.lfHeight = fontHeight;
+    lf.lfHeight = lfHeight;
     lf.lfWidth = 0;
     lf.lfWeight = FW_NORMAL;
-    lf.lfItalic = FALSE;
+    lf.lfItalic = (BYTE)(italic ? TRUE : FALSE);
     lf.lfUnderline = FALSE;
     lf.lfStrikeOut = FALSE;
     lf.lfCharSet = ANSI_CHARSET;
@@ -162,115 +191,135 @@ static ojson::Value CaptureGlyphs() {
 
     CFont font;
     font.CreateFontIndirect(&lf);
-    CFont* pOldFont = dc.SelectObject(&font);
+    CFont* pOld = dc.SelectObject(&font);
 
     TEXTMETRIC tm;
     dc.GetTextMetrics(&tm);
 
-    // CFontInfo scalars (balloon.h:47, fonts.cpp:89)
-    double reduction = (double)abs(lf.lfHeight) / 180.0;
-    int doVKern = 1; // Comic Sans MS
-    short leading = (short)(-40 * reduction * doVKern);
-    short baseAdd = (short)(30 * reduction * doVKern);
+    ojson::Value v = ojson::Value::Obj();
+    v.Set("role", ojson::Value::Str(role));
+    v.Set("faceName", ojson::Value::Str("Comic Sans MS"));
+    v.Set("lfHeight", ojson::Value::Int(lfHeight));
+    v.Set("lfItalic", ojson::Value::Int(italic ? 1 : 0));
+    v.Set("tmHeight", ojson::Value::Int(tm.tmHeight));
+    v.Set("tmAscent", ojson::Value::Int(tm.tmAscent));
+    v.Set("tmDescent", ojson::Value::Int(tm.tmDescent));
+    v.Set("tmInternalLeading", ojson::Value::Int(tm.tmInternalLeading));
+    v.Set("tmExternalLeading", ojson::Value::Int(tm.tmExternalLeading));
+    v.Set("tmAveCharWidth", ojson::Value::Int(tm.tmAveCharWidth));
+    v.Set("tmMaxCharWidth", ojson::Value::Int(tm.tmMaxCharWidth));
+    v.Set("tmOverhang", ojson::Value::Int(tm.tmOverhang));
+    // tmCharSet is captured because fonts.cpp branches on it: the whisper font is
+    // italicised only when tmCharSet < 3 or is one of the European sets, so a port that
+    // guessed it wrong would italicise the wrong balloons.
+    v.Set("tmCharSet", ojson::Value::Int(tm.tmCharSet));
 
-    ojson::Value fontInfo = ojson::Value::Obj();
-    fontInfo.Set("faceName", ojson::Value::Str("Comic Sans MS"));
-    fontInfo.Set("lfHeight", ojson::Value::Int(fontHeight));
-    fontInfo.Set("tmHeight", ojson::Value::Int(tm.tmHeight));
-    fontInfo.Set("tmAscent", ojson::Value::Int(tm.tmAscent));
-    fontInfo.Set("tmDescent", ojson::Value::Int(tm.tmDescent));
-    fontInfo.Set("tmInternalLeading", ojson::Value::Int(tm.tmInternalLeading));
-    fontInfo.Set("tmExternalLeading", ojson::Value::Int(tm.tmExternalLeading));
-    fontInfo.Set("tmAveCharWidth", ojson::Value::Int(tm.tmAveCharWidth));
-    fontInfo.Set("tmMaxCharWidth", ojson::Value::Int(tm.tmMaxCharWidth));
-    fontInfo.Set("tmOverhang", ojson::Value::Int(tm.tmOverhang));
-
-    ojson::Value cfi = ojson::Value::Obj();
-    cfi.Set("m_leading", ojson::Value::Int(leading));
-    cfi.Set("m_baseAdd", ojson::Value::Int(baseAdd));
-    // lineHeight and continuationWidth are computed in CFontInfo ctor (fonts.cpp)
-    // m_lineHeight = tm.tmHeight + m_leading
-    // m_continuationWidth = GetTextExtent("...") width
-    CSize contExt = dc.GetTextExtent("...", 3);
-    cfi.Set("m_lineHeight", ojson::Value::Int((short)(tm.tmHeight + leading)));
-    cfi.Set("m_continuationWidth", ojson::Value::Int((short)contExt.cx));
-    // topOffset = tm.tmAscent + leading + baseAdd (see CFontInfo ctor)
-    cfi.Set("m_topOffset", ojson::Value::Int((short)(tm.tmAscent + leading + baseAdd)));
-    fontInfo.Set("cFontInfo", cfi);
-
-    // Glyph advance widths for the FULL single-byte range, 0x20-0xFF.
-    //
-    // This used to stop at 0x7E, and the comment claimed "+ common corpus chars"
-    // while capturing none of them. That was a real hole rather than a cosmetic one:
-    // corpus cases 005 and 013 contain e-acute (0xE9), i-diaeresis (0xEF) and
-    // u-diaeresis (0xFC), so NO port could reproduce those two goldens' line
-    // breaking - the widths it needed were simply absent from the frozen table.
-    // RULEBOOK 5 sends out-of-range characters to the deferred CJK question, which
-    // hid the gap: these are CP-1252 accented letters on the happy path, not CJK.
-    //
-    // 0x20-0xFF is the right bound because the engine is an MBCS build indexing
-    // bytes: any single byte it can encounter is covered, and the double-byte path
-    // remains the separate deferred question (Tier-1 #13). 0x7F (DEL) is included
-    // for completeness rather than skipped, so the table has no holes to reason
-    // about.
     ojson::Value advances = ojson::Value::Arr();
     for (int c = 0x20; c <= 0xFF; c++) {
         char ch[2] = { (char)c, 0 };
         CSize ext = dc.GetTextExtent(ch, 1);
-        ojson::Value entry = ojson::Value::Obj();
-        entry.Set("char", ojson::Value::Int(c));
-        entry.Set("advance", ojson::Value::Int(ext.cx));
-        advances.Push(entry);
-    }
-    fontInfo.Set("glyphAdvances", advances);
-
-    // Multi-character extents, so a port can VERIFY that summing per-character
-    // advances reproduces GetTextExtent rather than assuming it.
-    //
-    // The whole frozen-table strategy rests on that assumption: the engine measures
-    // substrings (format.cpp's line breaker calls GetTextExtent on candidate
-    // fragments), while the table stores single characters. If Comic Sans MS kerned
-    // pairs, or if GDI applied inter-character spacing, the sum would drift from the
-    // measured width and every line break would be subtly wrong.
-    //
-    // tmOverhang is 0 and GDI does not apply pair kerning in GetTextExtent, so the
-    // sum SHOULD hold - but "should" is what oracles are for. Each probe below is a
-    // string plus its measured width; the port asserts sum(advances) == width.
-    // Deliberately includes pairs GDI would kern if it kerned anything (AV, To, Yo),
-    // a repeated-letter run, a spaces-only string, and an accented character from
-    // the corpus.
-    ojson::Value sumChecks = ojson::Value::Arr();
-    static const char* kProbes[] = {
-        "AV", "To", "Yo", "WA", "f.", "il", "mm", "MMM",
-        "   ", "the quick brown fox", "Hello, world!",
-        // Hex escapes are GREEDY: "\xFCber" parses as \xFCBE followed by 'r', which
-        // MSVC rejects outright (C7744, escape sequence out of range) rather than
-        // silently truncating. Split so the escape terminates. "caf\xE9" is safe only
-        // because the escape ends the literal, and "na\xEFve" because 'v' is not a hex
-        // digit - both are accidents of the following character, so any new probe with
-        // a high-bit escape should use the split form too.
-        "caf\xE9", "na\xEFve", "\xFC" "ber",
-        "...", "!!!", "1234567890",
-        NULL
-    };
-    for (int i = 0; kProbes[i] != NULL; i++) {
-        int len = (int)strlen(kProbes[i]);
-        CSize ext = dc.GetTextExtent(kProbes[i], len);
         ojson::Value e = ojson::Value::Obj();
-        // Emitted as bytes; ojson strings are raw so the high-bit characters survive.
-        e.Set("text", ojson::Value::Str(kProbes[i]));
+        e.Set("char", ojson::Value::Int(c));
+        e.Set("advance", ojson::Value::Int(ext.cx));
+        advances.Push(e);
+    }
+    v.Set("glyphAdvances", advances);
+
+    ojson::Value probes = ojson::Value::Arr();
+    for (int i = 0; kExtentProbes[i] != NULL; i++) {
+        int len = (int)strlen(kExtentProbes[i]);
+        CSize ext = dc.GetTextExtent(kExtentProbes[i], len);
+        ojson::Value e = ojson::Value::Obj();
+        e.Set("text", ojson::Value::Str(kExtentProbes[i]));
         e.Set("length", ojson::Value::Int(len));
         e.Set("width", ojson::Value::Int(ext.cx));
         e.Set("height", ojson::Value::Int(ext.cy));
-        sumChecks.Push(e);
+        probes.Push(e);
     }
-    fontInfo.Set("extentProbes", sumChecks);
+    v.Set("extentProbes", probes);
 
-    dc.SelectObject(pOldFont);
+    dc.SelectObject(pOld);
+    return v;
+}
+
+static ojson::Value CaptureGlyphs() {
+    ojson::Value root = ojson::Value::Obj();
+
+    // Desktop DC with MM_TWIPS, same as pageview.cpp:994
+    CClientDC dc(CWnd::FromHandle(::GetDesktopWindow()));
+    dc.SetMapMode(MM_TWIPS);
+
+    // The balloon font: Comic Sans MS at the default balloon size.
+    // chat.cpp:381 m_iFontHeightBalloon = PointsToTwips(atoi(strDefaultFontHeight)),
+    // IDS_DFLT_COMICSPNTSIZE = "12" (chat.rc:2336).
+    int balloonHeight = PointsToTwips(12);
+
+    // --- the legacy top-level `font` object, unchanged in shape --------------------
+    // Kept byte-compatible because RULEBOOK 5 and the TS port read it directly; the
+    // `fonts` array below is additive.
+    ojson::Value fontInfo = CaptureOneFont(dc, balloonHeight, FALSE, "balloon");
+    fontInfo.Set("role", ojson::Value::Null());   // absent from the legacy shape
+    {
+        // Re-select for the CFontInfo scalars, which are derived rather than measured.
+        LOGFONT lf;
+        memset(&lf, 0, sizeof(lf));
+        lf.lfHeight = balloonHeight;
+        lf.lfWeight = FW_NORMAL;
+        lf.lfCharSet = ANSI_CHARSET;
+        lf.lfOutPrecision = OUT_DEFAULT_PRECIS;
+        lf.lfClipPrecision = CLIP_DEFAULT_PRECIS;
+        lf.lfQuality = DEFAULT_QUALITY;
+        lf.lfPitchAndFamily = DEFAULT_PITCH | FF_DONTCARE;
+        strcpy(lf.lfFaceName, "Comic Sans MS");
+        CFont font;
+        font.CreateFontIndirect(&lf);
+        CFont* pOld = dc.SelectObject(&font);
+        TEXTMETRIC tm;
+        dc.GetTextMetrics(&tm);
+
+        // CFontInfo scalars (balloon.h:47, fonts.cpp:89)
+        double reduction = (double)abs(lf.lfHeight) / 180.0;
+        int doVKern = 1;   // Comic Sans MS
+        short leading = (short)(-40 * reduction * doVKern);
+        short baseAdd = (short)(30 * reduction * doVKern);
+        CSize contExt = dc.GetTextExtent("...", 3);
+
+        ojson::Value cfi = ojson::Value::Obj();
+        cfi.Set("m_leading", ojson::Value::Int(leading));
+        cfi.Set("m_baseAdd", ojson::Value::Int(baseAdd));
+        cfi.Set("m_lineHeight", ojson::Value::Int((short)(tm.tmHeight + leading)));
+        cfi.Set("m_continuationWidth", ojson::Value::Int((short)contExt.cx));
+        cfi.Set("m_topOffset", ojson::Value::Int((short)(tm.tmAscent + leading + baseAdd)));
+        fontInfo.Set("cFontInfo", cfi);
+        dc.SelectObject(pOld);
+    }
     root.Set("font", fontInfo);
+
+    // --- every font the engine actually creates -----------------------------------
+    // Heights derived exactly as UpdateTitleFonts does, for both panel widths the
+    // corpus uses, so the set is complete for the corpus rather than guessed.
+    ojson::Value fonts = ojson::Value::Arr();
+    fonts.Push(CaptureOneFont(dc, balloonHeight, FALSE, "balloon"));
+    fonts.Push(CaptureOneFont(dc, balloonHeight, TRUE,  "whisper"));
+
+    static const int kPanelWidths[] = { 4860, 2300 };   // 2300 is corpus case 014
+    for (int i = 0; i < 2; i++) {
+        float r = (float)kPanelWidths[i] / 4860;
+        int titleH = (int)(nFontHeightTitle * r);
+        titleH = min(titleH, (int)(1.2 * balloonHeight));
+        int shoutH = (int)(nFontHeightShout * r);
+        shoutH = min(shoutH, balloonHeight);
+
+        char role[64];
+        snprintf(role, sizeof(role), "title@%d", kPanelWidths[i]);
+        fonts.Push(CaptureOneFont(dc, titleH, FALSE, role));
+        snprintf(role, sizeof(role), "shout@%d", kPanelWidths[i]);
+        fonts.Push(CaptureOneFont(dc, shoutH, FALSE, role));
+    }
+    root.Set("fonts", fonts);
+
     root.Set("dpi", ojson::Value::Int(g_screenDpi));
     root.Set("mapMode", ojson::Value::Str("MM_TWIPS"));
-
     return root;
 }
 
