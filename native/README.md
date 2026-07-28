@@ -17,7 +17,10 @@ That set is the whole `.avb`/DIB asset pipeline (`avbfile` + `dib` + `avatar` +
 geometry core (`vector2d`, `bbox`, `traj`, `arc`, `spline`, `splinutl`) and the
 line-breaking unit (`format`).
 
-Across the whole tree: **22 of 91** `.cpp` files compile (`fonts` joined the set). The other 72 are
+Across the whole tree: **25 of 91** `.cpp` files compile. `balloon`, `panel`,
+`histent` and `fonts` have joined the engine-core set — that is the balloon
+geometry/outline unit and the panel layout unit, which between them own most of the
+Tier-3 goldens. The other 72 are
 predominantly the MFC dialogs and the OLE/ActiveX embedding that are not being
 ported at all. The engine files still blocked — `balloon`, `panel`, `pageview`,
 `chatdoc`, `histent`, `protsupp`, `ircsock`, `fonts` — all fail on the same kind of
@@ -44,7 +47,20 @@ Working:
      no equivalent for; the second loop now declares its own `i`.
   4. `GetBodyFromEmotion(CEmotion(0.0, 0.0))` — same temporary-to-non-const-ref
      extension, but the signature is virtual and overridden twice, so widening it
-     would ripple. A named local was the smaller change.
+     would ripple. A named local was the smaller change (two sites: `avatar.cpp`,
+     `panel.cpp`).
+  5. **`/Zc:forScope-` reuse, seven sites** across `avatar.cpp`, `panel.cpp` and
+     `balloon.cpp`. Both makefiles pass that switch, so a variable declared in a
+     `for` header stays in scope afterwards. Where the variable is dead after the
+     loop the second loop declares its own; where it is **read** after the loop —
+     `balloon.cpp:1674` and `:1729`, `panel.cpp`'s star labels — the declaration is
+     **hoisted** instead, because scoping it per-loop would change behaviour rather
+     than just satisfy the compiler. Checking which case applied, one site at a time,
+     was the whole job here.
+  6. **`/Zc:strictStrings-`**, one site: `chatdoc.cpp:259` binds a string literal to
+     `char*` inside a conditional. clang has no equivalent switch and the conversion
+     is in an expression, so an explicit cast was needed; MSVC accepts the cast form
+     unchanged.
 
 - **`CString` is a single `char*` member, and that is load-bearing.** The engine
   passes `CString` into printf-style varargs in ~580 places. MFC gets away with it

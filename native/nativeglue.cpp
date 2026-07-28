@@ -36,6 +36,13 @@ __attribute__((used)) void* theApp_ref __asm__("_theApp") = (void*)g_theAppStora
 __attribute__((used)) void* cui_ref    __asm__("_cui")    = (void*)g_cuiStorage;
 }
 
+// The global palette pair the engine's stdafx.h declares. A default-constructed
+// CPalette is inert (the shim's is a stub), and pageview.cpp only takes its address
+// to hand to CDC::SelectPalette, which is itself a no-op until there is a real
+// graphics backend.
+CPalette   ghPalette;
+LOGPALETTE *gpLogPal = 0;
+
 // These two have trivial types, so they get honest definitions.
 BOOL g_bCanViewUnrated = FALSE;
 class CUserInfo;

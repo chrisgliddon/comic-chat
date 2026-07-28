@@ -75,5 +75,12 @@ void msvc_srand(unsigned int seed);
 // ever used through pointers in the headers the engine core reaches.
 class CCNotif;
 
+// The engine's own stdafx.h declares these two globals (guarded by NOGLOBPAL) and
+// pageview.cpp takes the address of ghPalette. Declared here for the same reason as
+// CCNotif - our replacement stdafx.h short-circuits the include chain that would
+// otherwise bring them. Defined in native/nativeglue.cpp.
+extern CPalette   ghPalette;
+extern LOGPALETTE *gpLogPal;
+
 
 #endif // NATIVE_SHIM_STDAFX_H

@@ -166,6 +166,19 @@
 #define WM_RBUTTONDOWN      0x0204
 #define WM_MOUSEMOVE        0x0200
 #define WM_SETREDRAW        0x000B
+#define WM_UNDO             0x0304
+#define EM_GETSEL           0x00B0
+#define EM_SETSEL           0x00B1
+#define EM_CANUNDO          0x00C6
+#define EM_UNDO             0x00C7
+#define EM_REPLACESEL       0x00C2
+#define EM_LINELENGTH       0x00C1
+#define EM_LINEINDEX        0x00BB
+#define EM_GETLINECOUNT     0x00BA
+#define WM_CUT              0x0300
+#define WM_COPY             0x0301
+#define WM_PASTE            0x0302
+#define WM_CLEAR            0x0303
 #define WM_GETDLGCODE       0x0087
 #define WM_VSCROLL          0x0115
 #define WM_HSCROLL          0x0114
@@ -315,11 +328,17 @@ public:
     CWnd() : m_hWnd(0) {}
     virtual ~CWnd() {}
     static CWnd* FromHandle(HWND) { return 0; }
+    static CWnd* GetDesktopWindow() { return 0; }
+    static CWnd* GetActiveWindow() { return 0; }
+    static CWnd* GetFocus() { return 0; }
     HWND GetSafeHwnd() const { return m_hWnd; }
     BOOL IsWindow() const { return FALSE; }
     void GetClientRect(RECT* r) const { if (r) { r->left = r->top = r->right = r->bottom = 0; } }
     void GetWindowRect(RECT* r) const { if (r) { r->left = r->top = r->right = r->bottom = 0; } }
     void InvalidateRect(const RECT*, BOOL = TRUE) {}
+    BOOL RedrawWindow(const RECT* = 0, CRgn* = 0, UINT = 0) { return TRUE; }
+    virtual BOOL PreCreateWindow(CREATESTRUCT&) { return TRUE; }
+    virtual BOOL PreTranslateMessage(MSG*) { return FALSE; }
     void Invalidate(BOOL = TRUE) {}
     void UpdateWindow() {}
     BOOL ShowWindow(int) { return TRUE; }
@@ -349,7 +368,29 @@ class CMDIChildWnd : public CFrameWnd {};
 class CMiniFrameWnd : public CFrameWnd {};
 class CSplitterWnd : public CWnd {};
 class CControlBar : public CWnd {};
-class CToolBar : public CControlBar {};
+class CToolBar : public CControlBar {
+public:
+    BOOL LoadToolBar(UINT) { return FALSE; }
+    BOOL SetButtons(const UINT*, int) { return FALSE; }
+    void SetSizes(SIZE, SIZE) {}
+};
+
+// CCoolBar / CCoolToolBar are the project's toolbar classes (coolbar.h), stubbed
+// alongside CCSDialog and CCSPropertyPage for the same reason.
+class CCoolBar : public CControlBar {};
+class CCoolToolBar : public CToolBar {};
+// NOTE: CCoolToolBarEx is defined by the project's chatbars.h - not stubbed here.
+
+#define AFX_IDW_TOOLBAR         0xE800
+#define AFX_IDW_STATUS_BAR      0xE801
+#define AFX_IDW_PANE_FIRST      0xE900
+#define AFX_IDW_PANE_LAST       0xE9FF
+#define CBRS_ALIGN_TOP          0x00000100L
+#define CBRS_ALIGN_BOTTOM       0x00000200L
+#define CBRS_ALIGN_LEFT         0x00000400L
+#define CBRS_ALIGN_RIGHT        0x00000800L
+#define CB_ERR                  (-1)
+#define ID_FILE_NEW             0xE100
 class CStatusBar : public CControlBar {};
 class CDialogBar : public CControlBar {};
 
@@ -363,6 +404,7 @@ public:
     virtual void OnOK() {}
     virtual void OnCancel() {}
     virtual void DoDataExchange(void*) {}
+    BOOL UpdateData(BOOL = TRUE) { return TRUE; }
     void EndDialog(int) {}
 };
 
@@ -424,7 +466,11 @@ public:
     CString m_strTitle;
     virtual ~CDocument() {}
     virtual BOOL SaveModified() { return TRUE; }
+    virtual BOOL OnNewDocument() { return TRUE; }
+    virtual BOOL OnOpenDocument(LPCTSTR) { return TRUE; }
+    virtual BOOL OnSaveDocument(LPCTSTR) { return TRUE; }
     virtual void OnCloseDocument() {}
+    virtual void DeleteContents() {}
     void SetModifiedFlag(BOOL = TRUE) {}
     void UpdateAllViews(CView*, LONG = 0, CObject* = 0) {}
     CString GetPathName() const { return m_strPathName; }
@@ -436,6 +482,9 @@ class COleServerItem;   // returned by COleServerDoc::GetEmbeddedItem below
 class COleDocument : public CDocument {};
 class COleServerDoc : public COleDocument {
 public:
+    // MFC member; chatdoc.cpp assigns it directly in its constructor.
+    BOOL m_bRemember;
+    COleServerDoc() : m_bRemember(TRUE) {}
     // NOT virtual - matching MFC. chatdoc.h declares `CChatItem* GetEmbeddedItem()`
     // which HIDES this rather than overriding it; making it virtual here turned
     // that into a covariant-return override and required CChatItem to be complete,
@@ -446,7 +495,10 @@ public:
     virtual void NotifySaved() {}
     virtual void NotifyClosed() {}
 };
-class COleServerItem : public CCmdTarget {};
+class COleServerItem : public CCmdTarget {
+public:
+    CDocument* GetDocument() const { return 0; }
+};
 
 class CWinApp : public CCmdTarget {
 public:
@@ -501,12 +553,16 @@ public:
     void GetLBText(int, CString&) const {}
     int SetItemData(int, DWORD) { return 0; }
     DWORD GetItemData(int) const { return 0; }
+    void* GetItemDataPtr(int) const { return 0; }
+    int SetItemDataPtr(int, void*) { return 0; }
 };
 #define LVNI_ALL        0x0000
 #define LVNI_SELECTED   0x0002
 #define LVNI_FOCUSED    0x0001
 #define LVIS_SELECTED   0x0002
 #define LVIS_FOCUSED    0x0001
+#define LVIS_STATEIMAGEMASK 0xF000
+#define LVIS_OVERLAYMASK    0x0F00
 
 class CListCtrl : public CWnd {
 public:
@@ -514,6 +570,7 @@ public:
     UINT GetItemState(int, UINT) const { return 0; }
     BOOL SetItemState(int, UINT, UINT) { return TRUE; }
     BOOL DeleteItem(int) { return TRUE; }
+    BOOL RedrawItems(int, int) { return TRUE; }
     BOOL EnsureVisible(int, BOOL) { return TRUE; }
     CString GetItemText(int, int) const { return CString(); }
     BOOL SetItemText(int, int, LPCTSTR) { return TRUE; }
@@ -575,6 +632,11 @@ public:
     long StreamOut(int, void*) { return 0; }
     void ReplaceSel(LPCTSTR) {}
     long GetTextLength() const { return 0; }
+    int LineLength(int = -1) const { return 0; }
+    int LineIndex(int = -1) const { return 0; }
+    int LineFromChar(int = -1) const { return 0; }
+    int GetLineCount() const { return 0; }
+    int GetLine(int, LPTSTR, int) const { return 0; }
     void Copy() {}
     void Paste() {}
     void Clear() {}
@@ -711,7 +773,9 @@ inline BOOL SHGetPathFromIDList(LPITEMIDLIST, LPSTR) { return FALSE; }
 // --- free functions --------------------------------------------------------
 inline CWinApp* AfxGetApp() { return 0; }
 inline CWnd* AfxGetMainWnd() { return 0; }
+inline BOOL IsWindow(HWND) { return FALSE; }
 inline int AfxMessageBox(LPCTSTR, UINT = 0, UINT = 0) { return 0; }
+inline int AfxMessageBox(UINT, UINT = 0, UINT = 0) { return 0; }
 // Global ::SendMessage, distinct from CWnd::SendMessage. format.cpp posts rich-edit
 // messages through it.
 inline LRESULT SendMessage(HWND, UINT, WPARAM = 0, LPARAM = 0) { return 0; }

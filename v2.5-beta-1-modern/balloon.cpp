@@ -529,7 +529,7 @@ int PermuteFilters(CFontInfo& fontI, RANGE lFilters[], RANGE rFilters[], int nLF
 	
 	baseY = 0;
 	lastX = -LARGEINTEGER;
-	for (i = 0; i < nRFilters; i++) {
+	for (int i = 0; i < nRFilters; i++) {
 		rFilters[i].x += XBORDER;
 		if (i == 0)
 			rFilters[i].y = baseY + TOPBORDER + YBORDER + fontI.m_topOffset;
@@ -1616,12 +1616,16 @@ char* CBWoodringNormal::SplitHeight(int iHeight, CDWordArray **pprgdwRestFormatt
 				DWORD	dwLastURLStart, dwFirstURLEnd, dwElement;
 				BOOL	bInURL = FALSE;
 				char	*szURL, *szTmp;
+				// Hoisted out of the for below: the loop at 1643 reuses it and the test
+				// at 1652 READS it after that loop, both of which the Windows build gets
+				// from /Zc:forScope-. Scoping it to either loop would change behaviour.
+				int		iFormatIndex;
 
 				if (!(szURL = (char*) new char[serverConn.m_nMaxMsgLength]))	// more than enough
 					return NULL;
 				ZeroMemory(szURL, serverConn.m_nMaxMsgLength);
 
-				for (int iFormatIndex = 0; iFormatIndex <= m_prgdwFormatting->GetUpperBound(); iFormatIndex++)
+				for (iFormatIndex = 0; iFormatIndex <= m_prgdwFormatting->GetUpperBound(); iFormatIndex++)
 				{
 					dwElement = m_prgdwFormatting->GetAt(iFormatIndex);
 					if (!bInURL && (LOWORD(dwElement) & wLink))
@@ -1653,7 +1657,10 @@ char* CBWoodringNormal::SplitHeight(int iHeight, CDWordArray **pprgdwRestFormatt
 					{
 						strncat(szURL, szRest + strlen(szContinuationStr2), HIWORD(dwFirstURLEnd));
 
-						for (int i = 0; i < MAX_URL_INTEXT; i++)
+						// Hoisted: i is read after this loop (the ASSERT and m_prgszURLs[i] that
+						// follow), per /Zc:forScope-.
+						int i;
+						for (i = 0; i < MAX_URL_INTEXT; i++)
 							if (m_prgszURLs[i])
 							{
 								if (szTmp = strdup(m_prgszURLs[i]))
@@ -1706,7 +1713,10 @@ CSpline* CBWoodringNormal::CreateBalloonSpline(CFormatInfo& fInfo)
 	GetFilters(fInfo, lFilters, rFilters, nLFilters, nRFilters);
 	lastY = finalY = PermuteFilters(*m_fontI, lFilters, rFilters, nLFilters, nRFilters);
 	// fill pts vector w/ corners of tightly-binding text box
-	for (int i = 0; i < nLFilters; i++) {
+	// Hoisted: the loop below reuses i and its body reads it, which the Windows
+	// build gets from /Zc:forScope- (MSVC pre-standard for-scoping).
+	int i;
+	for (i = 0; i < nLFilters; i++) {
 		thisPoint.x = nextPoint.x = lFilters[i].x;
 		thisPoint.y = lFilters[i].y;
 		if (i > 0) AddWavies(pts[nPts-1], thisPoint, pts, nPts, HWAVEHEIGHT, HWAVEINTERVAL);

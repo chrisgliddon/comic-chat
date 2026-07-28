@@ -256,7 +256,9 @@ void CChatDoc::InitMyDocument() {
 
 char *CChatDoc::GetComicsTitle() {
 	char *GetRandomTitle();
-	char *title = m_bComicView ? m_comicsTitle : "";
+	// Cast for /Zc:strictStrings- parity: MSVC binds the literal to char* directly,
+	// clang requires the cast. MSVC accepts the cast form too.
+	char *title = m_bComicView ? m_comicsTitle : (char *)"";
 	if (!title) title = m_comicsTitle = GetRandomTitle();
 	return title;
 }

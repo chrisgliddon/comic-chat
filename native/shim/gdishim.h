@@ -24,6 +24,17 @@
 #include "mfcshim.h"
 #include <stdio.h>
 
+// Reaching an unimplemented drawing stub is a programming error, not a runtime
+// condition - it means a code path started painting before the Core Graphics
+// backend existed. Fail loudly and immediately rather than produce a plausible
+// wrong number.
+#define NATIVE_GDI_UNIMPLEMENTED(what) \
+    do { \
+        fprintf(stderr, "native: GDI not implemented yet: %s (%s:%d)\n", \
+                (what), __FILE__, __LINE__); \
+        abort(); \
+    } while (0)
+
 // Raster ops and mapping modes used by the engine.
 #define SRCCOPY         0x00CC0020
 #define SRCAND          0x008800C6
@@ -35,6 +46,107 @@
 #define DSTINVERT       0x00550009
 #define MERGECOPY       0x00C000CA
 #define PATCOPY         0x00F00021
+
+#define NULLREGION      1
+#define SIMPLEREGION    2
+#define COMPLEXREGION   3
+#define RGN_AND         1
+#define RGN_OR          2
+#define RGN_XOR         3
+#define RGN_DIFF        4
+#define RGN_COPY        5
+
+#define DT_LEFT             0x00000000
+#define DT_CENTER           0x00000001
+#define DT_RIGHT            0x00000002
+#define DT_TOP              0x00000000
+#define DT_VCENTER          0x00000004
+#define DT_BOTTOM           0x00000008
+#define DT_WORDBREAK        0x00000010
+#define DT_SINGLELINE       0x00000020
+#define DT_NOCLIP           0x00000100
+#define DT_CALCRECT         0x00000400
+#define DT_NOPREFIX         0x00000800
+#define DT_END_ELLIPSIS     0x00008000
+#define DT_PATH_ELLIPSIS    0x00004000
+
+// Rect helpers. Real implementations - balloon.cpp uses SetRect to build the
+// text-layout rectangle, so a no-op would collapse every balloon's text box.
+inline BOOL SetRect(RECT* r, int l, int t, int rt, int b) {
+    if (!r) return FALSE;
+    r->left = l; r->top = t; r->right = rt; r->bottom = b;
+    return TRUE;
+}
+inline BOOL SetRectEmpty(RECT* r) { return SetRect(r, 0, 0, 0, 0); }
+// DrawTextEx: painting, so a no-op - EXCEPT under DT_CALCRECT, where it is a
+// MEASUREMENT and callers use the returned rect for layout. Aborting in that case
+// rather than returning the untouched rect, for the same reason GetTextExtent
+// aborts: a silently wrong height reflows the balloon.
+typedef struct tagDRAWTEXTPARAMS { UINT cbSize; int iTabLength, iLeftMargin, iRightMargin; UINT uiLengthDrawn; } DRAWTEXTPARAMS;
+inline int DrawTextEx(HDC, LPSTR, int, RECT*, UINT flags, DRAWTEXTPARAMS*) {
+    if (flags & DT_CALCRECT) {
+        NATIVE_GDI_UNIMPLEMENTED("DrawTextEx with DT_CALCRECT - measurement, needs the frozen glyph table");
+    }
+    return 0;
+}
+inline int DrawText(HDC, LPCSTR, int, RECT*, UINT flags) {
+    if (flags & DT_CALCRECT) {
+        NATIVE_GDI_UNIMPLEMENTED("DrawText with DT_CALCRECT - measurement, needs the frozen glyph table");
+    }
+    return 0;
+}
+// Brush origin: panel.cpp saves and restores it around a StretchBlt so the halftone
+// pattern does not shift. Painting-side, so no-ops are safe until the Core Graphics
+// backend lands; at that point the equivalent is the pattern phase on CGContext.
+inline BOOL GetBrushOrgEx(HDC, POINT* p) { if (p) { p->x = 0; p->y = 0; } return TRUE; }
+inline BOOL SetBrushOrgEx(HDC, int, int, POINT* prev) { if (prev) { prev->x = 0; prev->y = 0; } return TRUE; }
+
+inline HWND GetFocus() { return (HWND)0; }
+inline HWND GetActiveWindow() { return (HWND)0; }
+inline HWND GetDesktopWindow() { return (HWND)0; }
+inline SHORT GetKeyState(int) { return 0; }
+inline SHORT GetAsyncKeyState(int) { return 0; }
+inline int GetWindowText(HWND, LPSTR buf, int n) { if (buf && n) buf[0] = 0; return 0; }
+inline BOOL OffsetRect(RECT* r, int dx, int dy) {
+    if (!r) return FALSE;
+    r->left += dx; r->right += dx; r->top += dy; r->bottom += dy;
+    return TRUE;
+}
+inline BOOL InflateRect(RECT* r, int dx, int dy) {
+    if (!r) return FALSE;
+    r->left -= dx; r->right += dx; r->top -= dy; r->bottom += dy;
+    return TRUE;
+}
+inline BOOL CopyRect(RECT* d, const RECT* s) { if (!d || !s) return FALSE; *d = *s; return TRUE; }
+inline BOOL IsRectEmpty(const RECT* r) { return !r || r->right <= r->left || r->bottom <= r->top; }
+inline BOOL PtInRect(const RECT* r, POINT p) {
+    return r && p.x >= r->left && p.x < r->right && p.y >= r->top && p.y < r->bottom;
+}
+inline BOOL IntersectRect(RECT* d, const RECT* a, const RECT* b) {
+    if (!d || !a || !b) return FALSE;
+    d->left = a->left > b->left ? a->left : b->left;
+    d->top = a->top > b->top ? a->top : b->top;
+    d->right = a->right < b->right ? a->right : b->right;
+    d->bottom = a->bottom < b->bottom ? a->bottom : b->bottom;
+    if (IsRectEmpty(d)) { SetRectEmpty(d); return FALSE; }
+    return TRUE;
+}
+inline BOOL UnionRect(RECT* d, const RECT* a, const RECT* b) {
+    if (!d || !a || !b) return FALSE;
+    d->left = a->left < b->left ? a->left : b->left;
+    d->top = a->top < b->top ? a->top : b->top;
+    d->right = a->right > b->right ? a->right : b->right;
+    d->bottom = a->bottom > b->bottom ? a->bottom : b->bottom;
+    return TRUE;
+}
+
+#define COLOR_WINDOW        5
+#define COLOR_WINDOWTEXT    8
+#define COLOR_BTNFACE       15
+#define COLOR_HIGHLIGHT     13
+#define COLOR_HIGHLIGHTTEXT 14
+#define COLOR_GRAYTEXT      17
+inline COLORREF GetSysColor(int) { return RGB(255, 255, 255); }
 
 #define MM_TEXT         1
 #define MM_TWIPS        6
@@ -212,8 +324,14 @@ inline int StretchDIBits(HDC, int, int, int, int, int, int, int, int,
                          const void*, const BITMAPINFO*, UINT, DWORD) { return 0; }
 inline int SetStretchBltMode(HDC, int) { return 0; }
 inline int GetDeviceCaps(HDC, int) { return 0; }
+#define BLACKONWHITE     1
+#define WHITEONBLACK     2
 #define COLORONCOLOR 3
 #define HALFTONE     4
+#define STRETCH_ANDSCANS      1
+#define STRETCH_ORSCANS       2
+#define STRETCH_DELETESCANS   3
+#define STRETCH_HALFTONE      4
 #define LOGPIXELSX   88
 #define LOGPIXELSY   90
 
@@ -243,16 +361,6 @@ typedef struct _charformat {
 } CHARFORMAT;
 inline HINSTANCE AfxGetInstanceHandle() { return (HINSTANCE)0; }
 
-// Reaching an unimplemented drawing stub is a programming error, not a runtime
-// condition - it means a code path started painting before the Core Graphics
-// backend existed. Fail loudly and immediately rather than produce a plausible
-// wrong number.
-#define NATIVE_GDI_UNIMPLEMENTED(what) \
-    do { \
-        fprintf(stderr, "native: GDI not implemented yet: %s (%s:%d)\n", \
-                (what), __FILE__, __LINE__); \
-        abort(); \
-    } while (0)
 
 // Owner-draw and measure-item structures. These reach the engine core only as
 // parameters on handler declarations in headers (memblst.h, userlist.h); no
@@ -325,6 +433,10 @@ public:
 class CBitmap : public CGdiObject {
 public:
     BOOL CreateCompatibleBitmap(CDC*, int, int) { return TRUE; }
+    BOOL CreateBitmap(int, int, UINT, UINT, const void*) { return TRUE; }
+    // panel.cpp calls this through an instance (temp.FromHandle(h)), which is legal
+    // for a static member and is how MFC's own samples use it.
+    static CBitmap* FromHandle(HBITMAP) { return 0; }
 };
 
 class CPalette : public CGdiObject {
@@ -357,7 +469,11 @@ public:
 class CDC {
 public:
     void* m_hDC;
-    CDC() : m_hDC(0) {}
+    // MFC exposes m_bPrinting on CDC and panel.cpp branches on it. FALSE here: the
+    // native app has no print path (print.cpp is dropped), and reporting TRUE would
+    // send panel layout down the printer branch.
+    BOOL m_bPrinting;
+    CDC() : m_hDC(0), m_bPrinting(FALSE) {}
     HDC GetSafeHdc() const { return (HDC)m_hDC; }
     CFont* GetCurrentFont() const { return 0; }
     int GetTextFace(int n, LPTSTR buf) const { if (buf && n > 0) buf[0] = 0; return 0; }
@@ -374,6 +490,8 @@ public:
     int SetPolyFillMode(int) { return ALTERNATE; }
     BOOL SetViewportOrg(int, int) { return TRUE; }
     BOOL SetWindowOrg(int, int) { return TRUE; }
+    BOOL OffsetWindowOrg(int, int) { return TRUE; }
+    BOOL OffsetViewportOrg(int, int) { return TRUE; }
     BOOL SetWindowExt(int, int) { return TRUE; }
     BOOL SetViewportExt(int, int) { return TRUE; }
     BOOL IsPrinting() const { return FALSE; }
@@ -384,6 +502,7 @@ public:
     CFont* SelectObject(CFont* p) { return p; }
     CPen* SelectObject(CPen* p) { return p; }
     CBrush* SelectObject(CBrush* p) { return p; }
+    CBitmap* SelectObject(CBitmap* p) { return p; }
     CPalette* SelectPalette(CPalette* p, BOOL) { return p; }
     UINT RealizePalette() { return 0; }
     CGdiObject* SelectStockObject(int) { return 0; }
@@ -409,6 +528,9 @@ public:
     BOOL MoveTo(POINT p) { return MoveTo((int)p.x, (int)p.y); }
     BOOL Rectangle(int, int, int, int) { return TRUE; }
     BOOL Ellipse(int, int, int, int) { return TRUE; }
+    BOOL Ellipse(const RECT*) { return TRUE; }
+    BOOL Rectangle(const RECT*) { return TRUE; }
+    BOOL RoundRect(const RECT*, POINT) { return TRUE; }
     BOOL Arc(int, int, int, int, int, int, int, int) { return TRUE; }
     BOOL BeginPath() { return TRUE; }
     BOOL EndPath() { return TRUE; }
@@ -435,7 +557,17 @@ public:
     BOOL CreateCompatibleDC(CDC*) { return TRUE; }
     BOOL DeleteDC() { return TRUE; }
     BOOL SelectClipRgn(CRgn*) { return TRUE; }
+    BOOL SelectClipRgn(CRgn*, int) { return TRUE; }
     int IntersectClipRect(int, int, int, int) { return 0; }
+    int IntersectClipRect(const RECT*) { return 0; }
+    // GetClipBox is a QUERY, but a painting-side one: panel.cpp saves and restores
+    // the clip box around a draw. Returning an empty rect is safe because nothing
+    // native paints yet; when the Core Graphics backend lands this must return the
+    // real clip, since panel.cpp compares against it to decide what to redraw.
+    virtual int GetClipBox(RECT* r) const {
+        if (r) { r->left = r->top = r->right = r->bottom = 0; }
+        return 0;   // NULLREGION
+    }
 
     // -- MEASUREMENT: must never guess (see class comment) --
     SIZE GetTextExtent(LPCTSTR, int) const {
@@ -510,5 +642,18 @@ protected:
 };
 
 class CMemFile : public CFile {};
+
+// ---------------------------------------------------------------------------
+// CArchive's string methods, defined here rather than inline in the class because
+// they touch CFile and CString, neither of which is complete at that point in
+// mfcshim.h. See the CArchive comment there on why no MFC framing is emulated.
+// ---------------------------------------------------------------------------
+inline void CArchive::WriteString(LPCTSTR s) {
+    if (m_pFile && s) m_pFile->Write(s, (UINT)strlen(s));
+}
+inline BOOL CArchive::ReadString(CString& s) {
+    s.Empty();
+    return FALSE;
+}
 
 #endif // NATIVE_SHIM_GDISHIM_H

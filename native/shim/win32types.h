@@ -177,6 +177,19 @@ typedef const SIZE*         LPCSIZE;
 // Message-handler plumbing. afx_msg is purely a marker in MFC (it expands to
 // nothing) but it must exist as a macro or every handler declaration is a syntax
 // error - and handler declarations appear in headers that engine files include.
+// The segmented-memory decorations. Empty in Win32 and here; they survive in the
+// engine's declarations (whisprbx.h has `MINMAXINFO FAR* lpMMI`) because MFC's
+// headers still defined them.
+#ifndef FAR
+#define FAR
+#endif
+#ifndef NEAR
+#define NEAR
+#endif
+#define _far
+#define _near
+#define huge
+
 #define afx_msg
 #define CALLBACK
 #define WINAPI
@@ -222,6 +235,43 @@ inline void DeleteCriticalSection(LPCRITICAL_SECTION cs) { if (cs->initialised) 
 // unreachable natively. Reporting success keeps the caller's error handling quiet
 // on a path that never runs.
 #define PAGE_READWRITE 0x04
+// Module / version APIs. ircsock.cpp dynamically loads the SSPI security DLL and
+// branches on the Windows version. Everything here reports failure or a neutral
+// value: there is no security DLL to load, and the native client will do plain IRC
+// rather than Windows-integrated authentication.
+typedef struct _OSVERSIONINFOA {
+    DWORD dwOSVersionInfoSize, dwMajorVersion, dwMinorVersion, dwBuildNumber, dwPlatformId;
+    char  szCSDVersion[128];
+} OSVERSIONINFOA, OSVERSIONINFO, *LPOSVERSIONINFO;
+#define VER_PLATFORM_WIN32_NT       2
+#define VER_PLATFORM_WIN32_WINDOWS  1
+
+inline BOOL GetVersionEx(LPOSVERSIONINFO v) {
+    if (!v) return FALSE;
+    DWORD keep = v->dwOSVersionInfoSize;
+    memset(v, 0, sizeof(*v));
+    v->dwOSVersionInfoSize = keep;
+    // Reported as NT so any "is this 9x" branch takes the modern path.
+    v->dwPlatformId = VER_PLATFORM_WIN32_NT;
+    v->dwMajorVersion = 10;
+    return TRUE;
+}
+inline HINSTANCE LoadLibrary(LPCSTR) { return (HINSTANCE)0; }
+inline BOOL FreeLibrary(HINSTANCE) { return TRUE; }
+inline FARPROC GetProcAddress(HINSTANCE, LPCSTR) { return (FARPROC)0; }
+#ifndef STDAPI
+#define STDAPI          extern "C" HRESULT
+#define STDAPI_(t)      extern "C" t
+#define STDMETHODCALLTYPE
+#endif
+#define E_OUTOFMEMORY   ((HRESULT)0x8007000EL)
+#define E_INVALIDARG    ((HRESULT)0x80070057L)
+#define E_NOTIMPL       ((HRESULT)0x80004001L)
+
+// DVASPECT - the OLE presentation aspect, named in ChatItem.h.
+typedef enum tagDVASPECT { DVASPECT_CONTENT = 1, DVASPECT_THUMBNAIL = 2,
+                           DVASPECT_ICON = 4, DVASPECT_DOCPRINT = 8 } DVASPECT;
+
 inline BOOL VirtualProtect(void*, size_t, DWORD, PDWORD old) { if (old) *old = PAGE_READWRITE; return TRUE; }
 
 #define MAX_PATH        260

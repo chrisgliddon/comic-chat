@@ -200,7 +200,7 @@ BOOL GetInterveningBBox(CBalloon *balloons[], int index, RECT &freeRect, RECT &i
 	// bottom of any balloon to its right\and no higher than the top of any balloon
 	// to its left.
 	irect.top = freeRect.top;
-	for (i = 0; i < index; i++) {
+	for (int i = 0; i < index; i++) {
 		balloons[i]->GetCloudBBox(&cloudbox);
 		if (cloudbox.right < irect.left) {		// cloud is to the right
 			irect.top = min(irect.top, cloudbox.top);
@@ -378,7 +378,7 @@ int EvalPlacement(CPtrArray &bdyArray, int nPlaced, CBodyRecord &bdy, int index,
 
 	bdy.m_body->m_flip = TRUE;
 
-	for (i = 0; i <= nPlaced; i++) {
+	for (int i = 0; i <= nPlaced; i++) {
 		CBodyRecord *rec1 = (CBodyRecord *) (bdyArray[i]);
 		for (int j = i+1; j <= nPlaced; j++) {
 			CBodyRecord *rec2 = (CBodyRecord *) bdyArray[j];
@@ -770,7 +770,9 @@ void CUnitPanel::LayoutAvatars() {
 	OrderAvatars(bRecs, bdyCount, placed);
 	ASSERT(bdyCount > 0);
 
-	for (int i = 0; i < bdyCount; i++) {
+	int i;   // hoisted: four later loops in this function reuse it, which the
+	         // Windows build gets from /Zc:forScope- (MSVC pre-standard scoping)
+	for (i = 0; i < bdyCount; i++) {
 		CBody *b = ((CBodyRecord *)(placed[i]))->m_body;
 		b->GetDimInfo(width[i], height[i], normHeight[i], headHeight[i], bitArrowX);
 		arrowX[i] = ((double) bitArrowX) / width[i];					// initially store arrows as percentage of width from left
@@ -1448,7 +1450,8 @@ void CUnitPanelPage::ShowInfo(USHORT avID, const char *szInfo, char cHotLinkChar
 		int iNewLeftX = (m_unitWidth - iBoxWidth) / 2;
 		box->SetBBox(iNewLeftX, rcBorder.bottom, iNewLeftX + iBoxWidth, rcBorder.top);
 
-		CBody *bdy = GetAvatar(avID)->GetBodyFromEmotion(CEmotion(0.0, 0.0));
+		CEmotion emNeutral(0.0, 0.0);   // named: GetBodyFromEmotion takes a non-const
+		CBody *bdy = GetAvatar(avID)->GetBodyFromEmotion(emNeutral); // ref, so no temporary
 		bdy->SetBBox(iMargin, -m_unitHeight, m_unitWidth-iMargin, rcBorder.bottom);
 		newPanel->m_bodies.AddTail(bdy);
 
@@ -1489,7 +1492,10 @@ void CUnitPanelPage::AddStars(CUnitPanel *panel, int topY) {
 	int nStars = min(maxStars, stars.GetUpperBound()+1);
 	int maxWidth = 0;
 
-	for (int i = 0; i < nStars; i++)
+	// Hoisted: the second loop over nStars below reuses i, which the Windows build
+	// gets from /Zc:forScope-.
+	int i;
+	for (i = 0; i < nStars; i++)
 	{
 		RECT bbox;
 		const char *szNickname;

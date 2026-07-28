@@ -108,7 +108,8 @@ inline void AfxThrowUserException()         { throw new CUserException(); }
 // codec instead (Tier-1 #10), not CArchive.
 // ---------------------------------------------------------------------------
 class CArchive;
-class CFile;   // defined in gdishim.h, which includes this header
+class CFile;     // defined in gdishim.h, which includes this header
+class CString;   // defined below; CArchive's string methods need it
 
 class CObject {
 public:
@@ -131,6 +132,11 @@ public:
     CFile* GetFile() const { return m_pFile; }
     void Close() {}
     void Flush() {}
+    // histent.cpp writes transcript lines through these. The .ccc codec is plain
+    // text, so raw bytes are the whole contract - no MFC tag/schema framing is
+    // involved and none is emulated (see the class comment).
+    void WriteString(LPCTSTR s);
+    BOOL ReadString(CString& s);
 private:
     CFile* m_pFile;
     UINT m_nMode;
@@ -311,6 +317,11 @@ public:
     void RemoveAt(int i, int n = 1)     { m_v.erase(m_v.begin() + i, m_v.begin() + i + n); }
     T& operator[](int i)                { return m_v[(size_t)i]; }
     const T& operator[](int i) const    { return m_v[(size_t)i]; }
+    // MFC hands out the backing store; balloon.cpp passes it straight to
+    // CFormatInfo as a raw pointer. Returns NULL when empty rather than a
+    // one-past-the-end pointer, matching what callers null-check for.
+    T* GetData()                        { return m_v.empty() ? (T*)0 : &m_v[0]; }
+    const T* GetData() const            { return m_v.empty() ? (const T*)0 : &m_v[0]; }
 protected:
     std::vector<T> m_v;
 };
@@ -499,25 +510,77 @@ typedef void* POSITION;
 
 class CPtrList {
 public:
-    int GetCount() const            { return (int)m_v.size(); }
-    BOOL IsEmpty() const            { return m_v.empty() ? TRUE : FALSE; }
-    POSITION AddTail(void* p)       { m_v.push_back(p); return (POSITION)m_v.size(); }
-    POSITION AddHead(void* p)       { m_v.insert(m_v.begin(), p); return (POSITION)1; }
-    void RemoveAll()                { m_v.clear(); }
+    // POSITION is a 1-based index into the vector, so 0/NULL is "past the end" the
+    // way MFC's null POSITION is. Everything below is written against that
+    // convention; changing the encoding means changing all of it at once.
+    int GetCount() const             { return (int)m_v.size(); }
+    BOOL IsEmpty() const             { return m_v.empty() ? TRUE : FALSE; }
+    POSITION AddTail(void* p)        { m_v.push_back(p); return (POSITION)m_v.size(); }
+    POSITION AddHead(void* p)        { m_v.insert(m_v.begin(), p); return (POSITION)1; }
+    void RemoveAll()                 { m_v.clear(); }
+
     POSITION GetHeadPosition() const { return m_v.empty() ? NULL : (POSITION)1; }
+    POSITION GetTailPosition() const { return m_v.empty() ? NULL : (POSITION)m_v.size(); }
+
     void* GetNext(POSITION& pos) const {
         size_t idx = (size_t)pos - 1;
         void* r = m_v[idx];
         pos = (idx + 1 < m_v.size()) ? (POSITION)(idx + 2) : NULL;
         return r;
     }
-    void* GetHead() const           { return m_v.front(); }
-    void* GetTail() const           { return m_v.back(); }
-    void* RemoveHead()              { void* r = m_v.front(); m_v.erase(m_v.begin()); return r; }
+    void* GetPrev(POSITION& pos) const {
+        size_t idx = (size_t)pos - 1;
+        void* r = m_v[idx];
+        pos = (idx == 0) ? NULL : (POSITION)idx;
+        return r;
+    }
+
+    void* GetAt(POSITION pos) const  { return m_v[(size_t)pos - 1]; }
+    void SetAt(POSITION pos, void* p){ m_v[(size_t)pos - 1] = p; }
+    // MFC's FindIndex is O(n) list walking; the index encoding makes it O(1) here.
+    // Returns NULL for out of range, as MFC does.
+    POSITION FindIndex(int i) const {
+        return (i >= 0 && (size_t)i < m_v.size()) ? (POSITION)(i + 1) : NULL;
+    }
+    POSITION Find(void* p) const {
+        for (size_t i = 0; i < m_v.size(); i++) if (m_v[i] == p) return (POSITION)(i + 1);
+        return NULL;
+    }
+    void RemoveAt(POSITION pos)      { m_v.erase(m_v.begin() + ((size_t)pos - 1)); }
+    POSITION InsertBefore(POSITION pos, void* p) {
+        size_t idx = (size_t)pos - 1;
+        m_v.insert(m_v.begin() + idx, p);
+        return (POSITION)(idx + 1);
+    }
+    POSITION InsertAfter(POSITION pos, void* p) {
+        size_t idx = (size_t)pos;
+        m_v.insert(m_v.begin() + idx, p);
+        return (POSITION)(idx + 1);
+    }
+
+    void* GetHead() const            { return m_v.front(); }
+    void* GetTail() const            { return m_v.back(); }
+    void* RemoveHead()               { void* r = m_v.front(); m_v.erase(m_v.begin()); return r; }
+    void* RemoveTail()               { void* r = m_v.back(); m_v.pop_back(); return r; }
 private:
     std::vector<void*> m_v;
 };
 
+// CTypedPtrList<CPtrList, T*> - the typed wrapper, same shape as CTypedPtrArray.
+template <class BASE, class TYPE>
+class CTypedPtrList : public BASE {
+public:
+    TYPE GetNext(POSITION& pos) const  { return (TYPE)BASE::GetNext(pos); }
+    TYPE GetPrev(POSITION& pos) const  { return (TYPE)BASE::GetPrev(pos); }
+    TYPE GetAt(POSITION pos) const     { return (TYPE)BASE::GetAt(pos); }
+    void SetAt(POSITION pos, TYPE p)   { BASE::SetAt(pos, (void*)p); }
+    TYPE GetHead() const               { return (TYPE)BASE::GetHead(); }
+    TYPE GetTail() const               { return (TYPE)BASE::GetTail(); }
+    TYPE RemoveHead()                  { return (TYPE)BASE::RemoveHead(); }
+    TYPE RemoveTail()                  { return (TYPE)BASE::RemoveTail(); }
+    POSITION AddTail(TYPE p)           { return BASE::AddTail((void*)p); }
+    POSITION AddHead(TYPE p)           { return BASE::AddHead((void*)p); }
+};
 // ---------------------------------------------------------------------------
 // CTime / CTimeSpan - MFC's time wrappers over time_t. Real implementations
 // (script.h and the history code stamp entries), but note the native app should
