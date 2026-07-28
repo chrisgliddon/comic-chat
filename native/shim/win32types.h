@@ -32,6 +32,12 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdarg.h>
+// ctype.h EARLY, before any engine header can macro-define its contents. intl.h:105 does
+// exactly that (`#define isspace(c) ((c==' ')||...)`) and the shim's tchar.h then includes
+// <ctype.h>, at which point libc's INLINE DEFINITION `isspace(int _c)` gets macro-expanded
+// and the header fails to parse. MSVC's ctype.h only declares, so this never bit on
+// Windows. Getting it in first makes the later include a guarded no-op.
+#include <ctype.h>
 
 // --- integer scalars -------------------------------------------------------
 typedef int32_t             LONG;

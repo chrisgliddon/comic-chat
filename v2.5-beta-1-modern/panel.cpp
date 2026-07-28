@@ -943,6 +943,20 @@ void CUnitPanel::GetCloudEstimate(CBalloon *balloons[], int nb, int index, RECT&
 		goalWidth = area / (goalLines * lineHeight);
 	}
 
+#ifdef ORACLE_HARNESS
+	// Recorded into the dump's ledger, not printed. Everything downstream of this function
+	// - balloon width, line count, spline, trajectory - is derived from these five numbers,
+	// so when a corpus case disagrees this says WHICH input diverged instead of leaving the
+	// difference to be inferred from the final geometry. The native build reaches this with
+	// len/area/lineHeight/maxWidth matching the goldens but goalWidth differing, and these
+	// records are what will identify the responsible term on the next Windows capture.
+	OracleRecordSeed("GetCloudEstimate.len", (long)len);
+	OracleRecordSeed("GetCloudEstimate.area", (long)area);
+	OracleRecordSeed("GetCloudEstimate.lineHeight", (long)lineHeight);
+	OracleRecordSeed("GetCloudEstimate.maxWidth", (long)maxWidth);
+	OracleRecordSeed("GetCloudEstimate.widestWord", (long)balloon->WidestWord());
+	OracleRecordSeed("GetCloudEstimate.goalWidthRaw", (long)goalWidth);
+#endif
 	// randomly place brect in x, guaranteeing that it overlaps character
 	goalWidth = min(goalWidth+200, maxWidth); // the + N is a fudge factor.  FIX!!!
 	goalWidth = min(goalWidth, len+200);		// won't be wider than len (FIX FUDGE)

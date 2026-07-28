@@ -29,7 +29,12 @@ mkdir -p "$STAGE"
 
 # Engine headers and sources, minus stdafx.h (ours wins) and stdafx.cpp (it only
 # exists to build the MFC precompiled header).
-for f in "$ENGINE"/*.h "$ENGINE"/*.cpp; do
+# *.c as well as *.cpp, so intl.c and dlylddll.c are reachable. Neither is currently in
+# NATIVE_UNITS: intl.c's international line-breaking is entirely behind `if (GetMime())`,
+# and GetMime() is NULL for CP-1252 (see nativeglue.cpp), so nothing in it is called.
+# Staged anyway because that can change - a CJK configuration would need it - and because
+# discovering it was absent from the link farm is a worse way to find out.
+for f in "$ENGINE"/*.h "$ENGINE"/*.cpp "$ENGINE"/*.c; do
     base=$(basename "$f")
     [ "$base" = "stdafx.h" ] && continue
     [ "$base" = "stdafx.cpp" ] && continue

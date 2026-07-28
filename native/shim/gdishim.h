@@ -556,8 +556,15 @@ public:
     CDC() : m_nDcMapMode(MM_TEXT), m_hDC(0), m_bPrinting(FALSE), m_pinnedFont(TRUE) {}
     HDC GetSafeHdc() const { return (HDC)m_hDC; }
     CFont* GetCurrentFont() const { return 0; }
-    int GetTextFace(int n, LPTSTR buf) const { if (buf && n > 0) buf[0] = 0; return 0; }
-    int GetTextFace(CString& s) const { s.Empty(); return 0; }
+    // Defined out-of-line in glyphtable_cdc.cpp against the frozen glyph table. NOT a
+    // stub: fonts.cpp:83 does
+    //     doVKern = (strcmp(szPhysFaceName, "Comic Sans MS") == 0) ? 1 : 0;
+    // and then scales the balloon font's leading and baseAdd by it. Returning an empty
+    // face name made doVKern 0, so m_leading was 0 instead of -53 and m_lineHeight 345
+    // instead of 292 - which changed balloon width, line count and every balloon spline
+    // in the corpus.
+    int GetTextFace(int n, LPTSTR buf) const;
+    int GetTextFace(CString& s) const;
     CPalette* GetCurrentPalette() const { return 0; }
     virtual ~CDC() {}
 

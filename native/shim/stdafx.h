@@ -79,6 +79,22 @@ void msvc_srand(unsigned int seed);
 #endif
 #define rand()      msvc_rand()
 #define srand(s)    msvc_srand(s)
+
+// RAND_MAX must be overridden too, and this is not cosmetic. randfloat() (balloon.cpp:428)
+// is `(double) rand() / RAND_MAX`, and it drives balloon width, balloon placement, head and
+// torso selection - most of the randomness the goldens pin.
+//
+// msvc_rand() returns at most 0x7FFF, but macOS's RAND_MAX is 0x7FFFFFFF. Left alone,
+// randfloat() therefore returned values ~65536x too small - effectively always 0 - so every
+// randomised choice collapsed to its minimum. Concretely, GetCloudEstimate's
+//     goalWidth = minWidth + randfloat() * (maxWidth - minWidth)
+// always gave goalWidth == minWidth, making every balloon as wide as its widest word and
+// stopping the text from ever wrapping: corpus 001 produced nLines 1 where Windows had 2.
+//
+// RAND_MAX_MSVC existed here already but nothing used it, which is the trap - the name
+// suggested the problem was handled.
+#undef RAND_MAX
+#define RAND_MAX    0x7fff
 #define RAND_MAX_MSVC 0x7fff
 
 // Include-order artifact, not a missing type. rules.h uses CCNotif* at line 621

@@ -110,3 +110,39 @@ int CDC::GetDeviceCaps(int index) const {
             abort();
     }
 }
+
+// GetTextFace - the PHYSICAL face name GDI resolved the LOGFONT to. Answered from the
+// frozen table, which records faceName per captured font.
+//
+// This is not a courtesy: fonts.cpp:83 and :125 compute
+//     doVKern = (strcmp(szPhysFaceName, "Comic Sans MS") == 0) ? 1 : 0;
+// and then pass (int)(-40 * reduction * doVKern) as CFontInfo's nLeading. With an empty
+// name doVKern was 0, so the balloon font's m_leading was 0 rather than -53 and its
+// m_lineHeight 345 rather than the pinned 292. That fed AreaEstimate -> GetCloudEstimate
+// -> balloon width, so every balloon in the corpus came out wider, wrapped to fewer lines,
+// and produced a different spline and trajectory.
+//
+// Aborting when no font is selected matches the rest of this file: silently returning an
+// empty name is what caused the bug in the first place.
+int CDC::GetTextFace(int n, LPTSTR buf) const {
+    if (!GlyphTableReady() && !GlyphTableLoad()) {
+        fprintf(stderr, "native: CDC::GetTextFace before the glyph table loaded\n");
+        abort();
+    }
+    if (!m_pinnedFont) GLYPH_WRONG_FONT("CDC::GetTextFace");
+    const char* face = GlyphTableMetrics()->faceName;
+    if (!face) face = "";
+    if (!buf || n <= 0) return 0;
+    int len = (int)strlen(face);
+    if (len > n - 1) len = n - 1;
+    memcpy(buf, face, (size_t)len);
+    buf[len] = '\0';
+    return len;
+}
+
+int CDC::GetTextFace(CString& s) const {
+    char buf[LF_FACESIZE];
+    int n = GetTextFace(LF_FACESIZE, buf);
+    s = buf;
+    return n;
+}

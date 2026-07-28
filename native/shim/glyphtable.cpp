@@ -306,6 +306,16 @@ long GlyphTextWidth(const char* s, int len) {
             // is being measured: a control byte mid-string is a real gap in the capture,
             // whereas a NUL at the end means the caller passed a length that includes the
             // terminator, and the fix is at the call site rather than in the table.
+            // COMIC_CHAT_GLYPH_PROBE substitutes a caller-supplied advance for unpinned
+            // bytes so the replay can be driven PAST this point to find what else is
+            // missing. It is strictly a diagnostic: any dump produced with it set is
+            // invalid, because the substituted width is a guess. Never a silent fallback -
+            // absent the variable, measurement still aborts.
+            if (const char* pv = getenv("COMIC_CHAT_GLYPH_PROBE")) {
+                fprintf(stderr, "  PROBE: substituting advance %s - THIS DUMP IS NOT VALID\n", pv);
+                sum += atoi(pv);
+                continue;
+            }
             fprintf(stderr, "  string: \"");
             for (int k = 0; k < len; k++) {
                 unsigned char ch = (unsigned char)s[k];

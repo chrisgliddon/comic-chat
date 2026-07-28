@@ -6,6 +6,20 @@
 
 #include <stdlib.h>
 
+// On Windows srand() IS the MSVC CRT's, and it seeds exactly the sequence the goldens pin.
+// Off Windows it seeds LIBC's generator - which nothing uses, because the shim redirects
+// every engine rand() to msvc_rand(). This file does not include the shim's stdafx.h (it
+// is shared with the Windows build), so it was the one place where srand escaped the
+// redirect: srand(42) went to libc and left msvc_rand's state untouched, so the first
+// recorded draw was 17040 (wherever that state happened to be) instead of 175.
+//
+// Every panel seed, avatar placement and balloon shift derives from this, so it moved all
+// of them. Found by diffing the corpus seedLedger, which is what it exists for.
+#ifndef _MSC_VER
+extern "C" void msvc_srand(unsigned int seed);
+#define srand(s) msvc_srand(s)
+#endif
+
 namespace {
 
 int g_active = 0;

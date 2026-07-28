@@ -113,6 +113,24 @@ void LoadEmotionStrings() {
         g_emotionName[i].LoadString(startID++);
 }
 
+// --- intl.c: GetMime ---
+// REAL, and load-bearing. intl.c holds it as `static PSCRIPTINFO g_pMime; void *GetMime()
+// { return g_pMime; }` and only SetMime ever assigns it - and only when
+// _IsFECodePage(GetACP()) is true, i.e. for a Far East code page. This build is CP-1252,
+// so g_pMime is never set and NULL is the value the real code produces.
+//
+// Why it matters: GetMime() is the switch for the entire international path.
+// FindFurthestLineBreak (balloon.cpp:289) and balloon.cpp:391 both read `if (GetMime())`
+// before calling FindFurthestLineBreakIntl, and FindSubStringForINTLThatFits dereferences
+// pMime->iCp with NO null check (intl.c:530). So NULL here is what keeps the engine on the
+// single-byte line-breaking path that the goldens were captured on; anything non-NULL
+// would take a path that immediately crashes.
+//
+// This is also why intl.c is not compiled: with GetMime() NULL, nothing in it is reachable
+// from the measurement path, and iBytesofChar's g_pMime==NULL branch returns 1 (which is
+// what the stub below already does).
+extern "C" void* GetMime() { return NULL; }
+
 // --- bodycam.cpp ---
 // IsSame is REAL, transcribed verbatim from bodycam.cpp:685-695. Same reasoning as
 // LoadEmotionStrings above: it is a four-line comparison of member fields with no UI in
