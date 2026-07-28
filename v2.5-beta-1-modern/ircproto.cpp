@@ -190,7 +190,7 @@ long GetMyIP() {
 	int len = sizeof(SOCKADDR);
 	if (!serverConn.GetSockName(&addr, &len)) return 0;
 	pAddr = (SOCKADDR_IN *)(&addr);
-	long l = ntohl(pAddr->sin_addr.S_un.S_addr);
+	long l = ntohl(pAddr->sin_addr.s_addr);
 	return (l);
 }
 
@@ -778,7 +778,14 @@ void CIrcProto::ChatPartChannel(CDocument *doc1, BOOL) {
 		ASSERT(doc);
 		ASSERT(doc->m_proto);
 		if (!m_strChannel.IsEmpty() && !doc->m_bStatusView)
-			theApp.m_dynaRules.bMatchAndApplyRules(eOnLeave, NULL, NULL, CString(GetMyServer()), theApp.m_myNick+"!"+theApp.m_myIdent, m_strChannel, CString(""));
+		{
+			// bMatchAndApplyRules takes CString& (non-const), and MSVC let temporaries
+			// bind to those. Hoisted into named locals so the arguments are lvalues.
+			CString strServer(GetMyServer());
+			CString strIdentity = theApp.m_myNick + "!" + theApp.m_myIdent;
+			CString strMessage("");
+			theApp.m_dynaRules.bMatchAndApplyRules(eOnLeave, NULL, NULL, strServer, strIdentity, m_strChannel, strMessage);
+		}
 	}
 }
 
@@ -880,7 +887,9 @@ BOOL CIrcProto::ChatBanUser(const char *szBanPattern, BOOL bBan, const char *szE
 
 	if (IsIRCX() && bExtendedNickname(szNickname))
 		szBanPattern = EncodeNick(szBanPattern);
-	sprintf(GetOutBuff(), "MODE %s %s %s\r\n", szEncodedChannel ? szEncodedChannel : m_strChannel, szFlag, szBanPattern);
+	// Both arms cast to LPCSTR: CString converts to const char* and back, so the
+	// conditional was ambiguous. %s wants the char* either way.
+	sprintf(GetOutBuff(), "MODE %s %s %s\r\n", szEncodedChannel ? (LPCSTR) szEncodedChannel : (LPCSTR) m_strChannel, szFlag, szBanPattern);
 	SendMessageText(GetOutBuff());
 
 	if (szNickname != szBanPattern)

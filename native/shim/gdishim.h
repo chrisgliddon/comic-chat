@@ -289,14 +289,18 @@ typedef struct tagTEXTMETRIC {
     BYTE tmCharSet;
 } TEXTMETRIC, *LPTEXTMETRIC;
 
-typedef struct tagLOGPALETTE {
-    WORD palVersion;
-    WORD palNumEntries;
-} LOGPALETTE;
-
 typedef struct tagPALETTEENTRY {
     BYTE peRed, peGreen, peBlue, peFlags;
 } PALETTEENTRY;
+
+// PALETTEENTRY must precede this: LOGPALETTE ends with a palPalEntry[1] flexible array,
+// which bodycam.cpp writes through after over-allocating the struct. Declaring the array
+// (rather than leaving it off) is what makes that indexing legal.
+typedef struct tagLOGPALETTE {
+    WORD palVersion;
+    WORD palNumEntries;
+    PALETTEENTRY palPalEntry[1];
+} LOGPALETTE;
 
 // AfxGetResourceHandle: the engine loads DIBs from Win32 resources. The native
 // app has no PE resource section - ComicArt assets come from files - so this
@@ -345,10 +349,8 @@ inline int EnumFontFamilies(HDC, LPCTSTR, FONTENUMPROC, LPARAM) { return 0; }
 // Global ::GetDC / ::ReleaseDC take an HWND, unlike CWnd's members.
 inline HDC GetDC(HWND) { return (HDC)0; }
 inline int ReleaseDC(HWND, HDC) { return 0; }
-#define ERROR_SUCCESS               0L
-#define ERROR_INVALID_PARAMETER     87L
-#define ERROR_FILE_NOT_FOUND        2L
-#define ERROR_NOT_ENOUGH_MEMORY     8L
+// The ERROR_* codes and SetLastError/GetLastError moved to win32types.h: winnls.h sits
+// ABOVE this header in the include order and needs to set ERROR_INSUFFICIENT_BUFFER.
 
 // Raw HDC font entry points, used with ::-qualified calls in format.cpp alongside
 // the CDC members.
@@ -359,8 +361,9 @@ inline UINT    GetTextCharset(HDC) { return ANSI_CHARSET; }
 inline BOOL    GetTextMetrics(HDC, LPTEXTMETRIC tm) { if (tm) memset(tm, 0, sizeof(*tm)); return FALSE; }
 inline BOOL    GetTextExtentPoint32(HDC, LPCTSTR, int, LPSIZE) { return FALSE; }
 
-inline void SetLastError(DWORD) {}
-inline DWORD GetLastError() { return 0; }
+// SetLastError/GetLastError: see win32types.h. They are REAL now - ccommon.cpp branches
+// on GetLastError() == ERROR_INSUFFICIENT_BUFFER, and chatsrv.cpp treats
+// GetLastError() == WSAEWOULDBLOCK as a successful non-blocking connect.
 
 #define CFM_STRIKEOUT   0x00000008
 #define CFE_STRIKEOUT   0x0008
@@ -390,6 +393,20 @@ inline int GetDeviceCaps(HDC, int) { return 0; }
 #define STRETCH_HALFTONE      4
 #define LOGPIXELSX   88
 #define LOGPIXELSY   90
+// GetDeviceCaps indices and the raster-capability bit bodycam.cpp tests when deciding
+// whether the display is palettised.
+#define BITSPIXEL    12
+#define PLANES       14
+#define NUMCOLORS    24
+#define RASTERCAPS   38
+#define RC_PALETTE   0x0100
+
+// ::GetDIBits - the global form. bodycam.cpp calls it twice with a NULL bits pointer to
+// read back just the BITMAPINFOHEADER (and again for BI_BITFIELDS masks). Returns 0
+// scanlines copied, i.e. failure, which leaves the caller's header as it initialised it.
+// Honest for a build with no display: guessing a bit depth here would silently change the
+// format decisions that follow.
+static inline int GetDIBits(HDC, HBITMAP, UINT, UINT, void*, BITMAPINFO*, UINT) { return 0; }
 
 // CHARFORMAT - the rich-edit character-format struct. chat.h carries one for the
 // text-view font settings, so the type must exist even though no rich edit
@@ -493,6 +510,10 @@ public:
     // panel.cpp calls this through an instance (temp.FromHandle(h)), which is legal
     // for a static member and is how MFC's own samples use it.
     static CBitmap* FromHandle(HBITMAP) { return 0; }
+    // bodycam.cpp writes (HBITMAP)bm on a CBitmap value. MFC's CGdiObject provides this
+    // through operator HGDIOBJ; spelling it out here keeps the cast working without
+    // giving every CGdiObject an implicit conversion to void*.
+    operator HBITMAP() const { return (HBITMAP)0; }
 };
 
 class CPalette : public CGdiObject {
@@ -747,7 +768,10 @@ public:
     virtual BOOL Open(LPCTSTR name, UINT flags, void* = 0) {
         const char* mode = (flags & modeCreate) ? "wb"
                          : (flags & (modeWrite | modeReadWrite)) ? "r+b" : "rb";
-        m_fp = fopen(name, mode);
+        // Backslash-separated paths: see NativePath in win32types.h. The engine formats
+        // asset paths Win32-style, and this is where an avatar or backdrop is opened.
+        char pbuf[NATIVE_PATH_MAX];
+        m_fp = name ? fopen(NativePath(name, pbuf, sizeof(pbuf)), mode) : 0;
         return m_fp != 0;
     }
     virtual UINT Read(void* buf, UINT n)  { return m_fp ? (UINT)fread(buf, 1, n, m_fp) : 0; }

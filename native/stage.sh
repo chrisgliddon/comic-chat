@@ -55,4 +55,12 @@ done
 # the path used backslashes).
 ln -sfn "$ROOT/artifacts-modern" "$ROOT/native/artifacts-modern"
 
+# ccommon.cpp does the same trick with "../core/ccommon.cpp". In the original 1996
+# layout the tree root held core/ alongside chat/; that tree is preserved here under
+# artifacts/, so ../core must resolve there. This one is not optional scaffolding:
+# core/ccommon.cpp holds the UTF-8 conversion and IRC low-level quoting that
+# ircproto.cpp's nick/channel encoding is built on, and it exists in source form ONLY
+# here - the prebuilt chatsock.lib is Win32 x86 and cannot be linked on arm64.
+ln -sfn "$ROOT/artifacts/core" "$ROOT/native/core"
+
 echo "staged $(ls "$STAGE" | wc -l | tr -d ' ') files in native/stage"

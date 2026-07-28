@@ -21,8 +21,11 @@ Two things that cost a round each and are easy to get wrong again:
 import json, subprocess, sys
 
 targets = json.load(open('/tmp/targets.json'))
-if not any(m == '_serverConn' for m, _ in targets):
-    targets.append(('_serverConn', 'serverConn'))
+# There used to be a special case appending _serverConn unconditionally, from when it was
+# referenced but nothing defined it. ircproto.cpp now compiles and defines it for real, so
+# appending it here produced a duplicate symbol. Removed rather than made conditional:
+# targets.json comes straight from the linker, so anything genuinely missing is already
+# in it, and a hand-maintained addition can only go stale the same way this one did.
 
 vtables = [(m, d) for m, d in targets if m.startswith('__ZTV')]
 data    = [(m, d) for m, d in targets if not m.startswith('__ZTV') and '(' not in d]

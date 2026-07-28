@@ -169,7 +169,7 @@ static const char* kExtentProbes[] = {
     NULL
 };
 
-// Captures one font: its TEXTMETRIC scalars, the 0x20-0xFF advances, and the extent
+// Captures one font: its TEXTMETRIC scalars, the 0x00-0xFF advances, and the extent
 // probes. cFontInfo is only meaningful for the balloon font (the engine derives the
 // other CFontInfos with different leading/baseAdd), so it is emitted separately by the
 // caller rather than here.
@@ -215,7 +215,14 @@ static ojson::Value CaptureOneFont(CDC& dc, int lfHeight, BOOL italic, const cha
     v.Set("tmCharSet", ojson::Value::Int(tm.tmCharSet));
 
     ojson::Value advances = ojson::Value::Arr();
-    for (int c = 0x20; c <= 0xFF; c++) {
+    // 0x00-0xFF, not 0x20-0xFF. The control range is NOT dead weight: CLabel::WidestWord
+    // (balloon.cpp:738) measures `szEnd - szStart + 1` bytes, and because isprint(' ') is
+    // true szEnd walks to the terminator - so the length includes the NUL and GDI measures
+    // it as a glyph. The `REGISB: original:` comment on the line above shows the +1 was
+    // there in 1996, so this is shipped behaviour that the goldens encode, not a porting
+    // artefact. Capturing only 0x20-0xFF left the native build unable to reproduce it, and
+    // the native run aborted rather than guessing - which is how this was found.
+    for (int c = 0x00; c <= 0xFF; c++) {
         char ch[2] = { (char)c, 0 };
         CSize ext = dc.GetTextExtent(ch, 1);
         ojson::Value e = ojson::Value::Obj();

@@ -890,7 +890,12 @@ HRESULT CIrcSocket::HrGenerateAndSendAuthMsg(CHAR *szBlob, CHAR *szSecurityPacka
     SecBuffer		inSecBuffer, outSecBuffer;
     PSecBufferDesc	pInSecDesc;
     ULONG			ulContextReq;
-    ULONG			ulContextAttrib;
+    // `unsigned long`, not ULONG: CSSPI.H declares InitializeSecurityContext's
+    // pfContextAttribute as `unsigned long*`. Those are the same 32 bits on Win32, but
+    // ULONG is uint32_t here while unsigned long is 64-bit, so passing &ULONG would let
+    // the callee write 8 bytes into a 4-byte slot. The value is only ever written by the
+    // callee and never read back, so matching the header's type is the whole fix.
+    unsigned long	ulContextAttrib;
     DWORD			dwExpireTime;
     DWORD			dwStatus;
     BYTE			pbBuffer[4096];
@@ -1380,12 +1385,21 @@ void CIrcSocket::HandleCommand(CString& strLine, char *szLine, PIRCPARSE pParse,
 				CDocument*	pDoc = LookupDoc(pParse->lastString);
 				if (pDoc)	// else we just left this channel
 				{
-					theApp.m_dynaRules.bMatchAndApplyRules(eOnJoin, (enumActions*) rgaIDs, NULL, CString(GetMyServer()), CString(pParse->nick)+"!"+strIdent, CString(pParse->lastString), CString(""));
+					// bMatchAndApplyRules takes CString& (non-const) but only reads the
+					// four - they are copied into the m_*Cach members and never assigned
+					// to - so one hoisted set shared by both calls is equivalent to the
+					// temporaries MSVC allowed to bind here.
+					CString		strRuleServer(GetMyServer());
+					CString		strRuleIdentity = CString(pParse->nick)+"!"+strIdent;
+					CString		strRuleChannel(pParse->lastString);
+					CString		strRuleMessage("");
+
+					theApp.m_dynaRules.bMatchAndApplyRules(eOnJoin, (enumActions*) rgaIDs, NULL, strRuleServer, strRuleIdentity, strRuleChannel, strRuleMessage);
 					char cHighlightType = -1;
 					if (theApp.m_dynaRules.GetFlags() & g_wHighlight)
 						cHighlightType = theApp.m_dynaRules.GetFlags() >> 8;
 					AddAndExecute(new JoinEntry(new CUserInfo(pParse->nick, strIdent), FALSE, cHighlightType), pDoc);
-					theApp.m_dynaRules.bMatchAndApplyRules(eOnJoin, NULL, (enumActions*) rgaIDs, CString(GetMyServer()), CString(pParse->nick)+"!"+strIdent, CString(pParse->lastString), CString(""));
+					theApp.m_dynaRules.bMatchAndApplyRules(eOnJoin, NULL, (enumActions*) rgaIDs, strRuleServer, strRuleIdentity, strRuleChannel, strRuleMessage);
 				}
 			}
 			else
@@ -1679,13 +1693,17 @@ void CIrcSocket::HandleCommand(CString& strLine, char *szLine, PIRCPARSE pParse,
 				{
 					enumActions	rgaIDs[2] = { (enumActions) 1, aHighlightMessage };
 					CString		strIdent = CString(pParse->nick)+"!"+pParse->user+"@"+pParse->machine;
+					// Hoisted for the same reason as the eOnJoin pair above.
+					CString		strRuleServer(GetMyServer());
+					CString		strRuleChannel(pParse->args[1]);
+					CString		strRuleMessage("");
 
-					theApp.m_dynaRules.bMatchAndApplyRules(eOnLeave, (enumActions*) rgaIDs, NULL, CString(GetMyServer()), strIdent, CString(pParse->args[1]), CString(""));
+					theApp.m_dynaRules.bMatchAndApplyRules(eOnLeave, (enumActions*) rgaIDs, NULL, strRuleServer, strIdent, strRuleChannel, strRuleMessage);
 					char cHighlightType = -1;
 					if (theApp.m_dynaRules.GetFlags() & g_wHighlight)
 						cHighlightType = theApp.m_dynaRules.GetFlags() >> 8;
 					AddAndExecute(new PartEntry(pParse->nick, cHighlightType), pDoc);
-					theApp.m_dynaRules.bMatchAndApplyRules(eOnLeave, NULL, (enumActions*) rgaIDs, CString(GetMyServer()), strIdent, CString(pParse->args[1]), CString(""));
+					theApp.m_dynaRules.bMatchAndApplyRules(eOnLeave, NULL, (enumActions*) rgaIDs, strRuleServer, strIdent, strRuleChannel, strRuleMessage);
 				}
 			pIrcPrint->SetFormat(PT_NONE);
 			break;
@@ -1882,7 +1900,15 @@ void CIrcSocket::HandleResultCode(CString &strLine, char *szLine, PIRCPARSE pPar
 			pIrcPrint->SetFormat(PT_NONE);		// Don't display this a second time
 
 			GetIrcProto()->SetConnectionStatus(CX_NOCHANNEL);
-			theApp.m_dynaRules.bMatchAndApplyRules(eOnConnect, NULL, NULL, CString(GetMyServer()), CString(pParse->args[1]), CString(""), CString(""));
+			{
+				// Braced and hoisted: the four arguments are CString& (non-const) but
+				// read-only, and MSVC let temporaries bind to them.
+				CString	strRuleServer(GetMyServer());
+				CString	strRuleIdentity(pParse->args[1]);
+				CString	strRuleChannel("");
+				CString	strRuleMessage("");
+				theApp.m_dynaRules.bMatchAndApplyRules(eOnConnect, NULL, NULL, strRuleServer, strRuleIdentity, strRuleChannel, strRuleMessage);
+			}
 			if (GetIrcProto()->GetConnectionStatus() != CX_DISCONNECTED)	// rules might have disconnected us
 			{
 				CCQuery* pQuery = new CCQuery(qpInitialLUsersMOTD, ctLUsersMOTD, dtMax, NULL, "", "", FALSE /*bCreatePrUserMatch*/);
@@ -2356,7 +2382,9 @@ void CIrcSocket::HandleResultCode(CString &strLine, char *szLine, PIRCPARSE pPar
 							{
 								CCDaemonExt* pDaemonExt = pRule->GetDaemonExt();
 								ASSERT(pDaemonExt);
-								pDaemonExt->bAddChannelToCurrentList(CString(pParse->args[2]));
+								// bAddChannelToCurrentList takes CString& (non-const).
+								CString strChan(pParse->args[2]);
+								pDaemonExt->bAddChannelToCurrentList(strChan);
 							}
 							break;
 						}
@@ -2409,7 +2437,9 @@ void CIrcSocket::HandleResultCode(CString &strLine, char *szLine, PIRCPARSE pPar
 						{
 							CCDaemonExt* pDaemonExt = pRule->GetDaemonExt();
 							ASSERT(pDaemonExt);
-							pDaemonExt->bAddChannelToCurrentList(CString(pParse->args[2]));
+							// bAddChannelToCurrentList takes CString& (non-const).
+							CString strChan(pParse->args[2]);
+							pDaemonExt->bAddChannelToCurrentList(strChan);
 						}
 						break;
 					}
@@ -2535,7 +2565,15 @@ void CIrcSocket::HandleResultCode(CString &strLine, char *szLine, PIRCPARSE pPar
 						CChatDoc* pDoc = pParse->nArgs >= 4 ? LookupDoc(pParse->args[3]) : NULL;
 						if (pParse->lastString && pDoc)
 							if (bForEachWord(pParse->lastString, bSingleJoin, pDoc, 0L, " "))
-								theApp.m_dynaRules.bMatchAndApplyRules(eOnJoin, NULL, NULL, CString(GetMyServer()), CString(GetMyNickName())+"!"+GetMyIdent(), pDoc->m_proto->m_strChannel, CString(""));
+							{
+								// Braces added deliberately: this call was the single
+								// statement of a brace-less if, so the hoisted locals
+								// need a block of their own to live in.
+								CString	strRuleServer(GetMyServer());
+								CString	strRuleIdentity = CString(GetMyNickName())+"!"+GetMyIdent();
+								CString	strRuleMessage("");
+								theApp.m_dynaRules.bMatchAndApplyRules(eOnJoin, NULL, NULL, strRuleServer, strRuleIdentity, pDoc->m_proto->m_strChannel, strRuleMessage);
+							}
 						break;
 					}
 					default:
@@ -3130,7 +3168,9 @@ void CIrcSocket::HandleErrorCode(char *szLine, PIRCPARSE pParse, CIrcPrint *pIrc
 		case ERR_NICKNAMEINUSE:		// 433
 		{
 			int		iIndex = (ERR_NICKNAMEINUSE == pParse->uCode) ? 2 : 1;
-			char*	szBadNick = pParse->nArgs >= (iIndex+1) ? pParse->args[iIndex] : "";
+			// const char*: the "" arm is a string literal. Both consumers below
+			// (TryNewNick's showNick and DecodeNick) already take const char*.
+			const char*	szBadNick = pParse->nArgs >= (iIndex+1) ? pParse->args[iIndex] : "";
 			GetIrcProto()->TryNewNick((ERR_NICKNAMEINUSE == pParse->uCode) ? ID_ERR_DUPED_NICK : ID_ERR_BAD_NICK, m_bIrcXServer ? DecodeNick(szBadNick) : szBadNick);
 			break;
 		}

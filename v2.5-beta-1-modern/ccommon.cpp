@@ -3,4 +3,6 @@
 
 #undef ASSERT
 
-#include "..\core\ccommon.cpp"
+// Forward slashes, not backslashes: MSVC accepts either, clang treats a backslash as a
+// literal filename character. Same fix as urlutil.cpp.
+#include "../core/ccommon.cpp"

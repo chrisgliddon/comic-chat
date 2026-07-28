@@ -19,6 +19,14 @@
 
 #include "win32types.h"
 #ifdef __cplusplus
+// The National Language Support surface, on the default chain because the real
+// windows.h puts it there. balloon.cpp includes <winnls.h> explicitly, but ircproto.cpp
+// reaches GetACP/MultiByteToWideChar/GetStringTypeEx through windows.h alone. Inside the
+// C++ fence because its converters call SetLastError, which is C++-only.
+#include "winnls.h"
+// The SSPI credential struct. ircsock.h includes artifacts/inc/CSSPI.H, which covers the
+// function table but leaves this to the real sspi.h. Compile-only - see the header.
+#include "sspi.h"
 #include "mfcshim.h"
 #include "gdishim.h"
 #include "mfcui.h"

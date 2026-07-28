@@ -79,6 +79,13 @@
 #define ON_WM_SHOWWINDOW()
 #define ON_WM_MOVE()
 #define ON_WM_CANCELMODE()
+// bodycam.cpp's map. A missing ON_WM_* macro does not fail where it is used - the line
+// parses as a declaration and the error lands on the NEXT entry as "expected function
+// body after function declarator", which is why these are worth keeping complete.
+#define ON_WM_NCDESTROY()
+#define ON_WM_GETDLGCODE()
+#define ON_WM_MENUSELECT()
+#define ON_WM_ENTERIDLE()
 #define ON_EN_CHANGE(id, fn)
 #define ON_BN_CLICKED(id, fn)
 #define ON_CBN_SELCHANGE(id, fn)
@@ -139,6 +146,8 @@
 
 #define SW_HIDE             0
 #define SW_SHOWNORMAL       1
+// SW_NORMAL is the older spelling of SW_SHOWNORMAL; status.cpp uses it.
+#define SW_NORMAL           1
 #define SW_SHOW             5
 #define SW_SHOWNA           8
 #define SW_RESTORE          9
@@ -172,6 +181,17 @@
 #define WM_MOUSEMOVE        0x0200
 #define WM_SETREDRAW        0x000B
 #define WM_UNDO             0x0304
+#define WM_MENUSELECT       0x011F
+#define WM_ENTERIDLE        0x0121
+// Dialog-code bits returned from OnGetDlgCode: "send me all keys / the arrow keys rather
+// than letting the dialog manager consume them".
+#define DLGC_WANTARROWS     0x0001
+#define DLGC_WANTTAB        0x0002
+#define DLGC_WANTALLKEYS    0x0004
+#define DLGC_WANTCHARS      0x0080
+// Tooltip control style: always show, even when the owning window is inactive.
+#define TTS_ALWAYSTIP       0x01
+#define TTS_NOPREFIX        0x02
 #define EM_GETSEL           0x00B0
 #define EM_SETSEL           0x00B1
 #define EM_CANUNDO          0x00C6
@@ -393,6 +413,10 @@ public:
     void OnRButtonUp(UINT, CPoint) {}
     int  OnCreate(LPCREATESTRUCT) { return 0; }
     void OnDestroy() {}
+    // bodycam.cpp's overrides call the base implementation (CWnd::OnNcDestroy() and
+    // CWnd::OnEnterIdle(...)), so these must exist as members, not just as map entries.
+    void OnNcDestroy() {}
+    void OnEnterIdle(UINT, CWnd*) {}
     void OnKeyDown(UINT, UINT, UINT) {}
     void OnKeyUp(UINT, UINT, UINT) {}
     void OnChar(UINT, UINT, UINT) {}
@@ -513,6 +537,11 @@ public:
     virtual void DoDataExchange(void*) {}
     BOOL UpdateData(BOOL = TRUE) { return TRUE; }
     void EndDialog(int) {}
+    // Keyboard-focus movement within the dialog. No-ops: there is no dialog and no
+    // focus. ircsock.cpp calls these on the room list after repopulating it.
+    void GotoDlgCtrl(CWnd*) {}
+    void NextDlgCtrl() const {}
+    void PrevDlgCtrl() const {}
 };
 
 // CCSDialog / CCoolBar are PROJECT classes (chicdial.h, coolbar.h) that the

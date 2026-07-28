@@ -106,7 +106,10 @@ BOOL CQueryPtrList::bAddQuery(CCQuery* pQuery)
 {
 	ASSERT(pQuery, "pQuery is NULL in CQueryPtrList::bAddQuery");
 
-	return AddTail((PVOID) pQuery) >= 0;
+	// AddTail returns a POSITION (a pointer), so the original `>= 0` was an ordered
+	// comparison against 0 that MSVC tolerated. A valid POSITION is non-NULL, which is
+	// the success test actually intended.
+	return AddTail((PVOID) pQuery) != NULL;
 }
 
 

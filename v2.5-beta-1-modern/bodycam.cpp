@@ -851,7 +851,10 @@ void CBodyCam::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
 		}
 		if (ptOld.x != ptCur.x || ptOld.y != ptCur.y)
 		{
-			UpdateEmotion (GetEmotionFromPoint (ptCur));
+			// UpdateEmotion takes CEmotion& (non-const) and GetEmotionFromPoint returns
+			// by value, so the temporary needs a name to bind to.
+			CEmotion emFromPoint = GetEmotionFromPoint (ptCur);
+			UpdateEmotion (emFromPoint);
 		}
 	}
 }
@@ -1065,7 +1068,9 @@ void CBodyCam::OnBodycontextSendexpression()
 	BOOL bLegalToSend(BOOL = FALSE);
 	if (!bLegalToSend()) return;
 
-	bChatSendText(CString("<Chr>"), BM_SAY);	
+	// bChatSendText takes CString& (non-const); the temporary needs a name.
+	CString strChr("<Chr>");
+	bChatSendText(strChr, BM_SAY);
 }
 
 void CBodyCam::OnSize(UINT nType, int cx, int cy) 

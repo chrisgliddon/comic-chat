@@ -276,6 +276,35 @@ public:
         free(big);
     }
 
+    // MFC's SECOND Format overload: the format string is a resource id, loaded from the
+    // string table and then used exactly as above. ircsock.cpp uses it in ten places
+    // (strLine.Format(IDS_NOWKNOWNAS, GetMyScreenName())), and without it those calls
+    // bind the int to the const char* parameter and fail to compile.
+    //
+    // Real, because the shipped text comes through here: native/resources/strings.json
+    // holds the 602 strings extracted from chat.rc. An unknown id formats to empty
+    // rather than crashing, which is what MFC does when LoadString fails.
+    //
+    // Overload resolution: a resource id is an integer constant so it picks this one, and
+    // a literal or char* picks the LPCTSTR overload above. The only ambiguous call would
+    // be a literal 0, which does not appear.
+    void Format(UINT nFormatID, ...) {
+        CString fmt;
+        if (!fmt.LoadString(nFormatID)) { Assign("", 0); return; }
+        va_list ap; va_start(ap, nFormatID);
+        char buf[2048];
+        int n = vsnprintf(buf, sizeof(buf), fmt.m_pchData, ap);
+        va_end(ap);
+        if (n >= 0 && (size_t)n < sizeof(buf)) { Assign(buf, (size_t)n); return; }
+        va_list ap2; va_start(ap2, nFormatID);
+        size_t need = (size_t)(n > 0 ? n + 1 : 8192);
+        char* big = (char*)malloc(need);
+        vsnprintf(big, need, fmt.m_pchData, ap2);
+        va_end(ap2);
+        Assign(big, strlen(big));
+        free(big);
+    }
+
     // Hands back the live buffer grown to minLen. No separate scratch member (see
     // the layout note), so the pointer is valid until the next mutation.
     char* GetBuffer(int minLen) {
@@ -290,12 +319,13 @@ public:
     }
     void ReleaseBuffer(int newLen = -1) { if (newLen >= 0) m_pchData[newLen] = 0; }
 
-    // LoadString reads the .rc string table, which a Mach-O binary has no
-    // equivalent of. Returns FALSE and empties so callers take their not-found
-    // branch. textpose.cpp's LoadEmotionStrings depends on the string table, so the
-    // native emotion rules need those strings from data - the frozen textpose golden
-    // lists them.
-    BOOL LoadString(UINT) { Empty(); return FALSE; }
+    // Reads the .rc string table, which is supplied as DATA on this platform - see
+    // native/shim/stringtable.h. Defined out-of-line (stringtable.cpp) because this
+    // header must not depend on ojson or file I/O.
+    //
+    // Not a stub: textpose.cpp loads its emotion-detection RULES through here, so
+    // returning FALSE would leave the engine with no rules and change every pose.
+    BOOL LoadString(UINT id);
 
 private:
     void Assign(const char* s, size_t n) {

@@ -452,7 +452,7 @@ void _cdecl ReceiveFileThread(void *arg) {
 	ZeroMemory(&dest_addr, sizeof(dest_addr));
 	dest_addr.sin_family = AF_INET;
 	dest_addr.sin_port = htons(fileTX->port);
-	dest_addr.sin_addr.S_un.S_addr = htonl(fileTX->hostAddr);
+	dest_addr.sin_addr.s_addr = htonl(fileTX->hostAddr);
 
 	if (connect(sock, (PSOCKADDR) &dest_addr, sizeof(dest_addr)) != 0) {
 		::PostMessage(fileTX->progHwnd, WM_STATCHANGE, WP_CONNECTFAILED, 0);

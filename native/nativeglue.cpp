@@ -88,6 +88,7 @@ __attribute__((weak)) CUserInfo* g_puiSelf = 0;
 #include "pe.h"
 #include "dib.h"
 #include "avatar.h"
+#include "resource.h"   // ID_EM_HAPPY
 
 #define NATIVE_UNLINKED(what) \
     do { \
@@ -97,14 +98,57 @@ __attribute__((weak)) CUserInfo* g_puiSelf = 0;
 
 // CPanelElement now comes from the real panel.cpp, which links.
 
+// --- bodycam.cpp: LoadEmotionStrings ---
+// Transcribed from bodycam.cpp:41-47. It is five lines, and the alternative is compiling
+// bodycam.cpp - a 1177-line body-cam dialog with 23 GDI call sites - for one function
+// the corpus replay genuinely needs (InitHarness calls it before the emotion rules).
+//
+// emotionName is only read by bodycam's own tooltip and label code, none of which runs
+// here, so it lives beside the loader rather than being exported. DELETE BOTH once
+// bodycam.cpp compiles.
+static CString g_emotionName[9];
+void LoadEmotionStrings() {
+    int startID = ID_EM_HAPPY;   // assumption in the original: happy first, ids contiguous
+    for (int i = 0; i < 9; i++)
+        g_emotionName[i].LoadString(startID++);
+}
+
 // --- bodycam.cpp ---
-BOOL CBodySingle::IsSame(CBody*) { NATIVE_UNLINKED("CBodySingle::IsSame (bodycam.cpp)"); }
+// IsSame is REAL, transcribed verbatim from bodycam.cpp:685-695. Same reasoning as
+// LoadEmotionStrings above: it is a four-line comparison of member fields with no UI in
+// it, and the alternative is compiling bodycam.cpp - a body-cam WINDOW with tooltips,
+// mouse capture, SetROP2 XOR drawing and palette handling, none of which the corpus
+// replay exercises.
+//
+// It has to be real rather than aborting because the replay genuinely calls it: pose
+// dedup asks whether two bodies are the same, and a wrong answer changes which poses get
+// reused and therefore the panel contents. That is exactly what the goldens measure.
+BOOL CBodySingle::IsSame(CBody* other) {
+    if (!other || GetClass() != other->GetClass()) return FALSE;
+    CBodySingle* b = (CBodySingle*) other;
+    return (GetPoseID() == b->GetPoseID());
+}
 RECT CBodySingle::DrawBody(CDC*, RECT&, BOOL) { NATIVE_UNLINKED("CBodySingle::DrawBody (bodycam.cpp)"); }
 void CBodySingle::Draw(CDC*, POINT*, RECT*) { NATIVE_UNLINKED("CBodySingle::Draw (bodycam.cpp)"); }
 void CBodySingle::GetBodyBox(CPose*, RECT&, RECT&) { NATIVE_UNLINKED("CBodySingle::GetBodyBox (bodycam.cpp)"); }
 void CBodySingle::FlipBodyBox(RECT&) { NATIVE_UNLINKED("CBodySingle::FlipBodyBox (bodycam.cpp)"); }
-void RefreshBodyCam(CAvatarX*) { NATIVE_UNLINKED("RefreshBodyCam (bodycam.cpp)"); }
-void RefreshBodyPreview(CAvatarX*) { NATIVE_UNLINKED("RefreshBodyPreview (bodycam.cpp)"); }
+// The two body-cam refresh entry points, called from CAvatarX::UpdateBody whenever a pose
+// changes. Both only REDRAW the self-view widgets - they do not touch avatar or pose
+// state - so headless behaviour is faithful rather than a placeholder:
+//
+//   RefreshBodyPreview returns FALSE when there is no character-select body cam
+//   (bodycam.cpp:877-884: `if (bcam && av == bcam->m_avatar)`). With no UI there is no
+//   such window, so FALSE is the answer the real code would give, and UpdateBody's
+//   fallback path is then taken exactly as on Windows.
+//
+//   RefreshBodyCam assigns bcam->m_avatar and calls RefreshBody, which draws through a
+//   CClientDC. With no body cam there is nothing to assign and nothing to draw.
+//
+// Returning/doing nothing here is therefore not a gap to close later - it is what a build
+// with no body-cam window does. If a golden ever depended on this, the dump would differ
+// and the corpus diff would say so.
+BOOL RefreshBodyPreview(CAvatarX*) { return FALSE; }
+void RefreshBodyCam(CAvatarX*) { }
 
 // --- chat.cpp ---
 // backdrop.cpp calls this when an unknown backdrop is referenced. The native build
@@ -125,7 +169,12 @@ void SetMyCharacter(const char*) { NATIVE_UNLINKED("SetMyCharacter (protsupp.cpp
 // SetMyPUIAvatarID now comes from the real userinfo.cpp, which links.
 
 // --- bodycam.cpp: CBodyDouble's virtuals, for its vtable ---
-BOOL CBodyDouble::IsSame(CBody*) { NATIVE_UNLINKED("CBodyDouble::IsSame (bodycam.cpp)"); }
+// Real, from bodycam.cpp:685-689 - see the note on CBodySingle::IsSame above.
+BOOL CBodyDouble::IsSame(CBody* other) {
+    if (!other || GetClass() != other->GetClass()) return FALSE;
+    CBodyDouble* b = (CBodyDouble*) other;
+    return (m_faceRec == b->m_faceRec && m_torsoRec == b->m_torsoRec);
+}
 RECT CBodyDouble::DrawBody(CDC*, RECT&, BOOL) { NATIVE_UNLINKED("CBodyDouble::DrawBody (bodycam.cpp)"); }
 void CBodyDouble::Draw(CDC*, POINT*, RECT*) { NATIVE_UNLINKED("CBodyDouble::Draw (bodycam.cpp)"); }
 void CBodyDouble::GetBodyBox(CPose*, CPose*, RECT&, RECT&, RECT&, RECT&) { NATIVE_UNLINKED("CBodyDouble::GetBodyBox (bodycam.cpp)"); }

@@ -3,6 +3,7 @@
 
 #include "stdafx.h"
 #include "glyphtable.h"
+#include "respath.h"
 #include "../../oracle/harness/ojson.h"
 
 #include <stdio.h>
@@ -104,15 +105,22 @@ bool ReadFont(const ojson::Value& f, FontEntry& out, std::string& err) {
 bool GlyphTableLoad(const char* path) {
     if (g_loaded) return true;
 
-    const char* p = path;
-    if (!p) p = getenv("COMIC_CHAT_GLYPHS");
-    if (!p) p = "oracle/glyphs/glyphs.json";
-
-    FILE* f = fopen(p, "rb");
+    // Search the real candidate locations rather than one fixed relative path - see
+    // respath.h. An explicit `path` argument still wins outright.
+    std::string chosen, tried;
+    FILE* f;
+    if (path) {
+        f = fopen(path, "rb");
+        chosen = path;
+        tried = path;
+    } else {
+        f = NativeResourceOpen("COMIC_CHAT_GLYPHS", "oracle/glyphs/glyphs.json", chosen, tried);
+    }
     if (!f) {
-        fprintf(stderr, "glyphtable: cannot open %s\n", p);
+        fprintf(stderr, "glyphtable: cannot open the glyph table. Tried: %s\n", tried.c_str());
         return false;
     }
+    const char* p = chosen.c_str();
     fseek(f, 0, SEEK_END);
     long sz = ftell(f);
     fseek(f, 0, SEEK_SET);
@@ -289,12 +297,23 @@ long GlyphTextWidth(const char* s, int len) {
         int a = e.advance[c];
         if (a < 0) {
             // Skipping would silently shorten the string and move the line break. Each
-            // font covers 0x20-0xFF, so this is either a control byte or a genuinely
-            // multi-byte sequence (the deferred Tier-1 #13 CJK question).
-            fprintf(stderr, "glyphtable: no pinned advance for byte 0x%02X in font "
-                            "lfHeight=%d italic=%d - cannot measure honestly. Extend\n"
-                            "  CaptureGlyphs in oracle/harness/oracleharness.cpp.\n",
-                    c, e.m.lfHeight, e.m.lfItalic);
+            // font covers 0x00-0xFF once re-captured, so this means the frozen table predates
+            // that range, or the byte is part of a multi-byte sequence (deferred Tier-1 #13 CJK).
+            fprintf(stderr, "glyphtable: no pinned advance for byte 0x%02X at index %d of "
+                            "%d in font lfHeight=%d italic=%d - cannot measure honestly.\n",
+                    c, i, len, e.m.lfHeight, e.m.lfItalic);
+            // Dump the whole string. Which byte is unpinned matters far less than WHY it
+            // is being measured: a control byte mid-string is a real gap in the capture,
+            // whereas a NUL at the end means the caller passed a length that includes the
+            // terminator, and the fix is at the call site rather than in the table.
+            fprintf(stderr, "  string: \"");
+            for (int k = 0; k < len; k++) {
+                unsigned char ch = (unsigned char)s[k];
+                if (ch >= 0x20 && ch < 0x7F) fprintf(stderr, "%c", ch);
+                else fprintf(stderr, "\\x%02X", ch);
+            }
+            fprintf(stderr, "\"\n  Extend CaptureGlyphs in oracle/harness/oracleharness.cpp"
+                            " if this byte is genuinely measured on Windows.\n");
             abort();
         }
         sum += a;

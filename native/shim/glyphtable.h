@@ -46,7 +46,10 @@ bool GlyphTableReady();
 bool GlyphSelectFont(const LOGFONT* lf);
 
 // Advance width in TWIPS for a single byte in the ACTIVE font, or -1 if unpinned.
-// Each font covers 0x20-0xFF, the whole single-byte MBCS range.
+// Each font covers 0x00-0xFF. The control range below 0x20 is included because
+// CLabel::WidestWord measures one byte past the end of the string (balloon.cpp:738,
+// `szEnd - szStart + 1`), so GDI measures the NUL terminator as a glyph and the goldens
+// encode its advance. A table starting at 0x20 cannot reproduce that.
 int GlyphAdvance(unsigned char ch);
 
 // Sums advances over len bytes in the active font. Aborts if any byte is unpinned,

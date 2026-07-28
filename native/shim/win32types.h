@@ -30,6 +30,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <stdio.h>
+#include <stdarg.h>
 
 // --- integer scalars -------------------------------------------------------
 typedef int32_t             LONG;
@@ -50,6 +52,8 @@ typedef BYTE*               LPBYTE;
 typedef WORD*               LPWORD;
 typedef void*               LPVOID;
 typedef void*               PVOID;
+// bodycam.cpp casts through (VOID**) when calling CreateDIBSection.
+#define VOID                void
 typedef BYTE*               PBYTE;
 typedef const void*         LPCVOID;
 typedef int*                PINT;
@@ -216,7 +220,13 @@ typedef LONG HRESULT;
 #define S_OK        ((HRESULT)0)
 #define S_FALSE     ((HRESULT)1)
 #define E_FAIL      ((HRESULT)0x80004005L)
+// E_ABORT is how HrGenerateAndSendAuthMsg reports "the user cancelled this
+// authentication package"; ircsock.cpp compares against it to move to the next package.
+#define E_ABORT     ((HRESULT)0x80004004L)
 #define NOERROR     0
+// NO_ERROR is the Win32 (not COM) success code, 0. ircsock.cpp tests the SSPI status
+// against it. Distinct spelling from NOERROR above, and both appear in the engine.
+#define NO_ERROR    0L
 #define SUCCEEDED(hr) ((HRESULT)(hr) >= 0)
 #define FAILED(hr)    ((HRESULT)(hr) < 0)
 #define MAKELONG(a, b) ((LONG)(((WORD)(a)) | (((DWORD)((WORD)(b))) << 16)))
@@ -383,6 +393,45 @@ typedef struct tagBITMAPFILEHEADER {
 #define __T(x)      x
 #endif
 
+// --- last-error -------------------------------------------------------------------
+// Real, not a stub. Two live call sites branch on the value:
+//   core/ccommon.cpp    GetLastError() == ERROR_INSUFFICIENT_BUFFER distinguishes "the
+//                       output buffer was too small" (give up) from any other failure
+//                       (fall through to LUnchanged and pass the text through).
+//   chatsrv.cpp:1778    GetLastError() == WSAEWOULDBLOCK is how a non-blocking connect
+//                       reports success, so a hardcoded 0 would read as a real failure
+//                       on every connection attempt.
+// A single instance shared across translation units: `inline` (external linkage) with a
+// function-local static is the header-only way to get that in C++. Not thread-local -
+// Win32's is per-thread, but the engine only touches it on the main thread, and a
+// silently per-thread value would be harder to reason about than a shared one.
+#define ERROR_SUCCESS               0L
+#define ERROR_INVALID_PARAMETER     87L
+#define ERROR_FILE_NOT_FOUND        2L
+#define ERROR_NOT_ENOUGH_MEMORY     8L
+#define ERROR_INSUFFICIENT_BUFFER   122L
+
+#ifdef __cplusplus
+inline DWORD& Win32LastErrorSlot() { static DWORD e = 0; return e; }
+inline void  SetLastError(DWORD e) { Win32LastErrorSlot() = e; }
+inline DWORD GetLastError()        { return Win32LastErrorSlot(); }
+#endif
+
+// wsprintf is USER32's sprintf. Real, not a stub: ircproto.cpp formats the quoted
+// nickname with it. Deliberately a function rather than `#define wsprintf sprintf`,
+// because the engine also takes its address in a couple of table initialisers, and a
+// macro would not survive that.
+static inline int wvsprintf(LPSTR dst, LPCSTR fmt, va_list ap) {
+    return vsprintf(dst, fmt, ap);
+}
+static inline int wsprintf(LPSTR dst, LPCSTR fmt, ...) {
+    va_list ap;
+    va_start(ap, fmt);
+    int n = vsprintf(dst, fmt, ap);
+    va_end(ap);
+    return n;
+}
+
 // File-attribute queries. The engine uses GetFileAttributes == -1 as its "does
 // this file exist" test (LoadAvatarInfo does exactly that), so this must answer
 // truthfully rather than stub - avatar loading depends on it.
@@ -411,15 +460,59 @@ static inline HINSTANCE FindExecutable(LPCSTR, LPCSTR, LPSTR buf) {
     if (buf) buf[0] = 0;
     return (HINSTANCE)(uintptr_t)31;   // < 32 == not found, per the Win32 contract
 }
+// --- path separator translation ---------------------------------------------------
+// Win32's separator is '\' and the engine formats paths with it:
+//     path.Format("%s\\%s.avb", theApp.GetAvatarDir(), avName);   (avatario.cpp:20)
+// There are nine such sites (avatar, backdrop, favourites, .ccr, screenshots). Handling
+// it HERE rather than editing them matters for two reasons:
+//
+//   * Not every backslash-joined string is a filesystem path. chatsrv.cpp:878 builds a
+//     REGISTRY key the same way, where '\' is correct and must not be touched. A blanket
+//     source edit would corrupt it.
+//   * Translating at the boundary keeps the engine sources byte-identical to the Windows
+//     build, so the Windows oracle cannot be broken by a portability edit that only the
+//     macOS build needs. Backslash-as-separator is a platform semantic, which makes it
+//     the shim's job by definition.
+//
+// Applied at every point where a path reaches the OS: GetFileAttributes and DeleteFile
+// here, CFile::Open in gdishim.h, and the directory walk in io.h.
+#define NATIVE_PATH_MAX 1024
+static inline const char* NativePath(const char* p, char* buf, size_t n) {
+    if (!p) return p;
+    size_t i = 0;
+    for (; p[i] && i + 1 < n; i++) buf[i] = (p[i] == '\\') ? '/' : p[i];
+    buf[i] = '\0';
+    return buf;
+}
+
+// Not every path reaches the OS through a shim function. CAvatarFileStream (avbfile.h)
+// holds a raw FILE* and calls fopen itself, so CFile::Open's translation never sees the
+// avatar file - which is exactly what made LoadAvatar fail while everything else worked.
+// Redirecting fopen catches that and any other direct use in the engine.
+//
+// No recursion: the macro is defined AFTER this function's body has been preprocessed,
+// so the fopen call inside it is still the real one.
+static inline FILE* NativeFopen(const char* path, const char* mode) {
+    char buf[NATIVE_PATH_MAX];
+    if (!path) return (FILE*)0;
+    return fopen(NativePath(path, buf, sizeof(buf)), mode);
+}
+#define fopen(p, m) NativeFopen((p), (m))
+
 static inline DWORD GetFileAttributes(const char* path) {
     struct stat st;
-    if (!path || stat(path, &st) != 0) return INVALID_FILE_ATTRIBUTES;
+    char pbuf[NATIVE_PATH_MAX];
+    if (!path) return INVALID_FILE_ATTRIBUTES;
+    if (stat(NativePath(path, pbuf, sizeof(pbuf)), &st) != 0) return INVALID_FILE_ATTRIBUTES;
     DWORD a = FILE_ATTRIBUTE_NORMAL;
     if (S_ISDIR(st.st_mode)) a |= FILE_ATTRIBUTE_DIRECTORY;
     if (!(st.st_mode & S_IWUSR)) a |= FILE_ATTRIBUTE_READONLY;
     return a;
 }
-static inline BOOL DeleteFile(const char* path) { return path && unlink(path) == 0; }
+static inline BOOL DeleteFile(const char* path) {
+    char pbuf[NATIVE_PATH_MAX];
+    return path && unlink(NativePath(path, pbuf, sizeof(pbuf))) == 0;
+}
 
 // _splitpath / _makepath - MSVC path helpers. Real implementations: avatar.cpp
 // uses _splitpath to derive an avatar name from a filename, so a stub would break

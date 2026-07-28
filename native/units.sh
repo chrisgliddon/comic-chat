@@ -13,11 +13,12 @@
 
 # Everything except a main(). Ordered roughly by layer.
 NATIVE_UNITS="avbdump posedump ojson oracleseed
-              nativeglue nativeapp glyphtable glyphtable_cdc
+              nativeglue nativeapp glyphtable glyphtable_cdc stringtable
               vector2d bbox arc spline splinutl traj
               dib avbfile avatar backdrop avatario textpose
               format fonts balloon panel pageview
-              chatdoc histent protsupp userinfo doskey urlutil sjis2jis"
+              chatdoc histent protsupp userinfo doskey urlutil sjis2jis
+              ircproto ircsock query ccommon status"
 
 # Entry points, each linked against the set above.
 #   oracleharness -> native/build/harness   (corpus replay + every --dump mode)
@@ -33,7 +34,7 @@ native_stage() {
     for c in avbmain posemain glyphmain nativeglue nativeapp; do
         ln -sf "$PWD/native/$c.cpp" "native/stage/$c.cpp"
     done
-    for c in glyphtable glyphtable_cdc; do
+    for c in glyphtable glyphtable_cdc stringtable; do
         ln -sf "$PWD/native/shim/$c.cpp" "native/stage/$c.cpp"
     done
 }

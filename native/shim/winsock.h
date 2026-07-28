@@ -93,4 +93,12 @@ inline void WSASetLastError(int e) { errno = e; }
 #define WSAVERSION          0x0101
 #define MAKEWORD_WS(a, b)   MAKEWORD(a, b)
 
+// NOTE on in_addr: Winsock exposes the address through a nested S_un union and then
+// defines `s_addr` as a macro for `S_un.S_addr`. BSD's in_addr has only `s_addr`. So the
+// portable spelling is `.s_addr`, which works on BOTH platforms - there is nothing to
+// shim here, and the two engine sites writing `.S_un.S_addr` were changed instead.
+
+#define MB_PRECOMPOSED  0x00000001
+#define MB_COMPOSITE    0x00000002
+
 #endif // NATIVE_SHIM_WINSOCK_H

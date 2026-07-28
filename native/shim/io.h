@@ -51,8 +51,12 @@ static inline void _oracleFillFindData(struct _finddata_t* fd, const std::string
 
 static inline long _findfirst(const char* pattern, struct _finddata_t* fd) {
     if (!pattern || !fd) return -1L;
+    // Normalise separators before splitting: the split below already tolerates a
+    // backslash before the filename, but the DIRECTORY half is handed to opendir, which
+    // does not. See NativePath in win32types.h for why this is the shim's job.
     std::string p(pattern);
-    size_t slash = p.find_last_of("/\\");
+    for (size_t i = 0; i < p.size(); i++) if (p[i] == '\\') p[i] = '/';
+    size_t slash = p.find_last_of("/");
     std::string dir  = (slash == std::string::npos) ? "." : p.substr(0, slash);
     std::string glob = (slash == std::string::npos) ? p   : p.substr(slash + 1);
     if (dir.empty()) dir = "/";
