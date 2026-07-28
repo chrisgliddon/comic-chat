@@ -249,6 +249,66 @@ static ojson::Value CaptureOneFont(CDC& dc, int lfHeight, BOOL italic, const cha
     return v;
 }
 
+// Captures the font the DC ALREADY HOLDS, selecting nothing. Same shape as
+// CaptureOneFont so the native table can load it as an ordinary entry, but the face name
+// and height are read back from the DC rather than requested, because the whole point is
+// that we do not know what they are.
+//
+// Why it exists: CLabel::WidestWord measures without selecting a font, and its result
+// feeds balloon width. See the note at the call site.
+static ojson::Value CaptureCurrentFont(CDC& dc, const char* role) {
+    TEXTMETRIC tm;
+    dc.GetTextMetrics(&tm);
+
+    char face[LF_FACESIZE];
+    if (!dc.GetTextFace(LF_FACESIZE, face)) face[0] = '\0';
+
+    // No LOGFONT to report a requested height from, so record the height GDI actually
+    // realised. Negative, matching the lfHeight convention of the other entries: the
+    // native table matches on |lfHeight|, so the sign must not flip the match.
+    int realisedHeight = -(tm.tmHeight - tm.tmInternalLeading);
+
+    ojson::Value v = ojson::Value::Obj();
+    v.Set("role", ojson::Value::Str(role));
+    v.Set("faceName", ojson::Value::Str(face));
+    v.Set("lfHeight", ojson::Value::Int(realisedHeight));
+    v.Set("lfItalic", ojson::Value::Int(tm.tmItalic ? 1 : 0));
+    v.Set("tmHeight", ojson::Value::Int(tm.tmHeight));
+    v.Set("tmAscent", ojson::Value::Int(tm.tmAscent));
+    v.Set("tmDescent", ojson::Value::Int(tm.tmDescent));
+    v.Set("tmInternalLeading", ojson::Value::Int(tm.tmInternalLeading));
+    v.Set("tmExternalLeading", ojson::Value::Int(tm.tmExternalLeading));
+    v.Set("tmAveCharWidth", ojson::Value::Int(tm.tmAveCharWidth));
+    v.Set("tmMaxCharWidth", ojson::Value::Int(tm.tmMaxCharWidth));
+    v.Set("tmOverhang", ojson::Value::Int(tm.tmOverhang));
+    v.Set("tmCharSet", ojson::Value::Int(tm.tmCharSet));
+
+    ojson::Value advances = ojson::Value::Arr();
+    for (int c = 0x00; c <= 0xFF; c++) {
+        char ch[2] = { (char)c, 0 };
+        CSize ext = dc.GetTextExtent(ch, 1);
+        ojson::Value e = ojson::Value::Obj();
+        e.Set("char", ojson::Value::Int(c));
+        e.Set("advance", ojson::Value::Int(ext.cx));
+        advances.Push(e);
+    }
+    v.Set("glyphAdvances", advances);
+
+    ojson::Value probes = ojson::Value::Arr();
+    for (int i = 0; kExtentProbes[i] != NULL; i++) {
+        int len = (int)strlen(kExtentProbes[i]);
+        CSize ext = dc.GetTextExtent(kExtentProbes[i], len);
+        ojson::Value e = ojson::Value::Obj();
+        e.Set("text", ojson::Value::Str(kExtentProbes[i]));
+        e.Set("length", ojson::Value::Int(len));
+        e.Set("width", ojson::Value::Int(ext.cx));
+        e.Set("height", ojson::Value::Int(ext.cy));
+        probes.Push(e);
+    }
+    v.Set("extentProbes", probes);
+    return v;
+}
+
 static ojson::Value CaptureGlyphs() {
     ojson::Value root = ojson::Value::Obj();
 
@@ -260,6 +320,19 @@ static ojson::Value CaptureGlyphs() {
     // chat.cpp:381 m_iFontHeightBalloon = PointsToTwips(atoi(strDefaultFontHeight)),
     // IDS_DFLT_COMICSPNTSIZE = "12" (chat.rc:2336).
     int balloonHeight = PointsToTwips(12);
+
+    // --- the DC's INCOMING font, before anything is selected ----------------------
+    // Captured first, because selecting anything destroys it. This is not a curiosity:
+    // CLabel::WidestWord (balloon.cpp) never selects a font, and AreaEstimate restores the
+    // DC's previous font immediately before it is called - so WidestWord measures in
+    // whatever the DC came with. Windows reported widestWord=3180 for a string the balloon
+    // font measures at 3885, which is only explicable as a different face, and that value
+    // feeds GetCloudEstimate -> balloon width -> line breaking.
+    //
+    // Recorded under the "stock" role and matched by face+height like any other entry, so
+    // the native shim can model "nothing selected yet" instead of silently continuing to
+    // hold the last pinned font.
+    ojson::Value stockFont = CaptureCurrentFont(dc, "stock");
 
     // --- the legacy top-level `font` object, unchanged in shape --------------------
     // Kept byte-compatible because RULEBOOK 5 and the TS port read it directly; the
@@ -306,6 +379,10 @@ static ojson::Value CaptureGlyphs() {
     // Heights derived exactly as UpdateTitleFonts does, for both panel widths the
     // corpus uses, so the set is complete for the corpus rather than guessed.
     ojson::Value fonts = ojson::Value::Arr();
+    // The stock entry, captured at the top of this function before anything was selected.
+    // First in the array so the native table can use it as the default active font, which
+    // is what "no SelectObject yet" means on the Windows side.
+    fonts.Push(stockFont);
     fonts.Push(CaptureOneFont(dc, balloonHeight, FALSE, "balloon"));
     fonts.Push(CaptureOneFont(dc, balloonHeight, TRUE,  "whisper"));
 

@@ -1,4 +1,7 @@
 #include "stdafx.h"
+#ifdef ORACLE_HARNESS
+#include "oracleseed.h"   // WidestWord records the DC's incoming font (see below)
+#endif
 #include "chat.h"
 
 #include "userinfo.h"
@@ -733,6 +736,22 @@ int CLabel::WidestWord()
 	}
 #endif
 	CDC			*pdc = GetClientDC();
+#ifdef ORACLE_HARNESS
+	// WidestWord never selects a font - unlike AreaEstimate, which selects m_fontI->m_font
+	// and then RESTORES the previous one immediately before this is called. So whatever
+	// this measures with is the DC's incoming font, and Windows reported widestWord=3180
+	// where the native build (still holding Comic Sans MS) reported 3885.
+	//
+	// These two numbers identify the font without needing to record a string: the 'M'
+	// advance and tmHeight together are enough to say whether both platforms are measuring
+	// in the same face at the same size.
+	OracleRecordSeed("WidestWord.dcFont.mWidth", (long)pdc->GetTextExtent("M", 1).cx);
+	{
+		TEXTMETRIC tmDc;
+		if (pdc->GetTextMetrics(&tmDc))
+			OracleRecordSeed("WidestWord.dcFont.tmHeight", (long)tmDc.tmHeight);
+	}
+#endif
 	CSize		sizeExtent;
 	int			iMaxWidth = 0;
 	char		*szEnd, *szStart = m_str;

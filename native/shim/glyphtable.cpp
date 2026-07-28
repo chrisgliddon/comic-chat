@@ -224,11 +224,22 @@ bool GlyphTableLoad(const char* path) {
         }
     }
 
-    // Default active font: the balloon one, so a caller that measures before selecting
-    // gets the size the engine uses most.
+    // Default active font: the STOCK entry when the capture has one - the font a fresh DC
+    // holds before anything is selected. That is what Windows measures with in
+    // CLabel::WidestWord, which selects no font and runs right after AreaEstimate has
+    // restored the DC's previous one. Defaulting to the balloon font instead made
+    // WidestWord 3885 where Windows reported 3180, which widened every balloon.
+    //
+    // Falls back to the balloon entry for a capture predating the stock role, so an older
+    // glyphs.json still loads with the previous behaviour rather than failing.
     g_active = 0;
     for (size_t i = 0; i < g_fonts.size(); i++) {
-        if (g_fonts[i].role == "balloon") { g_active = (int)i; break; }
+        if (g_fonts[i].role == "stock") { g_active = (int)i; break; }
+    }
+    if (g_fonts[(size_t)g_active].role != "stock") {
+        for (size_t i = 0; i < g_fonts.size(); i++) {
+            if (g_fonts[i].role == "balloon") { g_active = (int)i; break; }
+        }
     }
 
     g_loaded = true;
