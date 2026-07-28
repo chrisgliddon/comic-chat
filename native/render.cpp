@@ -207,28 +207,30 @@ void DrawBalloon(CGContextRef c, CBalloon* b, int panelLeft, int panelTop) {
 }
 
 // --- avatar body ------------------------------------------------------------------
-// NOT drawn here yet, deliberately. A body is composited from a head and a torso pose,
-// each optionally with a mask and an aura, in an order that depends on the avatar's
-// TORSOFIRST/TORSOMASK flags (bodycam.cpp:516-577), and the compositing is expressed as
-// GDI raster ops through CPose::Draw -> CDIB::Draw -> StretchDIBits.
+// Drawn by the ENGINE, not here. CBody::Draw dispatches to CBodyDouble/CBodySingle::DrawBody
+// (bodycam.cpp:516-607), which picks the head and torso poses from the pose IDs the corpus
+// pins, computes their rects, honours the flip, and blits mask-then-drawing in the order the
+// avatar's TORSOFIRST/TORSOMASK/HEADMASK flags dictate. All of that reaches the screen
+// through ::StretchDIBits, which native/shim/cgblit.cpp now implements against a CGContext.
 //
-// Reimplementing that here would mean re-deriving logic the engine already has, and the
-// corpus goldens pin the body RECTS but not the compositing. So the right move is to back
-// the shim's blitter with a CGContext and let the engine draw its own bodies - which is
-// the next step, not this one. Until then the body box is outlined so page layout is
-// visible and obviously incomplete rather than silently empty.
+// So the body compositing is the engine's own code path, and this only has to hand it a DC
+// pointing at the right context. Reimplementing it here would have meant re-deriving flag
+// handling and mask semantics that already exist and are already correct.
 void DrawBody(CGContextRef c, CBody* body, int panelLeft, int panelTop) {
     if (!body) return;
-    int l  = panelLeft + body->m_bbox.Left;
-    int r  = panelLeft + body->m_bbox.Right;
-    int t  = panelTop  + body->m_bbox.Top;
-    int bo = panelTop  + body->m_bbox.Bottom;
+
+    // A DC whose only job is to carry the context. Painting members are no-ops in the shim
+    // except the blitter, which is all a body needs.
+    CDC dc;
+    dc.m_cgCtx = (void*)c;
+
     CGContextSaveGState(c);
-    SetStroke(c, RGB(190, 190, 190));
-    CGContextSetLineWidth(c, 15.0);
-    CGFloat dash[2] = { 60, 60 };
-    CGContextSetLineDash(c, 0, dash, 2);
-    CGContextStrokeRect(c, CGRectMake(l, bo, r - l, t - bo));
+    // CBody::Draw works in panel-relative coordinates (its m_bbox is panel-relative and
+    // DrawBody passes SRECTToRECT(m_bbox) straight through), so the panel origin is applied
+    // as a transform rather than added at every call site.
+    CGContextTranslateCTM(c, panelLeft, panelTop);
+    POINT ul; ul.x = 0; ul.y = 0;
+    body->Draw(&dc, &ul, NULL);
     CGContextRestoreGState(c);
 }
 

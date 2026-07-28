@@ -18,8 +18,8 @@ NATIVE_UNITS="avbdump posedump ojson oracleseed
               dib avbfile avatar backdrop avatario textpose
               format fonts balloon panel pageview
               chatdoc histent protsupp userinfo doskey urlutil sjis2jis
-              ircproto ircsock query ccommon status
-              render"
+              ircproto ircsock query ccommon status bodycam
+              render cgblit"
 
 # Entry points, each linked against the set above.
 #   oracleharness -> native/build/harness   (corpus replay + every --dump mode)
@@ -39,7 +39,7 @@ native_stage() {
     done
     ln -sf "$PWD/native/render.cpp" "native/stage/render.cpp"
     ln -sf "$PWD/native/render.h"   "native/stage/render.h"
-    for c in glyphtable glyphtable_cdc stringtable; do
+    for c in glyphtable glyphtable_cdc stringtable cgblit; do
         ln -sf "$PWD/native/shim/$c.cpp" "native/stage/$c.cpp"
     done
 }

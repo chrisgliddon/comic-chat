@@ -48,6 +48,21 @@
 #define WHITENESS       0x00FF0062
 #define DSTINVERT       0x00550009
 #define MERGECOPY       0x00C000CA
+// MERGEPAINT (~src | dst) is the mask half of GDI's transparent-blit pair; bodycam.cpp uses
+// it for every avatar mask and aura. See native/shim/cgblit.cpp for how the pair is
+// translated to an alpha composite.
+#define MERGEPAINT      0x00BB0226
+// Binary raster ops (SetROP2). bodycam.cpp XORs its cursor crosshair so the second draw
+// erases the first - a no-op backend leaves the crosshair painted, which is a cosmetic
+// artefact of the body-cam window and not on any drawing path the page render uses.
+#define R2_BLACK        1
+#define R2_NOT          6
+#define R2_XORPEN       7
+#define R2_COPYPEN      13
+#define R2_WHITE        16
+// PALETTERGB asks GDI to match the nearest palette entry. macOS is true colour, so it is
+// the identity - which is also what RGB() means here.
+#define PALETTERGB(r, g, b)  RGB(r, g, b)
 #define PATCOPY         0x00F00021
 
 #define NULLREGION      1
@@ -379,9 +394,20 @@ inline DWORD   SizeofResource(HINSTANCE, HRSRC) { return 0; }
 // CDC for why measurement is treated differently.
 inline int SetDIBitsToDevice(HDC, int, int, DWORD, DWORD, int, int, UINT, UINT,
                              const void*, const BITMAPINFO*, UINT) { return 0; }
-inline int StretchDIBits(HDC, int, int, int, int, int, int, int, int,
-                         const void*, const BITMAPINFO*, UINT, DWORD) { return 0; }
+// Defined out-of-line in native/shim/cgblit.cpp: it needs Core Graphics, and this header
+// is included by all ~35 translation units. A DC with no CGContext still draws nothing, so
+// the oracle path is unaffected.
+int StretchDIBits(HDC hdc, int xDst, int yDst, int wDst, int hDst,
+                  int xSrc, int ySrc, int wSrc, int hSrc,
+                  const void* bits, const BITMAPINFO* bmi, UINT usage, DWORD rop);
 inline int SetStretchBltMode(HDC, int) { return 0; }
+// CreateDIBSection allocates a bitmap whose bits the caller writes directly. bodycam.cpp
+// uses it for the body-cam window's offscreen buffer. Reports failure: no window exists, and
+// handing back a buffer with no way to present it would be a lie the caller cannot detect.
+inline void* CreateDIBSection(HDC, const BITMAPINFO*, UINT, void** ppvBits, HANDLE, DWORD) {
+    if (ppvBits) *ppvBits = 0;
+    return 0;
+}
 inline int GetDeviceCaps(HDC, int) { return 0; }
 #define BLACKONWHITE     1
 #define WHITEONBLACK     2
@@ -554,7 +580,26 @@ public:
     // measurement, and a DC that is never given a font at all is only used for
     // painting. A wrong font is caught at SelectObject time instead.
     CDC() : m_nDcMapMode(MM_TEXT), m_hDC(0), m_bPrinting(FALSE), m_pinnedFont(TRUE),
-            m_pCurFont(0) {}
+            m_pCurFont(0), m_nRop2(13 /*R2_COPYPEN*/), m_cgCtx(0),
+            m_pendMaskBits(0), m_pendMaskInfo(0),
+            m_pendMaskX(0), m_pendMaskY(0), m_pendMaskW(0), m_pendMaskH(0) {
+        // GetSafeHdc() has to hand back something the global GDI entry points can turn
+        // back into this object, because CDIB::Draw goes through ::StretchDIBits(HDC,...)
+        // rather than a CDC member. The CDC pointer IS the handle here - there is no real
+        // GDI object to refer to, and inventing a handle table would buy nothing.
+        m_hDC = (void*)this;
+    }
+
+    // Where painting goes, or NULL for a DC that only measures. The oracle harness never
+    // sets this, which is what keeps the 50 goldens out of reach of any drawing change.
+    void* m_cgCtx;                  // CGContextRef, as void* to keep this header framework-free
+
+    // GDI has no alpha: a transparent sprite is blitted as MERGEPAINT(mask) then
+    // SRCAND(drawing) - see NativeStretchDIBits. The mask arrives first, so it is held
+    // here until the drawing that consumes it turns up.
+    const void*       m_pendMaskBits;
+    const BITMAPINFO* m_pendMaskInfo;
+    int m_pendMaskX, m_pendMaskY, m_pendMaskW, m_pendMaskH;
     // The font currently selected, so SelectObject can return the PREVIOUS one - which
     // is the whole mechanism callers use to restore it. Returning the newly selected font
     // instead (as this did) makes every save/restore pair a no-op, and that is why
@@ -569,6 +614,12 @@ public:
     // face name made doVKern 0, so m_leading was 0 instead of -53 and m_lineHeight 345
     // instead of 292 - which changed balloon width, line count and every balloon spline
     // in the corpus.
+    // SetROP2 returns the previous mode. Recorded but not honoured: the only user is the
+    // body-cam crosshair (see R2_XORPEN above).
+    int SetROP2(int mode) { int old = m_nRop2; m_nRop2 = mode; return old; }
+    int GetROP2() const { return m_nRop2; }
+    int m_nRop2;
+
     int GetTextFace(int n, LPTSTR buf) const;
     int GetTextFace(CString& s) const;
     CPalette* GetCurrentPalette() const { return 0; }

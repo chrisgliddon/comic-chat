@@ -416,6 +416,14 @@ public:
     // bodycam.cpp's overrides call the base implementation (CWnd::OnNcDestroy() and
     // CWnd::OnEnterIdle(...)), so these must exist as members, not just as map entries.
     void OnNcDestroy() {}
+    // CWnd::Create - creating a real window. Reports failure; there is no window server
+    // involvement in this build, and the AppKit shell will own its own windows rather than
+    // going through CWnd.
+    BOOL Create(LPCTSTR, LPCTSTR, DWORD, const RECT&, CWnd*, UINT, void* = 0) { return FALSE; }
+    BOOL CreateEx(DWORD, LPCTSTR, LPCTSTR, DWORD, int, int, int, int, HWND, HMENU, void* = 0) { return FALSE; }
+    // Mouse capture as a CWnd member. CWnd already declares IsWindow/IsWindowEnabled and
+    // a static GetFocus above, so only SetCapture is missing.
+    CWnd* SetCapture() { return 0; }
     void OnEnterIdle(UINT, CWnd*) {}
     void OnKeyDown(UINT, UINT, UINT) {}
     void OnKeyUp(UINT, UINT, UINT) {}
@@ -1080,6 +1088,11 @@ inline BOOL SHGetPathFromIDList(LPITEMIDLIST, LPSTR) { return FALSE; }
 inline CWinApp* AfxGetApp() { return 0; }
 inline CWnd* AfxGetMainWnd() { return 0; }
 inline BOOL IsWindow(HWND) { return FALSE; }
+// Focus and capture as GLOBALS, distinct from the CWnd members: bodycam.cpp calls both
+// spellings, and ::SetFocus takes the window it is restoring focus to.
+inline HWND SetFocus(HWND) { return (HWND)0; }
+inline BOOL ReleaseCapture() { return FALSE; }
+inline HWND GetCapture() { return (HWND)0; }
 inline LPSTR CharPrev(LPCSTR start, LPCSTR cur) { return (LPSTR)(cur > start ? cur - 1 : start); }
 
 // Cursor and shell entry points, reached from urlutil.cpp's URL launcher. All inert:

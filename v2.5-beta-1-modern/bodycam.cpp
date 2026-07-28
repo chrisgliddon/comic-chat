@@ -372,7 +372,7 @@ void CBodyCam::OnLButtonUp(UINT nFlags, CPoint point)
 		else
 			GetDefaultProto()->UpdateStatus();
 		if (m_bGainedFocusImplicitly && ::GetFocus () == m_hWnd && 
-				(m_hwndTookFocusFrom == NULL || IsWindow (m_hwndTookFocusFrom)))
+				(m_hwndTookFocusFrom == NULL || ::IsWindow (m_hwndTookFocusFrom)))
 			::SetFocus (m_hwndTookFocusFrom);
 		m_bGainedFocusImplicitly = FALSE;
 		m_hwndTookFocusFrom = NULL;
@@ -577,7 +577,10 @@ RECT CBodyDouble::DrawBody(CDC *dc, RECT &clientRect, BOOL drawNimbus) {
 
 void CBodyDouble::Draw(CDC *dc, POINT *ul, RECT *dmgRect) {
 	// for now, ignore ul and dmgRect
-	DrawBody(dc, SRECTToRECT(m_bbox), TRUE);
+	// DrawBody takes RECT& (non-const) and SRECTToRECT returns by value, so the temporary
+	// needs a name; MSVC allowed it to bind directly.
+	RECT rcBody = SRECTToRECT(m_bbox);
+	DrawBody(dc, rcBody, TRUE);
 }
 
 void CBodySingle::FlipBodyBox(RECT &fullBox) {
@@ -612,7 +615,8 @@ RECT CBodySingle::DrawBody(CDC *dc, RECT &clientRect, BOOL drawNimbus) {
 }
 
 void CBodySingle::Draw(CDC *dc, POINT *ul, RECT *dmgRect) {
-	DrawBody(dc, SRECTToRECT(m_bbox), TRUE);
+	RECT rcBody = SRECTToRECT(m_bbox);   // see CBodyDouble::Draw
+	DrawBody(dc, rcBody, TRUE);
 }
 
 
