@@ -24,6 +24,11 @@
 #include "mfcshim.h"
 #include "gdishim.h"
 #include "richedit.h"
+// CAsyncSocket's signatures use SOCKADDR, so this header must be self-sufficient in
+// it. stdafx.h happens to include winsock.h too, but AFTER this file - relying on
+// that order is the trap that has already cost several rounds here, since a type
+// declared later in the chain breaks every TU at once.
+#include "winsock.h"
 
 // --- message maps: declarations vanish -------------------------------------
 #define DECLARE_MESSAGE_MAP()
@@ -981,6 +986,17 @@ public:
     int Send(const void*, int, int = 0) { return -1; }
     int Receive(void*, int, int = 0) { return -1; }
     void Close() {}
+    // GetSockName/GetPeerName report failure: nothing is connected, and ircproto.cpp
+    // treats a failure as "no local address yet" and returns 0 rather than proceeding
+    // with garbage.
+    BOOL GetSockName(SOCKADDR*, int*) { return FALSE; }
+    BOOL GetPeerName(SOCKADDR*, int*) { return FALSE; }
+    BOOL AsyncSelect(long = 0) { return FALSE; }
+    BOOL IOCtl(long, DWORD*) { return FALSE; }
+    BOOL ShutDown(int = 0) { return FALSE; }
+    BOOL Listen(int = 5) { return FALSE; }
+    BOOL Bind(UINT, LPCTSTR = 0) { return FALSE; }
+    BOOL Accept(CAsyncSocket&, SOCKADDR* = 0, int* = 0) { return FALSE; }
 };
 
 // --- Win32 API surface reached from headers --------------------------------

@@ -162,6 +162,41 @@ bool GlyphTableLoad(const char* path) {
                         "  shout measurements will abort. Re-capture with --glyphs.\n", p);
     }
 
+    // The cFontInfo scalars live ONLY on the legacy top-level `font` object: the
+    // multi-font capture emits per-font metrics and advances, but CFontInfo is derived
+    // once for the balloon font and was never added to the `fonts` elements. So when the
+    // array branch is taken above, nothing has read them yet and every entry's
+    // m_lineHeight is 0 - which silently zeroed all five, and glyphmain caught it.
+    //
+    // Reading them from the legacy object is correct rather than a patch: that object IS
+    // the balloon font (same face, same lfHeight -240), so it is the same source the
+    // capture would write into fonts[0]. Doing it here also avoids re-freezing the table,
+    // which would cost a Windows CI run to regenerate data we already hold.
+    if (!g_fonts.empty() && g_fonts[0].m.m_lineHeight == 0) {
+        const ojson::Value* legacy = root.Find("font");
+        if (legacy) {
+            FontEntry le;
+            std::string lerr;
+            if (ReadFont(*legacy, le, lerr) && le.m.m_lineHeight != 0) {
+                // Matched on font identity (face, lfHeight, italic), NOT on role: the
+                // legacy object carries `role: null`, so comparing roles matched nothing
+                // and left the scalars zeroed. Identity is also the right key - it is
+                // what FindFont uses, and it is what determines the advances.
+                for (size_t i = 0; i < g_fonts.size(); i++) {
+                    if (g_fonts[i].face == le.face
+                        && g_fonts[i].m.lfHeight == le.m.lfHeight
+                        && !g_fonts[i].m.lfItalic == !le.m.lfItalic) {
+                        g_fonts[i].m.m_leading           = le.m.m_leading;
+                        g_fonts[i].m.m_baseAdd           = le.m.m_baseAdd;
+                        g_fonts[i].m.m_lineHeight        = le.m.m_lineHeight;
+                        g_fonts[i].m.m_continuationWidth = le.m.m_continuationWidth;
+                        g_fonts[i].m.m_topOffset         = le.m.m_topOffset;
+                    }
+                }
+            }
+        }
+    }
+
     // The cFontInfo scalars are only captured on the balloon entry (the engine derives
     // the other CFontInfos with different leading/baseAdd), so copy them across for
     // callers that ask the active font. They are a property of the balloon font.
