@@ -89,15 +89,48 @@ Two shim decisions follow directly from that and should not be relaxed:
   measuring live reintroduces exactly the platform dependence the frozen table
   exists to remove (RULEBOOK 5).
 
-## Milestones
+## Milestone 1: PASSED — `--avb` reproduces all 33 goldens byte-for-byte
 
-1. **`--avb` natively** — the first real gate, and the reason the engine-core set
-   above is what it is. It decodes all 32 ComicArt assets and CRCs 13.8 MB of
-   pixels *without drawing anything*, so it runs with the GDI stubs in place and
-   can be diffed against the 33 frozen `oracle/avb/*.golden.json`. Byte-identical
-   output there proves the shim's type widths, packing, and zlib framing in one
-   shot. Blocked on: the project-header long tail (`CCNotif`, `CHARFORMAT`,
-   `FindResource`, `Wininet.H`).
+`native/verify-avb.sh` builds the native dump and diffs it against the frozen
+Windows goldens. Current result: **matched 33, mismatched 0.**
+
+That single test covers 32 assets, 552 poses, 1612 decoded image slots and ~13.8 MB
+of hashed pixels, and it confirms:
+
+- **Integer widths and struct packing.** `avbfile.h` typedefs `AVBINT32` from
+  `ULONG` inside `#pragma pack(push, 1)` and memcpys the record structs straight
+  out of the file. Had `ULONG` been `unsigned long` (8 bytes here, 4 on Win32),
+  every offset in every asset would have been read from the wrong bytes.
+- **zlib framing, the ditto-optimisation, and the 2-bpp maskedmono/dualmask
+  expansion** — the paths that turn 745 stored images into 1612 decoded slots.
+- **`DIBStorageWidth`'s sub-byte rounding** and the row-masked pixel hash.
+- **`COLORREF` channel order** surviving the port, via the palette CRCs.
+
+The comparison is strong because both sides run the *same* dump code
+(`oracle/harness/avbdump.cpp`, extracted from the harness for exactly this reason):
+a match cannot be two implementations coincidentally agreeing, and a mismatch is
+attributable to the platform layer rather than to the dump.
+
+One real portability bug surfaced and was fixed in that shared code: it built paths
+with a backslash separator, which Win32 accepts but macOS treats as an ordinary
+filename character — the first native run produced 33 files literally named
+`avbout\anna.json`. Now `/`, which both platforms accept.
+
+Two scaffolding files exist only for this milestone and should shrink, not grow:
+
+- `native/nativeglue.cpp` supplies `theApp` and `cui` as **raw zeroed storage** under
+  the right assembler names, because their real constructors live in `chat.cpp` and
+  `ui.cpp` and pull in the whole MFC application tree. Nothing reads them. When a
+  milestone genuinely needs application state, the answer is a real native
+  application object — not a bigger stub.
+- The same file stubs leaf symbols from files not yet linked (`panel.cpp`'s
+  `CPanelElement`, `bodycam.cpp`'s body classes, `balloon.cpp`'s `randfloat`). Every
+  one **aborts** rather than returning a plausible value. `randfloat` is the sharpest
+  case: it consumes the MSVC LCG whose draw order the corpus goldens pin, so a stub
+  returning `0.0` would silently desynchronise every later panel.
+
+## Remaining milestones
+
 2. **The other no-DC dumps** — `--avatario`, `--avatar-pose`, `--codecs` against
    their frozen goldens. `--textpose` additionally needs the `.rc` string table,
    which has no native equivalent; the frozen textpose golden lists the strings,
@@ -112,7 +145,7 @@ Two shim decisions follow directly from that and should not be relaxed:
 
 ## Honest scope note
 
-Milestones 1–2 are a tractable grind: the errors are shallow and each fix unlocks
+Milestone 2 is a tractable grind: the errors are shallow and each fix unlocks
 several files. Milestone 3 is where the difficulty is concentrated, and milestone 4
 is a from-scratch UI. The ~20k lines of MFC dialogs in the original are mostly
 *not* being ported — a minimal native app needs the main window, the comic view,

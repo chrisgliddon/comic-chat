@@ -107,6 +107,54 @@ inline int _findclose(long handle) {
     return 0;
 }
 
+// ---------------------------------------------------------------------------
+// The Win32 FindFirstFile family, over the same _findfirst machinery above.
+//
+// Provided so that shared code - oracle/harness/avbdump.cpp is compiled for both
+// Windows and macOS - can use one enumeration API rather than being
+// platform-conditional. Same sorted, deterministic order.
+// ---------------------------------------------------------------------------
+typedef struct _WIN32_FIND_DATAA {
+    DWORD dwFileAttributes;
+    FILETIME ftCreationTime, ftLastAccessTime, ftLastWriteTime;
+    DWORD nFileSizeHigh, nFileSizeLow;
+    DWORD dwReserved0, dwReserved1;
+    char  cFileName[260];
+    char  cAlternateFileName[14];
+} WIN32_FIND_DATAA, WIN32_FIND_DATA, *LPWIN32_FIND_DATA;
+
+inline void _oracleFindDataToWin32(const struct _finddata_t* fd, WIN32_FIND_DATA* wfd) {
+    memset(wfd, 0, sizeof(*wfd));
+    // _A_SUBDIR and FILE_ATTRIBUTE_DIRECTORY are different constants; translate
+    // rather than copying, or a directory would look like a normal file.
+    wfd->dwFileAttributes = (fd->attrib & _A_SUBDIR) ? FILE_ATTRIBUTE_DIRECTORY
+                                                     : FILE_ATTRIBUTE_NORMAL;
+    if (fd->attrib & _A_RDONLY) wfd->dwFileAttributes |= FILE_ATTRIBUTE_READONLY;
+    strncpy(wfd->cFileName, fd->name, sizeof(wfd->cFileName) - 1);
+}
+
+inline HANDLE FindFirstFile(const char* pattern, WIN32_FIND_DATA* wfd) {
+    if (!wfd) return INVALID_HANDLE_VALUE;
+    struct _finddata_t fd;
+    long h = _findfirst(pattern, &fd);
+    if (h == -1L) return INVALID_HANDLE_VALUE;
+    _oracleFindDataToWin32(&fd, wfd);
+    return (HANDLE)(intptr_t)h;
+}
+
+inline BOOL FindNextFile(HANDLE h, WIN32_FIND_DATA* wfd) {
+    if (h == INVALID_HANDLE_VALUE || !wfd) return FALSE;
+    struct _finddata_t fd;
+    if (_findnext((long)(intptr_t)h, &fd) != 0) return FALSE;
+    _oracleFindDataToWin32(&fd, wfd);
+    return TRUE;
+}
+
+inline BOOL FindClose(HANDLE h) {
+    if (h == INVALID_HANDLE_VALUE) return FALSE;
+    return _findclose((long)(intptr_t)h) == 0;
+}
+
 #ifndef _access
 #define _access access
 #endif

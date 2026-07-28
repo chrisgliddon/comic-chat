@@ -25,6 +25,9 @@
 // translation unit; chatsrv.h and chatsock.h rely on that rather than including
 // winsock themselves.
 #include "winsock.h"
+// Directory enumeration (FindFirstFile / _findfirst). Needed by the shared Tier-2
+// dump and by backdrop.cpp's art-directory walk.
+#include "io.h"
 
 // chat.h and several other engine headers guard with
 //   #ifndef __AFXWIN_H__
