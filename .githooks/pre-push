@@ -1,0 +1,68 @@
+#!/bin/sh
+# pre-push - refuse to push a CI branch that has not been cleared locally.
+#
+# Pushing to staging or production fires up to four workflows, two on Windows
+# runners. This hook is the enforcement half of scripts/local-ci.sh: it will not let
+# a commit reach a CI branch unless that exact commit was cleared.
+#
+# dev is waved through unconditionally - it has no workflow triggers, so pushing it
+# costs nothing. That is the whole point of the branch model: work freely on dev,
+# pay only when promoting.
+#
+# Lives in .githooks/ (not .git/hooks/) so it is versioned and shared. Activated by:
+#     git config core.hooksPath .githooks
+#
+# Escape hatch: LOCAL_CI_OVERRIDE=1 git push ...
+
+CI_BRANCHES="staging production"
+STAMP=.git/local-ci-pass
+
+while read -r _local_ref local_sha remote_ref _remote_sha; do
+    # A deletion pushes the all-zero sha; nothing to verify.
+    case "$local_sha" in
+        *[^0]*) ;;
+        *) continue ;;
+    esac
+
+    branch=${remote_ref#refs/heads/}
+
+    gated=no
+    for b in $CI_BRANCHES; do
+        [ "$branch" = "$b" ] && gated=yes
+    done
+    [ "$gated" = no ] && continue
+
+    if [ "$LOCAL_CI_OVERRIDE" = 1 ]; then
+        echo "pre-push: LOCAL_CI_OVERRIDE=1 - pushing $branch without local clearance."
+        continue
+    fi
+
+    if [ ! -f "$STAMP" ]; then
+        echo "pre-push: BLOCKED push to '$branch' - no local clearance stamp."
+        echo ""
+        echo "  Pushing $branch spends GitHub Actions minutes (incl. Windows runners)."
+        echo "  Run the local legs first:"
+        echo ""
+        echo "      ./scripts/local-ci.sh"
+        echo ""
+        echo "  Then push again. To bypass: LOCAL_CI_OVERRIDE=1 git push ..."
+        exit 1
+    fi
+
+    cleared=$(head -1 "$STAMP")
+    if [ "$cleared" != "$local_sha" ]; then
+        echo "pre-push: BLOCKED push to '$branch' - clearance is for a different commit."
+        echo ""
+        echo "      cleared: $cleared"
+        echo "      pushing: $local_sha"
+        echo ""
+        echo "  Re-run ./scripts/local-ci.sh on the commit you are promoting."
+        echo "  To bypass: LOCAL_CI_OVERRIDE=1 git push ..."
+        exit 1
+    fi
+
+    echo "pre-push: '$branch' cleared locally at $cleared."
+    sed -n '2,$p' "$STAMP" | sed 's/^/pre-push:   /'
+done
+
+exit 0
