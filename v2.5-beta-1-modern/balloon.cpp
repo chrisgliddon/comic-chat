@@ -718,6 +718,20 @@ int CLabel::AreaEstimate(int *piLen, int *piLineHeight)
 
 int CLabel::WidestWord()
 {
+#ifdef ORACLE_HARNESS
+	// Temporary: what m_str actually contains, byte for byte. WidestWord splits on
+	// non-printable characters, so whether the engine has inserted format markers between
+	// words decides whether this returns one word or many.
+	if (getenv("COMIC_CHAT_DUMP_MSTR")) {
+		fprintf(stderr, "MSTR[%d]: \"", (int)strlen(m_str));
+		for (const char* q = m_str; *q; q++) {
+			unsigned char ch = (unsigned char)*q;
+			if (ch >= 0x20 && ch < 0x7F) fprintf(stderr, "%c", ch);
+			else fprintf(stderr, "\\x%02X", ch);
+		}
+		fprintf(stderr, "\"\n");
+	}
+#endif
 	CDC			*pdc = GetClientDC();
 	CSize		sizeExtent;
 	int			iMaxWidth = 0;

@@ -956,6 +956,16 @@ void CUnitPanel::GetCloudEstimate(CBalloon *balloons[], int nb, int index, RECT&
 	OracleRecordSeed("GetCloudEstimate.maxWidth", (long)maxWidth);
 	OracleRecordSeed("GetCloudEstimate.widestWord", (long)balloon->WidestWord());
 	OracleRecordSeed("GetCloudEstimate.goalWidthRaw", (long)goalWidth);
+	// freeRect is the leading suspect. Working back from the golden, corpus 001's balloon
+	// bbox (203..3418) is exactly freeRect clamped by `startX = freeRect.right - goalWidth`,
+	// which only holds if the Windows freeRect is 203..3418 where the native one is
+	// 60..4800. GetBalloonRect derives it from m_unitWidth and m_borderWidth, so these four
+	// numbers say whether the panel geometry or the clamping is what differs.
+	OracleRecordSeed("GetCloudEstimate.freeRect.left", (long)freeRect.left);
+	OracleRecordSeed("GetCloudEstimate.freeRect.top", (long)freeRect.top);
+	OracleRecordSeed("GetCloudEstimate.freeRect.right", (long)freeRect.right);
+	OracleRecordSeed("GetCloudEstimate.freeRect.bottom", (long)freeRect.bottom);
+	OracleRecordSeed("GetCloudEstimate.arrowX", (long)balloon->m_speaker->m_arrowX);
 #endif
 	// randomly place brect in x, guaranteeing that it overlaps character
 	goalWidth = min(goalWidth+200, maxWidth); // the + N is a fudge factor.  FIX!!!
