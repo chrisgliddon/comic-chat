@@ -31,6 +31,10 @@
 #include <stdarg.h>
 #include <new>
 
+// Forward declarations needed early: both CException::IsKindOf and CObject::IsKindOf
+// take a CRuntimeClass*, and CException is declared before it.
+class CRuntimeClass;
+
 // ---------------------------------------------------------------------------
 // Diagnostics. ASSERT/TRACE vanish, matching the shipped release build.
 // ---------------------------------------------------------------------------
@@ -55,6 +59,11 @@
 class CException {
 public:
     virtual ~CException() {}
+    // Same caveat as CObject::IsKindOf: DECLARE_DYNAMIC is a no-op here so there is
+    // no runtime-class chain to walk, and this reports FALSE. chatdoc.cpp uses it to
+    // distinguish a CFileException from other failures when reporting a save error -
+    // a FALSE sends it down the generic branch, which is the safe direction.
+    BOOL IsKindOf(const CRuntimeClass*) const { return FALSE; }
     virtual const char* What() const { return "CException"; }
 };
 class CMemoryException : public CException {
@@ -113,7 +122,6 @@ inline void AfxThrowUserException()         { throw new CUserException(); }
 // this port touches is either not serialized at all or goes through the .ccc text
 // codec instead (Tier-1 #10), not CArchive.
 // ---------------------------------------------------------------------------
-class CRuntimeClass;   // forward: CObject::IsKindOf takes one
 class CArchive;
 class CFile;     // defined in gdishim.h, which includes this header
 class CString;   // defined below; CArchive's string methods need it

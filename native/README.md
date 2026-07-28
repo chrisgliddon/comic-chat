@@ -17,7 +17,7 @@ That set is the whole `.avb`/DIB asset pipeline (`avbfile` + `dib` + `avatar` +
 geometry core (`vector2d`, `bbox`, `traj`, `arc`, `spline`, `splinutl`) and the
 line-breaking unit (`format`).
 
-Across the whole tree: **26 of 91** `.cpp` files compile. `balloon`, `panel`,
+Across the whole tree: **27 of 91** `.cpp` files compile, now including `chatdoc` — the document model. `balloon`, `panel`,
 `histent` and `fonts` have joined the engine-core set — that is the balloon
 geometry/outline unit and the panel layout unit, which between them own most of the
 Tier-3 goldens. The other 72 are

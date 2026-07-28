@@ -1535,7 +1535,11 @@ CMenu* pMenu)
 
 	// The item always comes after the Get Profile and Get Identity menu items. Try
 	// to find those, and get the next item.
-	for (int nPos = pMenu->GetMenuItemCount () - 1; nPos >= 0; nPos--) {
+	// Hoisted: nPos is READ after this loop (the SetMenuItemVisibility call below),
+	// which the Windows build gets from /Zc:forScope-. Scoping it to the loop would
+	// change behaviour, not just satisfy the compiler.
+	int nPos;
+	for (nPos = pMenu->GetMenuItemCount () - 1; nPos >= 0; nPos--) {
 		int nID = pMenu->GetMenuItemID (nPos);
 		if (nID == ID_GETIDENTITY || nID == ID_MEMBER_GETINFO) {
 			nPos = (nPos == pMenu->GetMenuItemCount () - 1) ? -1 : nPos + 1;

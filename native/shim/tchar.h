@@ -72,11 +72,20 @@ static inline char* _itot(int v, char* buf, int radix) {
 #define _tcsnccmp       strncmp
 #define _tcsnccnt       strlen
 
-#define _mbschr(s, c)   strchr((const char*)(s), (int)(c))
-#define _mbsrchr(s, c)  strrchr((const char*)(s), (int)(c))
+// _mbschr/_mbsrchr take and return `unsigned char*` in MSVC, not `char*`. Macros
+// over strchr returned char*, which the engine then assigned to an UCHAR* - and
+// clang rejects that conversion between plain char and unsigned char pointers.
+// Inline functions with the real signatures instead.
+static inline unsigned char* _mbschr(const unsigned char* s, unsigned int c) {
+    return (unsigned char*)strchr((const char*)s, (int)c);
+}
+static inline unsigned char* _mbsrchr(const unsigned char* s, unsigned int c) {
+    return (unsigned char*)strrchr((const char*)s, (int)c);
+}
 #define _mbsinc(s)      ((s) + 1)
 #define _mbsdec(a, b)   ((b) > (a) ? (b) - 1 : (a))
 #define _mbslen         strlen
+#define _mbspbrk(s, set) strpbrk((const char*)(s), (const char*)(set))
 #define _mbsstr         strstr
 #define _mbclen(s)      1
 #define _ismbblead(c)   0

@@ -338,6 +338,8 @@ typedef struct tagTOOLINFO {
 } TOOLINFO, *LPTOOLINFO;
 
 class CMenuFwd;
+class CScrollBar;   // CWnd::OnVScroll/OnHScroll take one
+
 class CCmdUI {
 public:
     UINT m_nID;
@@ -372,11 +374,29 @@ public:
     virtual BOOL PreTranslateMessage(MSG*) { return FALSE; }
     BOOL IsWindowVisible() const { return FALSE; }
     BOOL IsWindowEnabled() const { return FALSE; }
-    virtual void OnMouseMove(UINT, CPoint) {}
-    virtual void OnLButtonDown(UINT, CPoint) {}
-    virtual void OnLButtonUp(UINT, CPoint) {}
-    virtual void OnRButtonDown(UINT, CPoint) {}
-    virtual void OnRButtonUp(UINT, CPoint) {}
+    // afx_msg handlers: NOT virtual, matching MFC. They are dispatched through the
+    // message map, so a derived class's handler hides rather than overrides. Making
+    // them virtual put every derived handler in a vtable that then demanded a
+    // definition - CRtfCtrl's four, for one.
+    void OnMouseMove(UINT, CPoint) {}
+    void OnLButtonDown(UINT, CPoint) {}
+    void OnLButtonUp(UINT, CPoint) {}
+    void OnRButtonDown(UINT, CPoint) {}
+    void OnRButtonUp(UINT, CPoint) {}
+    int  OnCreate(LPCREATESTRUCT) { return 0; }
+    void OnDestroy() {}
+    void OnKeyDown(UINT, UINT, UINT) {}
+    void OnKeyUp(UINT, UINT, UINT) {}
+    void OnChar(UINT, UINT, UINT) {}
+    void OnSetFocus(CWnd*) {}
+    void OnKillFocus(CWnd*) {}
+    void OnSize(UINT, int, int) {}
+    void OnTimer(UINT) {}
+    void OnVScroll(UINT, UINT, CScrollBar*) {}
+    void OnHScroll(UINT, UINT, CScrollBar*) {}
+    BOOL EnableToolTips(BOOL = TRUE) { return FALSE; }
+    BOOL GetScrollInfo(int, void*, UINT = 0) { return FALSE; }
+    BOOL SetScrollInfo(int, const void*, BOOL = TRUE) { return FALSE; }
     void Invalidate(BOOL = TRUE) {}
     void UpdateWindow() {}
     BOOL ShowWindow(int) { return TRUE; }
@@ -385,6 +405,8 @@ public:
     void GetWindowText(CString& s) const { s.Empty(); }
     CWnd* GetParent() const { return 0; }
     CWnd* GetDlgItem(int) const { return 0; }
+    CMenu* GetMenu() const { return 0; }
+    void DrawMenuBar() {}
     void SetFocus() {}
     BOOL EnableWindow(BOOL = TRUE) { return TRUE; }
     UINT SetTimer(UINT, UINT, void*) { return 0; }
@@ -429,6 +451,35 @@ class CCoolToolBar : public CToolBar {};
 #define CBRS_ALIGN_RIGHT        0x00000800L
 #define CB_ERR                  (-1)
 #define ID_FILE_NEW             0xE100
+
+// Menu-item flags and mouse-key modifiers.
+#define MF_INSERT               0x00000000L
+#define MF_CHANGE               0x00000080L
+#define MF_APPEND               0x00000100L
+#define MF_DELETE               0x00000200L
+#define MF_REMOVE               0x00001000L
+#define MF_BYCOMMAND            0x00000000L
+#define MF_BYPOSITION           0x00000400L
+#define MF_SEPARATOR            0x00000800L
+#define MF_ENABLED              0x00000000L
+#define MF_GRAYED               0x00000001L
+#define MF_DISABLED             0x00000002L
+#define MF_UNCHECKED            0x00000000L
+#define MF_CHECKED              0x00000008L
+#define MF_STRING               0x00000000L
+#define MF_POPUP                0x00000010L
+#define MK_LBUTTON              0x0001
+#define MK_RBUTTON              0x0002
+#define MK_SHIFT                0x0004
+#define MK_CONTROL              0x0008
+#define TPM_LEFTALIGN           0x0000L
+#define TPM_RIGHTALIGN          0x0008L
+#define TPM_LEFTBUTTON          0x0000L
+#define TPM_RIGHTBUTTON         0x0002L
+#define SC_RESTORE              0xF120
+#define SC_MINIMIZE             0xF020
+#define SC_MAXIMIZE             0xF030
+#define SC_CLOSE                0xF060
 class CStatusBar : public CControlBar {};
 class CDialogBar : public CControlBar {};
 
@@ -504,6 +555,11 @@ public:
     // MFC keeps the view's mapping mode here (NOT on CDC, where an earlier version
     // of this shim wrongly put it - pageview.cpp reads it as a view member).
     int m_nMapMode;
+    // MFC's scroll bookkeeping, all read directly by pageview.cpp. Zeroed: there is
+    // no window, so there is nothing to scroll - and pageview only reads them to
+    // clamp against, so zeros keep it inside bounds rather than sending it off the
+    // end.
+    CSize m_totalLog, m_totalDev, m_pageDev, m_lineDev;
     CScrollView() : m_nMapMode(MM_TEXT) {}
     virtual void OnInitialUpdate() {}
     void SetScrollSizes(int, SIZE, SIZE = CSize(0,0), SIZE = CSize(0,0)) {}
@@ -511,10 +567,14 @@ public:
     CPoint GetScrollPosition() const { return CPoint(0, 0); }
     CPoint GetDeviceScrollPosition() const { return CPoint(0, 0); }
     void ScrollToPosition(POINT) {}
+    void ScrollToDevicePosition(POINT) {}
+    void UpdateBars() {}
     int GetScrollPos(int) const { return 0; }
     int GetScrollLimit(int) const { return 0; }
     SIZE GetTotalSize() const { CSize s(0, 0); return s; }
 };
+
+class CDocTemplate;   // returned by CDocument::GetDocTemplate
 
 class CDocument : public CCmdTarget {
 public:
@@ -528,10 +588,15 @@ public:
     virtual BOOL OnOpenDocument(LPCTSTR) { return TRUE; }
     virtual BOOL OnSaveDocument(LPCTSTR) { return TRUE; }
     virtual void OnCloseDocument() {}
+    void OnFileClose() {}
+    // MFC's list of attached views; chatdoc.cpp walks it. Empty, since no view is
+    // ever attached in a dump.
+    CPtrList m_viewList;
     virtual void DeleteContents() {}
     void SetModifiedFlag(BOOL = TRUE) {}
     void UpdateAllViews(CView*, LONG = 0, CObject* = 0) {}
     CString GetPathName() const { return m_strPathName; }
+    CDocTemplate* GetDocTemplate() const { return 0; }
     CString GetTitle() const { return m_strTitle; }
     void SetTitle(LPCTSTR t) { m_strTitle = t ? t : ""; }
     void SetPathName(LPCTSTR p, BOOL = TRUE) { m_strPathName = p ? p : ""; }
@@ -552,6 +617,8 @@ public:
     virtual void NotifyChanged() {}
     virtual void NotifySaved() {}
     virtual void NotifyClosed() {}
+    virtual void ReportSaveLoadException(LPCTSTR, CException*, BOOL, UINT) {}
+    virtual void OnFrameWindowActivate(BOOL) {}
 };
 class COleServerItem : public CCmdTarget {
 public:
@@ -803,6 +870,14 @@ public:
 };
 class CMenu : public CObject {
 public:
+    // m_hMenu is public in MFC and chatdoc.cpp reads it directly when reparenting
+    // the in-place menu. Always NULL here: there is no menu bar.
+    HMENU m_hMenu;
+    CMenu() : m_hMenu(0) {}
+    void Attach(HMENU h) { m_hMenu = h; }
+    HMENU Detach() { HMENU h = m_hMenu; m_hMenu = 0; return h; }
+    BOOL RemoveMenu(UINT, UINT) { return TRUE; }
+    UINT GetMenuState(UINT, UINT) const { return (UINT)-1; }
     BOOL LoadMenu(UINT) { return FALSE; }
     BOOL CreatePopupMenu() { return FALSE; }
     BOOL DestroyMenu() { return TRUE; }
@@ -829,7 +904,13 @@ public:
     void UpdateRegistry(int = 0) {}
 };
 class COleObjectFactory : public CCmdTarget {};
-class CDocTemplate : public CCmdTarget {};
+class CDocTemplate : public CCmdTarget {
+public:
+    // MFC keeps the in-place server menu handle here; chatdoc.cpp swaps it while
+    // embedded. NULL, since nothing is embedded.
+    HMENU m_hMenuInPlaceServer;
+    CDocTemplate() : m_hMenuInPlaceServer(0) {}
+};
 class CSingleDocTemplate : public CDocTemplate {
 public:
     CSingleDocTemplate(UINT, CRuntimeClass*, CRuntimeClass*, CRuntimeClass*) {}

@@ -572,6 +572,8 @@ public:
     // brings a real backend with it.
     void LPtoDP(POINT*, int = 1) const {}
     void DPtoLP(POINT*, int = 1) const {}
+    void DPtoLP(SIZE*) const {}
+    void LPtoDP(SIZE*) const {}
     void LPtoDP(RECT*) const {}
     void DPtoLP(RECT*) const {}
 
@@ -614,6 +616,7 @@ public:
     void Draw3dRect(const RECT*, COLORREF, COLORREF) {}
     void FrameRect(const RECT*, CBrush*) {}
     BOOL InvertRect(const RECT*) { return TRUE; }
+    BOOL DrawFocusRect(const RECT*) { return TRUE; }
     BOOL CreateCompatibleDC(CDC*) { return TRUE; }
     BOOL DeleteDC() { return TRUE; }
     BOOL SelectClipRgn(CRgn*) { return TRUE; }
@@ -717,5 +720,45 @@ inline BOOL CArchive::ReadString(CString& s) {
     s.Empty();
     return FALSE;
 }
+
+// ---------------------------------------------------------------------------
+// Late additions. Appended rather than slotted into the sections above because
+// insertion-point mistakes in these headers have twice produced a silent no-op
+// (a replace whose anchor did not match) and once a semantic error (m_nMapMode put
+// on CDC instead of CScrollView). Appending is verifiable at a glance.
+// ---------------------------------------------------------------------------
+
+typedef struct tagSCROLLINFO {
+    UINT cbSize, fMask;
+    int  nMin, nMax;
+    UINT nPage;
+    int  nPos, nTrackPos;
+} SCROLLINFO, *LPSCROLLINFO;
+#define SIF_RANGE       0x0001
+#define SIF_PAGE        0x0002
+#define SIF_POS         0x0004
+#define SIF_DISABLENOSCROLL 0x0008
+#define SIF_TRACKPOS    0x0010
+#define SIF_ALL         (SIF_RANGE | SIF_PAGE | SIF_POS | SIF_TRACKPOS)
+
+#define SIZE_RESTORED   0
+#define SIZE_MINIMIZED  1
+#define SIZE_MAXIMIZED  2
+
+#define TTF_IDISHWND    0x0001
+#define TTF_CENTERTIP   0x0002
+#define TTF_RTLREADING  0x0004
+#define TTF_SUBCLASS    0x0010
+#define TTF_NOTBUTTON   0x0080
+#define TTF_ALWAYSTIP   0x0200
+
+// Debug output. Goes to stderr under an opt-in define rather than unconditionally:
+// the engine calls it on paths that run per message, and the dumps' stderr is read
+// by CI.
+#ifdef NATIVE_SHIM_TRACE
+static inline void OutputDebugString(LPCSTR s) { if (s) fputs(s, stderr); }
+#else
+static inline void OutputDebugString(LPCSTR) {}
+#endif
 
 #endif // NATIVE_SHIM_GDISHIM_H
