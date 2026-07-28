@@ -7,10 +7,31 @@ code that calls the engine.
 
 ## Status (2026-07-28)
 
-**All 15 engine-core files compile natively** — `vector2d`, `bbox`, `traj`, `arc`,
-`spline`, `splinutl`, `dib`, `avbfile`, `backdrop`, `avatar`, `avatario`,
-`textpose`, `format`, `userinfo`, `doskey`. Run `native/build.sh` for the live
-table, `native/build.sh <file>` for one file's full errors.
+**Tier-3 is COMPLETE. All 50 frozen Windows goldens reproduce byte-for-byte on
+macOS/arm64:** 33 Tier-2 asset manifests, `avatario`, `avatar-pose`, and all **15
+Tier-3 corpus cases**. `native/verify.sh` runs all three milestones and gates
+`scripts/local-ci.sh`.
+
+The corpus cases are the whole engine *running* — pages, panels, avatar placement,
+pose selection, balloon layout, line breaking, splines and trajectories — compared
+against dumps captured by the MSVC build. Both sides run the same dump code, so a
+match cannot be two implementations coincidentally agreeing.
+
+**34 engine files compile natively**, now including `ircproto`, `ircsock`, `query`,
+`ccommon` (the real UTF-8 / IRC low-level quoting from `artifacts/core`) and `status`.
+
+Five bugs that only the corpus diff could have found, each silently plausible:
+
+| bug | effect |
+|---|---|
+| `srand` escaped the MSVC redirect in `oracleseed.cpp` | whole RNG sequence wrong from draw one |
+| `RAND_MAX` left as macOS's `0x7FFFFFFF` | `randfloat()` ~65536x too small — every random choice collapsed to its minimum |
+| `CDC::GetTextFace` returned `""` | `doVKern` 0, so balloon `m_leading` 0 instead of −53 |
+| `CDC::SelectObject` returned the *new* font | every save/restore a no-op, and `if (pOldFont)` restores SKIPPED |
+| `CharUpperBuff` used `toupper()` | accented letters never uppercased; É is 150 twips vs é's 120 |
+
+The last one is the sharpest illustration of why the oracle exists: nothing about
+the code looks wrong, and the symptom was a balloon 90 twips too narrow.
 
 That set is the whole `.avb`/DIB asset pipeline (`avbfile` + `dib` + `avatar` +
 `backdrop`), the emotion/pose logic (`avatario`, `textpose`, `avatar`), the
@@ -195,8 +216,11 @@ stubbing them to abort would have made milestone 2 unreachable. **Delete both on
 2b. **`--codecs`** against its golden — blocked on `ircsock.cpp` compiling.
    **`--textpose`** needs the `.rc` string table, which has no native equivalent;
    the frozen textpose golden lists the strings, so they can be supplied from data.
-3. **Core Graphics `CDC`** → the 15 corpus goldens. ~150 GDI call sites,
-   `StrokeAndFillPath` path semantics, TWIPS mapping. The real engineering.
+3. ~~**the 15 corpus goldens**~~ — **DONE**, and notably WITHOUT a Core Graphics
+   backend. The corpus dumps compare *computed geometry*, not pixels, so measurement
+   (the frozen glyph table) was the load-bearing part and painting was not needed at
+   all. Core Graphics is still required to put anything on screen, but it is now an
+   app-shell task rather than an oracle one.
 
    **Text measurement is DONE** (`native/shim/glyphtable.{h,cpp}`,
    `glyphtable_cdc.cpp`): `CDC::GetTextExtent`, `GetTextMetrics`, `GetCharWidth` and
