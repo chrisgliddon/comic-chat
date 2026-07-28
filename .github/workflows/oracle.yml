@@ -108,10 +108,12 @@ jobs:
           cl /nologo /EP /C /MT /D "NDEBUG" /D "ORACLE_HARNESS" /D "WIN32" /D "_CONSOLE" /D "_MBCS" /Zc:forScope- /Zc:strictStrings- /I "." /I "..\artifacts\inc" /I "..\oracle\harness" protsupp.cpp > "%TEMP%\protsupp.i" 2> "%TEMP%\protsupp.err"
           echo ---- preprocessor stderr (tail) ----
           powershell -NoProfile -Command "Get-Content \"$env:TEMP\protsupp.err\" -Tail 8"
-          echo ---- expansion around DoChannelDialog ----
-          powershell -NoProfile -Command "$f = Get-Content \"$env:TEMP\protsupp.i\"; $i = ($f | Select-String -Pattern 'DoChannelDialog' | Select-Object -First 1).LineNumber; if ($i) { $f[($i-2)..($i+6)] } else { 'DoChannelDialog not found in the preprocessed output' }"
-          echo ---- is strCurrentChannelTopic defined as a macro at all? ----
-          powershell -NoProfile -Command "Select-String -Path \"$env:TEMP\protsupp.i\" -Pattern 'm_strTopic' | Select-Object -First 5 | ForEach-Object { $_.Line.Trim() }"
+          echo ---- does strCurrentChannelTopic survive UNEXPANDED? ----
+          powershell -NoProfile -Command "Select-String -Path \"$env:TEMP\protsupp.i\" -Pattern 'strCurrentChannelTopic' | Select-Object -First 6 | ForEach-Object { \"$($_.LineNumber): $($_.Line.Trim())\" }"
+          echo ---- any expansion of the macro body? ----
+          powershell -NoProfile -Command "$m = Select-String -Path \"$env:TEMP\protsupp.i\" -Pattern 'currentRoom->m_strTopic'; if ($m) { $m | Select-Object -First 3 | ForEach-Object { \"$($_.LineNumber): $($_.Line.Trim())\" } } else { 'NONE - the macro is not being expanded in this TU' }"
+          echo ---- the definition site (CRoomInfo::DoChannelDialog) ----
+          powershell -NoProfile -Command "$f = Get-Content \"$env:TEMP\protsupp.i\"; $i = ($f | Select-String -Pattern 'CRoomInfo::DoChannelDialog' | Select-Object -First 1).LineNumber; if ($i) { $f[($i-1)..($i+4)] } else { 'definition not found' }"
 
       # glyphs.json is a frozen *input* to the port (RULEBOOK 6: the TS side
       # consumes oracle/glyphs/glyphs.json verbatim and never re-measures
