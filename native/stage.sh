@@ -47,4 +47,12 @@ for f in "$ROOT/oracle/harness"/*.h "$ROOT/oracle/harness"/*.cpp; do
     ln -sf "$f" "$STAGE/$(basename "$f")"
 done
 
+# urlutil.cpp does #include "../artifacts-modern/core/urlutil.cpp" - a relative path
+# that ESCAPES the staging directory. Quoted includes resolve against the including
+# file's directory, which for a staged file is native/stage/, so ".." lands in
+# native/ rather than the repo root. Symlinking the tree there makes the escape
+# resolve without touching the engine source (which needed a separate fix anyway:
+# the path used backslashes).
+ln -sfn "$ROOT/artifacts-modern" "$ROOT/native/artifacts-modern"
+
 echo "staged $(ls "$STAGE" | wc -l | tr -d ' ') files in native/stage"

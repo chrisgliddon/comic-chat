@@ -17,7 +17,7 @@ That set is the whole `.avb`/DIB asset pipeline (`avbfile` + `dib` + `avatar` +
 geometry core (`vector2d`, `bbox`, `traj`, `arc`, `spline`, `splinutl`) and the
 line-breaking unit (`format`).
 
-Across the whole tree: **25 of 91** `.cpp` files compile. `balloon`, `panel`,
+Across the whole tree: **26 of 91** `.cpp` files compile. `balloon`, `panel`,
 `histent` and `fonts` have joined the engine-core set — that is the balloon
 geometry/outline unit and the panel layout unit, which between them own most of the
 Tier-3 goldens. The other 72 are
@@ -144,13 +144,34 @@ with a backslash separator, which Win32 accepts but macOS treats as an ordinary
 filename character — the first native run produced 33 files literally named
 `avbout\anna.json`. Now `/`, which both platforms accept.
 
-Two scaffolding files exist only for this milestone and should shrink, not grow:
+## The native application object
 
-- `native/nativeglue.cpp` supplies `theApp` and `cui` as **raw zeroed storage** under
-  the right assembler names, because their real constructors live in `chat.cpp` and
-  `ui.cpp` and pull in the whole MFC application tree. Nothing reads them. When a
-  milestone genuinely needs application state, the answer is a real native
-  application object — not a bigger stub.
+`native/nativeapp.cpp` now supplies **real** `theApp` and `cui` objects, replacing the
+raw zeroed storage the asset dumps used. The corpus replay reads fonts, art
+directories and flags, so it needs the real thing.
+
+`CChatApp::CChatApp` there is a **documented subset** of `chat.cpp:157-277`. The
+member initialisations are transcribed faithfully — several are load-bearing
+(`m_flags1 = ~0` carries `F1_RTFCOMIC`, `m_charSet`, `m_strDefaultArtDir`). Omitted,
+each for a stated reason: the rules/notifications wiring (function pointers into
+files that don't compile, and the replay drives `ProcessLine` directly), the GUI font
+(no Win32 stock objects, and the frozen table pins the *comics* font anyway), the
+image list, and the service connector.
+
+**The omissions are an experiment with a referee, not an assumption.** The Windows
+oracle links the real `chat.cpp`, so its goldens encode the real constructor. The 35
+goldens still reproducing proves the omitted parts don't affect those dumps; when the
+corpus dump lands, a mismatch will name whichever one matters. That is what makes a
+subset worth attempting rather than making a 2871-line UI file compile first — it
+converts a lift into a measurement.
+
+Its by-value members (`CCDynaRules`, `CCRulesData`, `CCDynaNotifs`, `CCDelayedRules`,
+`CChatServiceConnector`, `CRtfCtrl`) get **no-op constructors** rather than aborts —
+uniquely in this port, because they must succeed for `theApp` to exist at all. Their
+*methods* are undefined, so anything that actually drives those subsystems fails to
+link, naming what it pulled in.
+
+Other scaffolding that should shrink, not grow:
 - The same file stubs leaf symbols from files not yet linked (`panel.cpp`'s
   `CPanelElement`, `bodycam.cpp`'s body classes, `balloon.cpp`'s `randfloat`). Every
   one **aborts** rather than returning a plausible value. `randfloat` is the sharpest

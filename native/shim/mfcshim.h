@@ -34,9 +34,11 @@
 // ---------------------------------------------------------------------------
 // Diagnostics. ASSERT/TRACE vanish, matching the shipped release build.
 // ---------------------------------------------------------------------------
-#define ASSERT(expr)        ((void)0)
-#define ASSERT_VALID(p)     ((void)0)
-#define VERIFY(expr)        ((void)(expr))
+// Variadic: the engine writes ASSERT(f(a, b)), and a single-parameter macro reads
+// that as two arguments and errors.
+#define ASSERT(...)          ((void)0)
+#define ASSERT_VALID(...)    ((void)0)
+#define VERIFY(...)          ((void)(__VA_ARGS__))
 #ifdef NATIVE_SHIM_TRACE
 #define TRACE(...)          ((void)fprintf(stderr, __VA_ARGS__))
 #else

@@ -11,6 +11,10 @@
 
 #include "win32types.h"
 
+// Declared before use below; the real SetLastError lives in gdishim.h, which this
+// header must not depend on.
+static inline void SetLastError_Stub() {}
+
 typedef void* HINTERNET;
 typedef DWORD INTERNET_PORT;
 
@@ -45,5 +49,33 @@ typedef struct {
     LPSTR    lpszExtraInfo;
     DWORD    dwExtraInfoLength;
 } URL_COMPONENTS, *LPURL_COMPONENTS;
+
+// InternetCanonicalizeUrl - urlutil.cpp uses it to normalise a detected URL before
+// launching it. Reports the insufficient-buffer failure that its caller already
+// handles, rather than attempting a canonicalisation: URL escaping rules are exactly
+// the kind of thing that looks simple and is not, and getting them subtly different
+// from WinInet would change which URLs the engine recognises. If the native app ever
+// needs this, NSURL is the right implementation - not a hand-rolled escaper here.
+#ifndef ERROR_INSUFFICIENT_BUFFER
+#define ERROR_INSUFFICIENT_BUFFER  122L
+#endif
+#define ICU_NO_ENCODE       0x20000000
+#define ICU_DECODE          0x10000000
+#define ICU_NO_META         0x08000000
+#define ICU_ENCODE_SPACES_ONLY 0x04000000
+#define ICU_BROWSER_MODE    0x02000000
+#define ICU_ESCAPE          0x80000000
+#ifndef ERROR_BAD_PATHNAME
+#define ERROR_BAD_PATHNAME  161L
+#endif
+#define ERROR_INTERNET_BASE                 12000
+#define ERROR_INTERNET_INVALID_URL          (ERROR_INTERNET_BASE + 5)
+#define ERROR_INTERNET_UNRECOGNIZED_SCHEME  (ERROR_INTERNET_BASE + 6)
+#define ERROR_INTERNET_NAME_NOT_RESOLVED    (ERROR_INTERNET_BASE + 7)
+
+static inline BOOL InternetCanonicalizeUrl(LPCSTR, LPSTR, LPDWORD, DWORD) {
+    SetLastError_Stub();
+    return FALSE;
+}
 
 #endif // NATIVE_SHIM_WININET_H

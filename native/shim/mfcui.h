@@ -926,6 +926,23 @@ inline BOOL SHGetPathFromIDList(LPITEMIDLIST, LPSTR) { return FALSE; }
 inline CWinApp* AfxGetApp() { return 0; }
 inline CWnd* AfxGetMainWnd() { return 0; }
 inline BOOL IsWindow(HWND) { return FALSE; }
+inline LPSTR CharPrev(LPCSTR start, LPCSTR cur) { return (LPSTR)(cur > start ? cur - 1 : start); }
+
+// Cursor and shell entry points, reached from urlutil.cpp's URL launcher. All inert:
+// the native build has no cursor to set, and launching a URL should go through
+// NSWorkspace rather than an emulated ShellExecute. Reporting failure (< 32 is the
+// ShellExecute error convention) keeps the caller's error path intact.
+#define IDC_ARROW           ((LPCSTR)(uintptr_t)32512)
+#define IDC_WAIT            ((LPCSTR)(uintptr_t)32514)
+#define IDC_APPSTARTING     ((LPCSTR)(uintptr_t)32650)
+#define SW_SHOWNOACTIVATE   4
+inline HCURSOR LoadCursor(HINSTANCE, LPCSTR) { return (HCURSOR)0; }
+inline HCURSOR SetCursor(HCURSOR) { return (HCURSOR)0; }
+inline HINSTANCE ShellExecute(HWND, LPCSTR, LPCSTR, LPCSTR, LPCSTR, int) {
+    return (HINSTANCE)(uintptr_t)31;   // < 32 == failure, per ShellExecute's contract
+}
+inline UINT GetWindowsDirectory(LPSTR buf, UINT n) { if (buf && n) buf[0] = 0; return 0; }
+inline UINT GetSystemDirectory(LPSTR buf, UINT n) { if (buf && n) buf[0] = 0; return 0; }
 inline int AfxMessageBox(LPCTSTR, UINT = 0, UINT = 0) { return 0; }
 inline int AfxMessageBox(UINT, UINT = 0, UINT = 0) { return 0; }
 // Global ::SendMessage, distinct from CWnd::SendMessage. format.cpp posts rich-edit

@@ -43,13 +43,13 @@ struct _OracleFindHandle {
     size_t                   pos;
 };
 
-inline void _oracleFillFindData(struct _finddata_t* fd, const std::string& name, unsigned attrib) {
+static inline void _oracleFillFindData(struct _finddata_t* fd, const std::string& name, unsigned attrib) {
     memset(fd, 0, sizeof(*fd));
     fd->attrib = attrib;
     strncpy(fd->name, name.c_str(), sizeof(fd->name) - 1);
 }
 
-inline long _findfirst(const char* pattern, struct _finddata_t* fd) {
+static inline long _findfirst(const char* pattern, struct _finddata_t* fd) {
     if (!pattern || !fd) return -1L;
     std::string p(pattern);
     size_t slash = p.find_last_of("/\\");
@@ -92,7 +92,7 @@ inline long _findfirst(const char* pattern, struct _finddata_t* fd) {
     return (long)(intptr_t)h;
 }
 
-inline int _findnext(long handle, struct _finddata_t* fd) {
+static inline int _findnext(long handle, struct _finddata_t* fd) {
     if (handle == -1L || !fd) return -1;
     _OracleFindHandle* h = (_OracleFindHandle*)(intptr_t)handle;
     if (h->pos >= h->names.size()) return -1;
@@ -101,7 +101,7 @@ inline int _findnext(long handle, struct _finddata_t* fd) {
     return 0;
 }
 
-inline int _findclose(long handle) {
+static inline int _findclose(long handle) {
     if (handle == -1L) return -1;
     delete (_OracleFindHandle*)(intptr_t)handle;
     return 0;
@@ -123,7 +123,7 @@ typedef struct _WIN32_FIND_DATAA {
     char  cAlternateFileName[14];
 } WIN32_FIND_DATAA, WIN32_FIND_DATA, *LPWIN32_FIND_DATA;
 
-inline void _oracleFindDataToWin32(const struct _finddata_t* fd, WIN32_FIND_DATA* wfd) {
+static inline void _oracleFindDataToWin32(const struct _finddata_t* fd, WIN32_FIND_DATA* wfd) {
     memset(wfd, 0, sizeof(*wfd));
     // _A_SUBDIR and FILE_ATTRIBUTE_DIRECTORY are different constants; translate
     // rather than copying, or a directory would look like a normal file.
@@ -133,7 +133,7 @@ inline void _oracleFindDataToWin32(const struct _finddata_t* fd, WIN32_FIND_DATA
     strncpy(wfd->cFileName, fd->name, sizeof(wfd->cFileName) - 1);
 }
 
-inline HANDLE FindFirstFile(const char* pattern, WIN32_FIND_DATA* wfd) {
+static inline HANDLE FindFirstFile(const char* pattern, WIN32_FIND_DATA* wfd) {
     if (!wfd) return INVALID_HANDLE_VALUE;
     struct _finddata_t fd;
     long h = _findfirst(pattern, &fd);
@@ -142,7 +142,7 @@ inline HANDLE FindFirstFile(const char* pattern, WIN32_FIND_DATA* wfd) {
     return (HANDLE)(intptr_t)h;
 }
 
-inline BOOL FindNextFile(HANDLE h, WIN32_FIND_DATA* wfd) {
+static inline BOOL FindNextFile(HANDLE h, WIN32_FIND_DATA* wfd) {
     if (h == INVALID_HANDLE_VALUE || !wfd) return FALSE;
     struct _finddata_t fd;
     if (_findnext((long)(intptr_t)h, &fd) != 0) return FALSE;
@@ -150,7 +150,7 @@ inline BOOL FindNextFile(HANDLE h, WIN32_FIND_DATA* wfd) {
     return TRUE;
 }
 
-inline BOOL FindClose(HANDLE h) {
+static inline BOOL FindClose(HANDLE h) {
     if (h == INVALID_HANDLE_VALUE) return FALSE;
     return _findclose((long)(intptr_t)h) == 0;
 }

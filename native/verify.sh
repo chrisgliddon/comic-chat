@@ -39,7 +39,7 @@ OUT=$BUILD/avbout
 # differ - recordTags and the histograms would be empty.
 
 ./native/stage.sh > /dev/null
-for c in avbmain posemain nativeglue glyphmain; do
+for c in avbmain posemain nativeglue nativeapp glyphmain; do
     ln -sf "$ROOT/native/$c.cpp" "native/stage/$c.cpp"
 done
 
@@ -49,8 +49,13 @@ mkdir -p "$BUILD"
 # userinfo.o: it compiles, but importing it drags in the history and protocol layer
 # (AddAndExecute, GetMembers, the HistoryEntry vtables) for a dump that needs none
 # of it - native/nativeglue.cpp stubs the one symbol it was wanted for.
-ENGINE="avbfile dib avatar backdrop avatario vector2d bbox"
-SHARED="avbdump posedump ojson oracleseed nativeglue"
+# doskey is LINKED rather than stubbed: it compiles, and CChatApp holds a CDosKey
+# by value so its ctor runs.
+# format is linked for CopyFormatting/FreeAndNullFormatting, which CChatApp's
+# member teardown reaches.
+# urlutil is linked for CUrlRec, which format.cpp's URL detection uses.
+ENGINE="avbfile dib avatar backdrop avatario vector2d bbox doskey format urlutil"
+SHARED="avbdump posedump ojson oracleseed nativeglue nativeapp"
 # The measurement layer: the frozen glyph table plus CDC's measurement methods.
 GLYPH="glyphtable glyphtable_cdc"
 DRIVERS="avbmain posemain"

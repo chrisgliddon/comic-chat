@@ -41,6 +41,18 @@
 #define _ftprintf   fprintf
 #define _tfopen     fopen
 #define _ttoi       atoi
+// _itot writes an integer into a buffer in the given radix. Real implementation:
+// urlutil.cpp uses it to build a temp-file name, and a stub would produce colliding
+// names rather than merely doing nothing.
+#include <stdio.h>
+static inline char* _itot(int v, char* buf, int radix) {
+    if (!buf) return buf;
+    if (radix == 16) sprintf(buf, "%x", v);
+    else if (radix == 8) sprintf(buf, "%o", v);
+    else sprintf(buf, "%d", v);
+    return buf;
+}
+#define _itoa_shim  _itot
 #define _tcstol     strtol
 #define _tcstod     strtod
 
@@ -48,6 +60,18 @@
 // build actually runs (CP-1252 and friends), the plain str* functions are
 // equivalent; the CJK double-byte path is a documented open question in the plan
 // (Tier-1 #13) and is not reached by anything the oracle covers.
+// Character classification and navigation, single-byte (see the note above).
+#define _istpunct(c)    ispunct((unsigned char)(c))
+#define _istspace(c)    isspace((unsigned char)(c))
+#define _istalpha(c)    isalpha((unsigned char)(c))
+#define _istdigit(c)    isdigit((unsigned char)(c))
+#define _istalnum(c)    isalnum((unsigned char)(c))
+#define _totupper(c)    toupper((unsigned char)(c))
+#define _totlower(c)    tolower((unsigned char)(c))
+#define _tcsnccpy       strncpy
+#define _tcsnccmp       strncmp
+#define _tcsnccnt       strlen
+
 #define _mbschr(s, c)   strchr((const char*)(s), (int)(c))
 #define _mbsrchr(s, c)  strrchr((const char*)(s), (int)(c))
 #define _mbsinc(s)      ((s) + 1)

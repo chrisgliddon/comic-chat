@@ -466,3 +466,6 @@ oracle/avb/*.json
 # native/stage.sh; native/build holds object files.
 native/stage/
 native/build/
+# Symlink created by stage.sh so urlutil.cpp's relative include resolves; see the
+# comment there.
+native/artifacts-modern

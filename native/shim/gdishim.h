@@ -228,6 +228,19 @@ inline HBITMAP CreateDIBitmap(HDC, const BITMAPINFOHEADER*, DWORD, const void*, 
 #define DEFAULT_QUALITY         0
 #define DEFAULT_PITCH           0
 #define FF_DONTCARE             0
+#define DEFAULT_GUI_FONT        17
+#define SYSTEM_FONT             13
+#define ANSI_VAR_FONT           12
+#define NULL_BRUSH              5
+#define WHITE_BRUSH             0
+#define BLACK_PEN               7
+#define NULL_PEN                8
+inline void* GetStockObject(int) { return (void*)0; }
+// GetObject copies a GDI object's descriptor out. Zero-fills and reports failure:
+// there is no real HFONT behind any handle here, and the callers (rtfctrl.cpp,
+// chat.cpp's GUI-font setup) check the result.
+inline int GetObject(void*, int n, void* buf) { if (buf && n > 0) memset(buf, 0, (size_t)n); return 0; }
+
 #define FW_NORMAL               400
 #define FW_REGULAR              400
 #define FW_LIGHT                300

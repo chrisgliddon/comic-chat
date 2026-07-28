@@ -32,7 +32,7 @@
 #define LCMAP_LOWERCASE 0x00000100
 #define LCMAP_UPPERCASE 0x00000200
 #define LCMAP_SORTKEY   0x00000400
-inline int LCMapString(DWORD, DWORD flags, LPCSTR src, int srcLen, LPSTR dst, int dstLen) {
+static inline int LCMapString(DWORD, DWORD flags, LPCSTR src, int srcLen, LPSTR dst, int dstLen) {
     if (!src || !dst || dstLen <= 0) return 0;
     int n = (srcLen < 0) ? (int)strlen(src) : srcLen;
     if (n > dstLen) n = dstLen;
@@ -51,26 +51,26 @@ inline int LCMapString(DWORD, DWORD flags, LPCSTR src, int srcLen, LPSTR dst, in
 
 typedef struct _cpinfo { UINT MaxCharSize; BYTE DefaultChar[2]; BYTE LeadByte[12]; } CPINFO;
 
-inline BOOL IsDBCSLeadByteEx(UINT, BYTE) { return FALSE; }
-inline BOOL GetCPInfo(UINT, CPINFO* i) { if (i) { memset(i, 0, sizeof(*i)); i->MaxCharSize = 1; } return TRUE; }
-inline UINT GetACP() { return CP_ACP; }
+static inline BOOL IsDBCSLeadByteEx(UINT, BYTE) { return FALSE; }
+static inline BOOL GetCPInfo(UINT, CPINFO* i) { if (i) { memset(i, 0, sizeof(*i)); i->MaxCharSize = 1; } return TRUE; }
+static inline UINT GetACP() { return CP_ACP; }
 // CharUpperBuff uppercases in place and returns the count processed. balloon.cpp
 // uses it when normalising text for the shout/emphasis heuristics, so this is a real
 // implementation - a no-op would change which balloons get treated as shouting.
 // Single-byte only, consistent with IsDBCSLeadByteEx above.
-inline DWORD CharUpperBuff(LPSTR s, DWORD n) {
+static inline DWORD CharUpperBuff(LPSTR s, DWORD n) {
     if (!s) return 0;
     for (DWORD i = 0; i < n; i++) s[i] = (char)toupper((unsigned char)s[i]);
     return n;
 }
-inline DWORD CharLowerBuff(LPSTR s, DWORD n) {
+static inline DWORD CharLowerBuff(LPSTR s, DWORD n) {
     if (!s) return 0;
     for (DWORD i = 0; i < n; i++) s[i] = (char)tolower((unsigned char)s[i]);
     return n;
 }
-inline int MultiByteToWideChar(UINT, DWORD, LPCSTR, int, void*, int) { return 0; }
-inline int WideCharToMultiByte(UINT, DWORD, const void*, int, LPSTR, int, LPCSTR, LPBOOL) { return 0; }
-inline int CompareStringA(DWORD, DWORD, LPCSTR a, int, LPCSTR b, int) {
+static inline int MultiByteToWideChar(UINT, DWORD, LPCSTR, int, void*, int) { return 0; }
+static inline int WideCharToMultiByte(UINT, DWORD, const void*, int, LPSTR, int, LPCSTR, LPBOOL) { return 0; }
+static inline int CompareStringA(DWORD, DWORD, LPCSTR a, int, LPCSTR b, int) {
     int r = strcmp(a ? a : "", b ? b : "");
     return r < 0 ? 1 : (r == 0 ? 2 : 3);   // CSTR_LESS_THAN / EQUAL / GREATER_THAN
 }

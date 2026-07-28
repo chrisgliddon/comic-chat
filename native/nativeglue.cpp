@@ -19,22 +19,11 @@
 
 #include "stdafx.h"
 
-// Deliberately larger than either class; nothing reads it, and being generous
-// costs a few KB of BSS while a too-small guess would corrupt adjacent symbols if
-// anything ever did write through.
-#define NATIVE_GLUE_STORAGE 65536
-
-namespace {
-alignas(16) char g_theAppStorage[NATIVE_GLUE_STORAGE];
-alignas(16) char g_cuiStorage[NATIVE_GLUE_STORAGE];
-}
-
-// The asm labels give these the exact symbols the engine objects import. Using the
-// real types instead would require their constructors.
-extern "C" {
-__attribute__((used)) void* theApp_ref __asm__("_theApp") = (void*)g_theAppStorage;
-__attribute__((used)) void* cui_ref    __asm__("_cui")    = (void*)g_cuiStorage;
-}
+// theApp and cui now come from native/nativeapp.cpp as REAL objects. This file
+// used to supply them as raw zeroed storage under asm labels, which was enough for
+// the asset dumps (they never read application state) but not for the corpus replay,
+// which needs fonts and art directories. See nativeapp.cpp for what its constructor
+// does and does not reproduce.
 
 // The global palette pair the engine's stdafx.h declares. A default-constructed
 // CPalette is inert (the shim's is a stub), and pageview.cpp only takes its address
@@ -42,6 +31,22 @@ __attribute__((used)) void* cui_ref    __asm__("_cui")    = (void*)g_cuiStorage;
 // graphics backend.
 CPalette   ghPalette;
 LOGPALETTE *gpLogPal = 0;
+
+// iBytesofChar (intl.c:2699) reduces to `if (!g_pMime) return 1;` and g_pMime is the
+// CJK/MIME converter, which the native build never initialises - the double-byte path
+// is the deferred Tier-1 #13 scope question. Both callers (balloon.cpp:196,
+// proppage.cpp:782) are additionally gated behind `GetMime() ?`, so this reproduces
+// the only branch that can be taken here.
+//
+// Defined rather than linked because intl.c does not compile natively yet: it is C,
+// and it collides with the macOS <ctype.h> internals through the shim. If CJK support
+// is ever wanted, this must come from intl.c instead - a 1 for a lead byte would
+// split a character in half mid-line.
+extern "C" int iBytesofChar(BYTE) { return 1; }
+
+// The WinInet DLL handle, defined in chat.cpp. NULL: nothing loads WinInet, and
+// urlutil.cpp checks it before use.
+HINSTANCE g_hinstWinInet = 0;
 
 // These two have trivial types, so they get honest definitions.
 BOOL g_bCanViewUnrated = FALSE;

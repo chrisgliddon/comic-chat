@@ -113,6 +113,11 @@ typedef VARIANT*            LPVARIANT;
 typedef struct tagDISPPARAMS { VARIANTARG* rgvarg; LONG* rgdispidNamedArgs; UINT cArgs, cNamedArgs; } DISPPARAMS;
 typedef struct tagEXCEPINFO { WORD wCode, wReserved; BSTR bstrSource, bstrDescription, bstrHelpFile; DWORD dwHelpContext; void* pvReserved; void* pfnDeferredFillIn; SCODE scode; } EXCEPINFO;
 typedef LONG                DISPID;
+
+// C++ only from here to the end of the OLE block: REFIID is a reference type and
+// IDispatch uses inheritance. The engine's three C files (intl.c, jis2sjis.c,
+// sjis2jis.c) include this header via stdafx.h and need none of it.
+#ifdef __cplusplus
 typedef const GUID&         REFIID;
 typedef const GUID&         REFCLSID;
 // IUnknown/IDispatch must be real (if empty) types, not void: icchat.h declares
@@ -127,6 +132,7 @@ typedef void*               LPSTORAGE;
 typedef void*               LPMONIKER;
 typedef void*               LPBC;
 typedef void*               LPOLEOBJECT;
+#endif // __cplusplus (OLE block)
 
 #ifndef TRUE
 #define TRUE  1
@@ -217,7 +223,7 @@ typedef LONG HRESULT;
 // real race rather than dead scaffolding - cheap to do correctly, so it is.
 #include <pthread.h>
 typedef struct { pthread_mutex_t mtx; int initialised; } CRITICAL_SECTION, *LPCRITICAL_SECTION;
-inline void InitializeCriticalSection(LPCRITICAL_SECTION cs) {
+static inline void InitializeCriticalSection(LPCRITICAL_SECTION cs) {
     pthread_mutexattr_t a;
     pthread_mutexattr_init(&a);
     // Win32 critical sections are recursive; a non-recursive mutex here would
@@ -227,9 +233,9 @@ inline void InitializeCriticalSection(LPCRITICAL_SECTION cs) {
     pthread_mutexattr_destroy(&a);
     cs->initialised = 1;
 }
-inline void EnterCriticalSection(LPCRITICAL_SECTION cs) { if (cs->initialised) pthread_mutex_lock(&cs->mtx); }
-inline void LeaveCriticalSection(LPCRITICAL_SECTION cs) { if (cs->initialised) pthread_mutex_unlock(&cs->mtx); }
-inline void DeleteCriticalSection(LPCRITICAL_SECTION cs) { if (cs->initialised) { pthread_mutex_destroy(&cs->mtx); cs->initialised = 0; } }
+static inline void EnterCriticalSection(LPCRITICAL_SECTION cs) { if (cs->initialised) pthread_mutex_lock(&cs->mtx); }
+static inline void LeaveCriticalSection(LPCRITICAL_SECTION cs) { if (cs->initialised) pthread_mutex_unlock(&cs->mtx); }
+static inline void DeleteCriticalSection(LPCRITICAL_SECTION cs) { if (cs->initialised) { pthread_mutex_destroy(&cs->mtx); cs->initialised = 0; } }
 
 // VirtualProtect: dib.cpp pokes page permissions on its resource path, which is
 // unreachable natively. Reporting success keeps the caller's error handling quiet
@@ -246,7 +252,7 @@ typedef struct _OSVERSIONINFOA {
 #define VER_PLATFORM_WIN32_NT       2
 #define VER_PLATFORM_WIN32_WINDOWS  1
 
-inline BOOL GetVersionEx(LPOSVERSIONINFO v) {
+static inline BOOL GetVersionEx(LPOSVERSIONINFO v) {
     if (!v) return FALSE;
     DWORD keep = v->dwOSVersionInfoSize;
     memset(v, 0, sizeof(*v));
@@ -256,9 +262,9 @@ inline BOOL GetVersionEx(LPOSVERSIONINFO v) {
     v->dwMajorVersion = 10;
     return TRUE;
 }
-inline HINSTANCE LoadLibrary(LPCSTR) { return (HINSTANCE)0; }
-inline BOOL FreeLibrary(HINSTANCE) { return TRUE; }
-inline FARPROC GetProcAddress(HINSTANCE, LPCSTR) { return (FARPROC)0; }
+static inline HINSTANCE LoadLibrary(LPCSTR) { return (HINSTANCE)0; }
+static inline BOOL FreeLibrary(HINSTANCE) { return TRUE; }
+static inline FARPROC GetProcAddress(HINSTANCE, LPCSTR) { return (FARPROC)0; }
 #ifndef STDAPI
 #define STDAPI          extern "C" HRESULT
 #define STDAPI_(t)      extern "C" t
@@ -272,7 +278,7 @@ inline FARPROC GetProcAddress(HINSTANCE, LPCSTR) { return (FARPROC)0; }
 typedef enum tagDVASPECT { DVASPECT_CONTENT = 1, DVASPECT_THUMBNAIL = 2,
                            DVASPECT_ICON = 4, DVASPECT_DOCPRINT = 8 } DVASPECT;
 
-inline BOOL VirtualProtect(void*, size_t, DWORD, PDWORD old) { if (old) *old = PAGE_READWRITE; return TRUE; }
+static inline BOOL VirtualProtect(void*, size_t, DWORD, PDWORD old) { if (old) *old = PAGE_READWRITE; return TRUE; }
 
 #define MAX_PATH        260
 #define _MAX_PATH       260
@@ -381,7 +387,27 @@ typedef struct tagBITMAPFILEHEADER {
 #define FILE_ATTRIBUTE_READONLY  0x00000001
 #define FILE_ATTRIBUTE_DIRECTORY 0x00000010
 #define FILE_ATTRIBUTE_NORMAL    0x00000080
-inline DWORD GetFileAttributes(const char* path) {
+#define FILE_ATTRIBUTE_TEMPORARY 0x00000100
+#define FILE_ATTRIBUTE_HIDDEN    0x00000002
+#define CREATE_NEW               1
+#define CREATE_ALWAYS            2
+#define OPEN_EXISTING            3
+#define OPEN_ALWAYS              4
+#define GENERIC_READ             0x80000000
+#define GENERIC_WRITE            0x40000000
+#define FILE_SHARE_READ          0x00000001
+// CreateFile / CloseHandle / FindExecutable: urlutil.cpp's temp-file and
+// file-association probing. Report failure - there is no file association database
+// here, and NSWorkspace is the right answer if the native app ever needs one.
+static inline HANDLE CreateFile(LPCSTR, DWORD, DWORD, void*, DWORD, DWORD, HANDLE) {
+    return INVALID_HANDLE_VALUE;
+}
+static inline BOOL CloseHandle(HANDLE) { return TRUE; }
+static inline HINSTANCE FindExecutable(LPCSTR, LPCSTR, LPSTR buf) {
+    if (buf) buf[0] = 0;
+    return (HINSTANCE)(uintptr_t)31;   // < 32 == not found, per the Win32 contract
+}
+static inline DWORD GetFileAttributes(const char* path) {
     struct stat st;
     if (!path || stat(path, &st) != 0) return INVALID_FILE_ATTRIBUTES;
     DWORD a = FILE_ATTRIBUTE_NORMAL;
@@ -389,12 +415,12 @@ inline DWORD GetFileAttributes(const char* path) {
     if (!(st.st_mode & S_IWUSR)) a |= FILE_ATTRIBUTE_READONLY;
     return a;
 }
-inline BOOL DeleteFile(const char* path) { return path && unlink(path) == 0; }
+static inline BOOL DeleteFile(const char* path) { return path && unlink(path) == 0; }
 
 // _splitpath / _makepath - MSVC path helpers. Real implementations: avatar.cpp
 // uses _splitpath to derive an avatar name from a filename, so a stub would break
 // avatar enumeration.
-inline void _splitpath(const char* path, char* drive, char* dir, char* fname, char* ext) {
+static inline void _splitpath(const char* path, char* drive, char* dir, char* fname, char* ext) {
     if (drive) drive[0] = 0;
     if (dir) dir[0] = 0;
     if (fname) fname[0] = 0;
@@ -414,7 +440,7 @@ inline void _splitpath(const char* path, char* drive, char* dir, char* fname, ch
     if (ext && dot) strcpy(ext, dot);
 }
 
-inline void _makepath(char* path, const char* drive, const char* dir,
+static inline void _makepath(char* path, const char* drive, const char* dir,
                       const char* fname, const char* ext) {
     if (!path) return;
     path[0] = 0;
@@ -443,10 +469,15 @@ typedef void* HFONT;
 // Forward declarations for the MFC graphics classes. pe.h and friends take CDC*
 // purely as an opaque parameter, so the engine's headers parse with just these -
 // no Core Graphics backend is needed until something actually draws.
+//
+// C++ only: the engine's C files reach this header through stdafx.h and have no use
+// for MFC class names.
+#ifdef __cplusplus
 class CDC;
 class CPalette;
 class CFont;
 class CBitmap;
 class CWnd;
+#endif // __cplusplus
 
 #endif // NATIVE_SHIM_WIN32TYPES_H

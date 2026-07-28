@@ -18,6 +18,7 @@
 #include <math.h>
 
 #include "win32types.h"
+#ifdef __cplusplus
 #include "mfcshim.h"
 #include "gdishim.h"
 #include "mfcui.h"
@@ -28,6 +29,7 @@
 // Directory enumeration (FindFirstFile / _findfirst). Needed by the shared Tier-2
 // dump and by backdrop.cpp's art-directory walk.
 #include "io.h"
+#endif // __cplusplus
 
 // chat.h and several other engine headers guard with
 //   #ifndef __AFXWIN_H__
