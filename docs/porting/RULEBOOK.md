@@ -272,7 +272,20 @@ diverge on font availability, subpixel hinting, platform shaping.
 
 **The frozen table provides:**
 - `font.glyphAdvances`: per-codepoint advance widths for Comic Sans MS at the
-  pinned size (chars 32–126).
+  pinned size, **chars 32–255** (the full single-byte CP-1252 range).
+
+  This was 32–126 until 2026-07-28, which was a hole rather than a limitation:
+  corpus cases 005 and 013 contain `é` (0xE9), `ï` (0xEF) and `ü` (0xFC), so **no
+  port could reproduce those two goldens' line breaking** — the widths were simply
+  absent. The note below about out-of-range characters being "deferred" is what hid
+  it; these are accented letters on the happy path, not CJK.
+- `font.extentProbes`: multi-character strings with their measured `GetTextExtent`
+  widths. **Use these to verify that summing per-character advances reproduces the
+  measured width.** The entire frozen-table strategy depends on that: the engine
+  measures *substrings* while the table stores single characters, so if the font
+  kerned pairs the sum would drift and every line break would be subtly wrong.
+  `tmOverhang` is 0 and GDI does not pair-kern in `GetTextExtent`, so it should
+  hold — the probes are there so the port asserts it instead of assuming it.
 - `font.cFontInfo`: the five `CFontInfo` scalars the engine reads:
   `m_leading=-53`, `m_baseAdd=40`, `m_lineHeight=292`, `m_continuationWidth=180`,
   `m_topOffset=257` (from `balloon.h:47-56`). Pin these as constants in the
@@ -285,8 +298,10 @@ diverge on font availability, subpixel hinting, platform shaping.
 import glyphs from "../../oracle/glyphs/glyphs.json" with { type: "json" };
 const advance = (codepoint: number) => /* lookup in glyphs.glyphAdvances */;
 ```
-The glyph lookup is a `Map<number, number>` built once at module load. For
-characters outside 32–126 (CJK, control codes), see §11 (deferred).
+The glyph lookup is a `Map<number, number>` built once at module load. Characters
+outside **32–255** (i.e. genuinely multi-byte CJK) remain the deferred question in
+§11 — but everything a single MBCS byte can hold is now pinned, so a missing
+advance means a real bug rather than an accepted limitation.
 
 **Pinning test:** the corpus `formatInfo` dump (`rgiLengths`, `rgiWidths`,
 `rgiLeftX`, `rgiStartOffsets`, `bbox`) is the golden for the line-breaker.

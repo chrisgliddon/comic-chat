@@ -198,9 +198,23 @@ static ojson::Value CaptureGlyphs() {
     cfi.Set("m_topOffset", ojson::Value::Int((short)(tm.tmAscent + leading + baseAdd)));
     fontInfo.Set("cFontInfo", cfi);
 
-    // Glyph advance widths for ASCII 0x20-0x7E + common corpus chars
+    // Glyph advance widths for the FULL single-byte range, 0x20-0xFF.
+    //
+    // This used to stop at 0x7E, and the comment claimed "+ common corpus chars"
+    // while capturing none of them. That was a real hole rather than a cosmetic one:
+    // corpus cases 005 and 013 contain e-acute (0xE9), i-diaeresis (0xEF) and
+    // u-diaeresis (0xFC), so NO port could reproduce those two goldens' line
+    // breaking - the widths it needed were simply absent from the frozen table.
+    // RULEBOOK 5 sends out-of-range characters to the deferred CJK question, which
+    // hid the gap: these are CP-1252 accented letters on the happy path, not CJK.
+    //
+    // 0x20-0xFF is the right bound because the engine is an MBCS build indexing
+    // bytes: any single byte it can encounter is covered, and the double-byte path
+    // remains the separate deferred question (Tier-1 #13). 0x7F (DEL) is included
+    // for completeness rather than skipped, so the table has no holes to reason
+    // about.
     ojson::Value advances = ojson::Value::Arr();
-    for (int c = 0x20; c <= 0x7E; c++) {
+    for (int c = 0x20; c <= 0xFF; c++) {
         char ch[2] = { (char)c, 0 };
         CSize ext = dc.GetTextExtent(ch, 1);
         ojson::Value entry = ojson::Value::Obj();
@@ -209,6 +223,42 @@ static ojson::Value CaptureGlyphs() {
         advances.Push(entry);
     }
     fontInfo.Set("glyphAdvances", advances);
+
+    // Multi-character extents, so a port can VERIFY that summing per-character
+    // advances reproduces GetTextExtent rather than assuming it.
+    //
+    // The whole frozen-table strategy rests on that assumption: the engine measures
+    // substrings (format.cpp's line breaker calls GetTextExtent on candidate
+    // fragments), while the table stores single characters. If Comic Sans MS kerned
+    // pairs, or if GDI applied inter-character spacing, the sum would drift from the
+    // measured width and every line break would be subtly wrong.
+    //
+    // tmOverhang is 0 and GDI does not apply pair kerning in GetTextExtent, so the
+    // sum SHOULD hold - but "should" is what oracles are for. Each probe below is a
+    // string plus its measured width; the port asserts sum(advances) == width.
+    // Deliberately includes pairs GDI would kern if it kerned anything (AV, To, Yo),
+    // a repeated-letter run, a spaces-only string, and an accented character from
+    // the corpus.
+    ojson::Value sumChecks = ojson::Value::Arr();
+    static const char* kProbes[] = {
+        "AV", "To", "Yo", "WA", "f.", "il", "mm", "MMM",
+        "   ", "the quick brown fox", "Hello, world!",
+        "caf\xE9", "na\xEFve", "\xFCber",
+        "...", "!!!", "1234567890",
+        NULL
+    };
+    for (int i = 0; kProbes[i] != NULL; i++) {
+        int len = (int)strlen(kProbes[i]);
+        CSize ext = dc.GetTextExtent(kProbes[i], len);
+        ojson::Value e = ojson::Value::Obj();
+        // Emitted as bytes; ojson strings are raw so the high-bit characters survive.
+        e.Set("text", ojson::Value::Str(kProbes[i]));
+        e.Set("length", ojson::Value::Int(len));
+        e.Set("width", ojson::Value::Int(ext.cx));
+        e.Set("height", ojson::Value::Int(ext.cy));
+        sumChecks.Push(e);
+    }
+    fontInfo.Set("extentProbes", sumChecks);
 
     dc.SelectObject(pOldFont);
     root.Set("font", fontInfo);
