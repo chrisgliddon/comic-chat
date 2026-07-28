@@ -515,7 +515,10 @@ public:
     // native app has no print path (print.cpp is dropped), and reporting TRUE would
     // send panel layout down the printer branch.
     BOOL m_bPrinting;
-    CDC() : m_hDC(0), m_bPrinting(FALSE) {}
+    // m_pinnedFont starts TRUE: the oracle dumps set up the pinned font before any
+    // measurement, and a DC that is never given a font at all is only used for
+    // painting. A wrong font is caught at SelectObject time instead.
+    CDC() : m_hDC(0), m_bPrinting(FALSE), m_pinnedFont(TRUE) {}
     HDC GetSafeHdc() const { return (HDC)m_hDC; }
     CFont* GetCurrentFont() const { return 0; }
     int GetTextFace(int n, LPTSTR buf) const { if (buf && n > 0) buf[0] = 0; return 0; }
@@ -543,7 +546,7 @@ public:
     BOOL RestoreDC(int) { return TRUE; }
 
     CGdiObject* SelectObject(CGdiObject* p) { return p; }
-    CFont* SelectObject(CFont* p) { return p; }
+    CFont* SelectObject(CFont* p);   // records m_pinnedFont; see glyphtable_cdc.cpp
     CPen* SelectObject(CPen* p) { return p; }
     CBrush* SelectObject(CBrush* p) { return p; }
     CBitmap* SelectObject(CBitmap* p) { return p; }
@@ -613,25 +616,25 @@ public:
         return 0;   // NULLREGION
     }
 
-    // -- MEASUREMENT: must never guess (see class comment) --
-    SIZE GetTextExtent(LPCTSTR, int) const {
-        NATIVE_GDI_UNIMPLEMENTED("CDC::GetTextExtent - must read the frozen glyph table");
-    }
-    SIZE GetTextExtent(const CString&) const {
-        NATIVE_GDI_UNIMPLEMENTED("CDC::GetTextExtent(CString) - must read the frozen glyph table");
-    }
-    SIZE GetOutputTextExtent(LPCTSTR, int) const {
-        NATIVE_GDI_UNIMPLEMENTED("CDC::GetOutputTextExtent");
-    }
-    BOOL GetTextMetrics(TEXTMETRIC*) const {
-        NATIVE_GDI_UNIMPLEMENTED("CDC::GetTextMetrics");
-    }
-    BOOL GetCharWidth(UINT, UINT, int*) const {
-        NATIVE_GDI_UNIMPLEMENTED("CDC::GetCharWidth");
-    }
-    int GetDeviceCaps(int) const {
-        NATIVE_GDI_UNIMPLEMENTED("CDC::GetDeviceCaps");
-    }
+    // -- MEASUREMENT: from the frozen glyph table, never from the platform --
+    //
+    // Implemented out-of-line in glyphtable_cdc.cpp so this header does not have to
+    // include the table. The contract (RULEBOOK 5): sum pinned per-character
+    // advances, and refuse rather than guess for anything the table does not cover.
+    //
+    // m_pinnedFont tracks whether the font currently selected into this DC is the
+    // one the table was captured for. SelectObject(CFont*) updates it. Measuring
+    // with any other font would be silently wrong - a plausible number from the
+    // wrong font is worse than a crash, because it only shows up as a golden
+    // mismatch several layers downstream.
+    SIZE GetTextExtent(LPCTSTR s, int len) const;
+    SIZE GetTextExtent(const CString& s) const;
+    SIZE GetOutputTextExtent(LPCTSTR s, int len) const { return GetTextExtent(s, len); }
+    BOOL GetTextMetrics(TEXTMETRIC* tm) const;
+    BOOL GetCharWidth(UINT first, UINT last, int* buf) const;
+    int GetDeviceCaps(int index) const;
+
+    BOOL m_pinnedFont;
 };
 
 class CClientDC : public CDC {

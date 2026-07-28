@@ -175,9 +175,23 @@ stubbing them to abort would have made milestone 2 unreachable. **Delete both on
 2b. **`--codecs`** against its golden — blocked on `ircsock.cpp` compiling.
    **`--textpose`** needs the `.rc` string table, which has no native equivalent;
    the frozen textpose golden lists the strings, so they can be supplied from data.
-3. **Core Graphics `CDC`** + the frozen glyph table → the 15 corpus goldens. This
-   is the real engineering: ~150 GDI call sites, `StrokeAndFillPath` path
-   semantics, and TWIPS mapping.
+3. **Core Graphics `CDC`** → the 15 corpus goldens. ~150 GDI call sites,
+   `StrokeAndFillPath` path semantics, TWIPS mapping. The real engineering.
+
+   **Text measurement is DONE** (`native/shim/glyphtable.{h,cpp}`,
+   `glyphtable_cdc.cpp`): `CDC::GetTextExtent`, `GetTextMetrics`, `GetCharWidth` and
+   `GetDeviceCaps` all read the frozen table, never Core Text. `native/glyphcheck`
+   verifies 19 properties through the CDC API and runs first in `verify.sh`.
+
+   Two safety properties worth preserving:
+   - **A font the table does not cover aborts rather than measures.** `SelectObject`
+     records whether the selected `LOGFONT` matches the pinned one; measuring with a
+     different font would produce a plausible wrong number, which is worse than a
+     crash because it only surfaces as a golden mismatch layers downstream. The
+     engine does use other fonts (titles, UI), so this will fire — and when it does
+     it names the font to add to `CaptureGlyphs`.
+   - **An unpinned byte aborts rather than being skipped.** Skipping would silently
+     shorten the string and move the line break.
 4. **AppKit shell** — window, comic view, say line. New code, not a `CView`
    emulation.
 5. **Networking** — `ircsock` over BSD sockets.

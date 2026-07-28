@@ -39,7 +39,7 @@ OUT=$BUILD/avbout
 # differ - recordTags and the histograms would be empty.
 
 ./native/stage.sh > /dev/null
-for c in avbmain posemain nativeglue; do
+for c in avbmain posemain nativeglue glyphmain; do
     ln -sf "$ROOT/native/$c.cpp" "native/stage/$c.cpp"
 done
 
@@ -51,18 +51,33 @@ mkdir -p "$BUILD"
 # of it - native/nativeglue.cpp stubs the one symbol it was wanted for.
 ENGINE="avbfile dib avatar backdrop avatario vector2d bbox"
 SHARED="avbdump posedump ojson oracleseed nativeglue"
+# The measurement layer: the frozen glyph table plus CDC's measurement methods.
+GLYPH="glyphtable glyphtable_cdc"
 DRIVERS="avbmain posemain"
 
-for u in $ENGINE $SHARED $DRIVERS; do
+for c in glyphtable glyphtable_cdc; do
+    ln -sf "$ROOT/native/shim/$c.cpp" "native/stage/$c.cpp"
+done
+
+for u in $ENGINE $SHARED $GLYPH $DRIVERS glyphmain; do
     clang++ -c $CXXFLAGS -o "$BUILD/$u.o" "native/stage/$u.cpp"
 done
 
 # posedump links avbdump.o for the OracleAvb* observability sinks: avbfile.cpp calls
 # them under ORACLE_HARNESS whether or not this binary dumps assets.
-OBJS=$(for u in $ENGINE $SHARED; do printf '%s ' "$BUILD/$u.o"; done)
+OBJS=$(for u in $ENGINE $SHARED $GLYPH; do printf '%s ' "$BUILD/$u.o"; done)
 
 clang++ -o "$BUILD/avbdump"  "$BUILD/avbmain.o"  $OBJS native/shim/msvcrand.cpp -lz
 clang++ -o "$BUILD/posedump" "$BUILD/posemain.o" $OBJS native/shim/msvcrand.cpp -lz
+
+# --- text measurement, before the dumps: if the frozen glyph table or the CDC
+# wiring is wrong, everything downstream of line breaking is wrong too, and the
+# per-check output here says which part rather than leaving a golden diff to
+# interpret. Its own binary because it needs no engine objects.
+clang++ -o "$BUILD/glyphcheck" \
+    "$BUILD/glyphmain.o" "$BUILD/glyphtable.o" "$BUILD/glyphtable_cdc.o" \
+    "$BUILD/ojson.o" native/shim/msvcrand.cpp
+"$BUILD/glyphcheck" oracle/glyphs/glyphs.json
 
 rm -rf "$OUT"
 mkdir -p "$OUT"

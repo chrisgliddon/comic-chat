@@ -53,7 +53,12 @@ jobs:
       - name: Engine compile status
         run: ./native/build.sh
 
-      - name: Verify dumps against frozen Windows goldens
+      # verify.sh runs glyphcheck first, then the dump comparisons. Text measurement
+      # is checked before the dumps on purpose: if the frozen glyph table or the CDC
+      # wiring is wrong then everything downstream of line breaking is wrong too, and
+      # glyphcheck's per-property output says which part rather than leaving a golden
+      # diff to interpret.
+      - name: Verify measurement and dumps against frozen goldens
         run: ./native/verify.sh
 
       - name: Upload native dumps
