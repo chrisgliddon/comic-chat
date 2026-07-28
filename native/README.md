@@ -20,97 +20,37 @@ line-breaking unit (`format`).
 Across the whole tree: **28 of 91** `.cpp` files compile, now including `chatdoc`
 (the document model) and `pageview`.
 
-Of the engine files needed for the corpus replay, only **`protsupp`** is left. Its
-remaining work is catalogued, and one attempt at it has been made and reverted —
-read this before trying again:
+Of the engine files needed for the corpus replay, only **`protsupp`** is left.
 
-- **12 sites bind a `CString` temporary to a non-const reference** — 7 calls to
-  `bMatchAndApplyRules`, 5 to `bChatSendText`. Same MSVC extension as `DashSeg` and
-  `GetBodyFromEmotion`.
-- Widening the parameters to `const CString&` would be one edit instead of twelve,
-  but **it cascades**: `bMatchAndApplyRules` forwards to `iGetFirstMatchingRule`,
-  which also takes `CString&`, through `rules.cpp` — a file that does not compile
-  natively, so the cascade cannot be checked locally. Named locals avoid that.
-- The batch attempt failed for reasons worth knowing: two of the calls **span
-  multiple lines** so a paren-matcher confined to one line mangles them; one
-  introduced a name that **collided with an existing local** (`currentRoom`); and one
-  produced an **ambiguous conditional** (`const char*` ↔ `CString` convertible both
-  ways). Do these deliberately, a few at a time, compiling between.
-- Two non-`CString` items: `protsupp.cpp:1960` passes **three arguments to the
-  two-parameter `MAKELONG`** (a stray trailing comma before `/*wOffset*/`) — MSVC's
-  legacy preprocessor tolerates extra macro arguments and drops the empty third, so
-  removing the comma preserves the value. And `iArg` at 2389 is another
-  `/Zc:forScope-` site that **reads the variable after the loop**, so it needs the
-  hoist.
+**Done** (in the engine source, verified by Windows CI): all 7 `bMatchAndApplyRules`
+sites now use named locals instead of `CString` temporaries; the stray trailing comma
+that passed **three arguments to the two-parameter `MAKELONG`** at `protsupp.cpp:1960`
+is gone (MSVC's legacy preprocessor tolerates extra macro arguments and dropped the
+empty third, so removing it is value-identical); and `iArg` is hoisted for
+`/Zc:forScope-`.
 
-The revert was deliberate: `protsupp.cpp` is shared with the Windows build, and a
-half-applied batch of twelve interacting edits is worse than none. `balloon`, `panel`,
-`histent` and `fonts` have joined the engine-core set — that is the balloon
-geometry/outline unit and the panel layout unit, which between them own most of the
-Tier-3 goldens. The other 72 are
-predominantly the MFC dialogs and the OLE/ActiveX embedding that are not being
-ported at all. The engine files still blocked — `balloon`, `panel`, `pageview`,
-`chatdoc`, `histent`, `protsupp`, `ircsock`, `fonts` — all fail on the same kind of
-transitively-included UI types (`CPrintInfo`, `CCoolToolBar`, `OFN_*`), i.e. more
-of the same shim grind rather than anything structural.
+**Remaining, in order of how well understood they are:**
 
-Working:
+1. **3 × `bChatSendText` temporaries** — same fix as the rules calls, mechanical.
+2. **1 ambiguous conditional** at ~4496: `const char*` and `CString` convert both ways,
+   so a `?:` between them has no unique type. Needs an explicit cast on one arm.
+3. **An unresolved puzzle at `protsupp.cpp:4061`** — do not guess at this one.
+   `CRoomInfo::DoChannelDialog` opens with `extern CString strCurrentChannelTopic;`,
+   but `chatprot.h:101` defines `strCurrentChannelTopic` as an object-like **macro**
+   `(currentRoom->m_strTopic)`. `protsupp.cpp` includes `chat.h`, which includes
+   `chatprot.h`, so the macro *is* in scope — the declaration expands to
+   `extern CString (currentRoom->m_strTopic);`, which clang rejects.
 
-- Compilation is from **unmodified** engine source apart from five small
-  portability fixes listed below.
-- The MSVC CRT RNG is reproduced bit-exactly (`native/shim/msvcrand.cpp`);
-  `srand(1)` → 41 and `srand(0)` → 38, the two values pinned in the port tests.
-  This matters more than it looks: panel layout and avatar placement consume
-  `rand()`, and every corpus golden depends on the sequence.
-- Only **five** source incompatibilities in ~92k lines, all fixed with forms MSVC
-  also accepts, so the Windows build is unaffected (and CI verifies that):
-  1. `sizeof MATRIX` without parentheses, twice in `spline.cpp`.
-  2. `DashSeg(POINT&, DASHINFO&)` called with a temporary — MSVC binds temporaries
-     to non-const references. `DashSeg` only reads the point, so it became
-     `const POINT&` (definition in `traj.cpp`, local declarations in `arc.cpp` and
-     `spline.cpp`).
-  3. `avatar.cpp` reused a loop variable after its `for` scope ended. Both
-     makefiles pass `/Zc:forScope-`, MSVC's pre-standard scoping, which clang has
-     no equivalent for; the second loop now declares its own `i`.
-  4. `GetBodyFromEmotion(CEmotion(0.0, 0.0))` — same temporary-to-non-const-ref
-     extension, but the signature is virtual and overridden twice, so widening it
-     would ripple. A named local was the smaller change (two sites: `avatar.cpp`,
-     `panel.cpp`).
-  5. **`/Zc:forScope-` reuse, seven sites** across `avatar.cpp`, `panel.cpp` and
-     `balloon.cpp`. Both makefiles pass that switch, so a variable declared in a
-     `for` header stays in scope afterwards. Where the variable is dead after the
-     loop the second loop declares its own; where it is **read** after the loop —
-     `balloon.cpp:1674` and `:1729`, `panel.cpp`'s star labels — the declaration is
-     **hoisted** instead, because scoping it per-loop would change behaviour rather
-     than just satisfy the compiler. Checking which case applied, one site at a time,
-     was the whole job here.
-  6. **`/Zc:strictStrings-`**, one site: `chatdoc.cpp:259` binds a string literal to
-     `char*` inside a conditional. clang has no equivalent switch and the conversion
-     is in an expression, so an explicit cast was needed; MSVC accepts the cast form
-     unchanged.
+   Yet MSVC compiles this file (it is in `oracle.mak`'s link line and CI is green).
+   There is no `#undef`, the line is at preprocessor depth 0, and the guard cannot be
+   the explanation. So MSVC is doing something here that is not obvious, and the
+   honest next step is a Windows experiment — preprocess `protsupp.cpp` with `/P` and
+   look at what line 4061 actually becomes — rather than editing shared source on a
+   guess about why.
 
-- **`CString` is a single `char*` member, and that is load-bearing.** The engine
-  passes `CString` into printf-style varargs in ~580 places. MFC gets away with it
-  because a `CString` *is* one pointer to a NUL-terminated buffer. An earlier shim
-  held `std::string` members: it compiled, and every one of those 580 sites would
-  have pushed a `std::string` and read its internals as a `char*` — silently. The
-  build also passes `-Wno-error=non-pod-varargs`, which is sound *only* because of
-  that layout.
-
-- `-fms-compatibility` is deliberately **not** used: it redefines `va_list` against
-  macOS system headers and breaks every translation unit. `-fms-extensions` alone
-  is what the engine needs (for redundant member qualification).
-
-- **`min`/`max` are defined at the very END of `stdafx.h`, after every standard
-  header.** libc++ `#undef`s them to protect `std::min`/`std::max`, so defining them
-  earlier — as an earlier version of this shim did, in `win32types.h` — silently
-  loses them again. They must stay macros rather than `std::min`/`std::max` because
-  the engine mixes int/short/double operands freely, which the templates reject.
-
-  Found by CI on its first run, not locally: this machine has Apple clang 21 where
-  the definitions survived, while the `macos-14` runner's clang 15 erased them and
-  three core files stopped compiling. Worth remembering as the shape of bug the
-  native job exists to catch — a shim that works on one toolchain and not another.
+The batch attempt that was reverted earlier also failed on multi-line calls and a
+name collision (`currentRoom`); doing these a few at a time, compiling between, is
+what worked for the seven that are done.
 
 ## Why staging, not include paths
 

@@ -1894,7 +1894,14 @@ void ProcessSay(CChatDoc *doc, CUserInfo *pui, char *szMesg, BYTE msgType, CDWor
 			ASSERT(doc->m_proto);
 
 			theApp.m_dynaRules.SetCachRecipients(strDecodedRecipients);
-			theApp.m_dynaRules.bMatchAndApplyRules((msgType & MT_CHANNELSEND) ? eOnMessage : eOnWhisperInRoom, (enumActions*) rgaIDs, NULL, CString(GetMyServer()), strSenderIdent, CString(doc->m_proto->m_strChannel), CString(szMesg));
+			// Named locals: the parameters are CString& and MSVC binds a temporary to a
+			// non-const reference where clang does not. NOT widened to const CString&
+			// because the callee forwards to iGetFirstMatchingRule, which also takes
+			// CString&, so const would cascade through rules.cpp.
+			CString strRuleSrvA(GetMyServer());
+			CString strRuleChanA(doc->m_proto->m_strChannel);
+			CString strRuleMsgA(szMesg);
+			theApp.m_dynaRules.bMatchAndApplyRules((msgType & MT_CHANNELSEND) ? eOnMessage : eOnWhisperInRoom, (enumActions*) rgaIDs, NULL, strRuleSrvA, strSenderIdent, strRuleChanA, strRuleMsgA);
 			if (!(theApp.m_dynaRules.GetFlags() & g_wDoNotDisplay))
 			{
 				const char *szTmp;
@@ -1907,7 +1914,14 @@ void ProcessSay(CChatDoc *doc, CUserInfo *pui, char *szMesg, BYTE msgType, CDWor
 					cHighlightType = theApp.m_dynaRules.GetFlags() >> 8;
 				AddAndExecute(new SayEntry(pui, szTmp, NULL, cHighlightType), doc);
 			}
-			theApp.m_dynaRules.bMatchAndApplyRules((msgType & MT_CHANNELSEND) ? eOnMessage : eOnWhisperInRoom, NULL, (enumActions*) rgaIDs, CString(GetMyServer()), strSenderIdent, CString(doc->m_proto->m_strChannel), CString(szMesg));
+			// Named locals: the parameters are CString& and MSVC binds a temporary to a
+			// non-const reference where clang does not. NOT widened to const CString&
+			// because the callee forwards to iGetFirstMatchingRule, which also takes
+			// CString&, so const would cascade through rules.cpp.
+			CString strRuleSrvB(GetMyServer());
+			CString strRuleChanB(doc->m_proto->m_strChannel);
+			CString strRuleMsgB(szMesg);
+			theApp.m_dynaRules.bMatchAndApplyRules((msgType & MT_CHANNELSEND) ? eOnMessage : eOnWhisperInRoom, NULL, (enumActions*) rgaIDs, strRuleSrvB, strSenderIdent, strRuleChanB, strRuleMsgB);
 			theApp.m_dynaRules.SetCachRecipients("");
 		}
 	}
@@ -1957,12 +1971,17 @@ void OnKick(CChatDoc *pDoc, char *szKicker, char *szKickee, char *szMesg)
 		return;
 	szControlLess = SzControlLess(szControlFull, &rgdwFormatting);
 	if (rgdwFormatting.GetSize())
-		rgdwFormatting.Add(MAKELONG(0 /*wFormat*/, lstrlen(szControlLess)-2, /*wOffset*/));	// -2 for trailing ".
+		rgdwFormatting.Add(MAKELONG(0 /*wFormat*/, lstrlen(szControlLess)-2 /*wOffset*/));	// -2 for trailing ".
 
 	if (!kickeePui->GetFullName().IsEmpty())
 		strKickeeIdent += "!"+kickeePui->GetFullName();
 
-	theApp.m_dynaRules.bMatchAndApplyRules(eOnKick, (enumActions*) rgaIDs, NULL, CString(GetMyServer()), strKickeeIdent, CString(pDoc->m_proto->m_strChannel), CString(""));
+	// Named locals: parameters are CString&; MSVC binds temporaries to non-const
+	// references, clang does not. See the site above on why not const CString&.
+	CString strRuleSrvKickA(GetMyServer());
+	CString strRuleChanKickA(pDoc->m_proto->m_strChannel);
+	CString strRuleMsgKickA("");
+	theApp.m_dynaRules.bMatchAndApplyRules(eOnKick, (enumActions*) rgaIDs, NULL, strRuleSrvKickA, strKickeeIdent, strRuleChanKickA, strRuleMsgKickA);
 
 	if (kickerPui)
 	{
@@ -1996,7 +2015,12 @@ void OnKick(CChatDoc *pDoc, char *szKicker, char *szKickee, char *szMesg)
 
 	// REGISB Should rules be applied before showing dialog box?
 	//		  Should there be an action "DoNotDisplayDialog" ?
-	theApp.m_dynaRules.bMatchAndApplyRules(eOnKick, NULL, (enumActions*) rgaIDs, CString(GetMyServer()), strKickeeIdent, CString(pDoc->m_proto->m_strChannel), CString(""));
+	// Named locals: parameters are CString&; MSVC binds temporaries to non-const
+	// references, clang does not. See the site above on why not const CString&.
+	CString strRuleSrvKickB(GetMyServer());
+	CString strRuleChanKickB(pDoc->m_proto->m_strChannel);
+	CString strRuleMsgKickB("");
+	theApp.m_dynaRules.bMatchAndApplyRules(eOnKick, NULL, (enumActions*) rgaIDs, strRuleSrvKickB, strKickeeIdent, strRuleChanKickB, strRuleMsgKickB);
 
 	rgdwFormatting.RemoveAll();
 	free(szControlFull);
@@ -2094,7 +2118,12 @@ void ChatChangeAdmin(CChatDoc *doc, const char *szNickname, int setModes, int un
 		if (!pui->GetFullName().IsEmpty())
 			strNewHostIdent += "!"+pui->GetFullName();
 		ASSERT(doc->m_proto);
-		theApp.m_dynaRules.bMatchAndApplyRules(eOnNewHost, NULL, NULL, CString(GetMyServer()), strNewHostIdent, CString(doc->m_proto->m_strChannel), CString(""));
+		// Named locals: parameters are CString&; MSVC binds temporaries to non-const
+		// references, clang does not. See the site above on why not const CString&.
+		CString strRuleSrvHost(GetMyServer());
+		CString strRuleChanHost(doc->m_proto->m_strChannel);
+		CString strRuleMsgHost("");
+		theApp.m_dynaRules.bMatchAndApplyRules(eOnNewHost, NULL, NULL, strRuleSrvHost, strNewHostIdent, strRuleChanHost, strRuleMsgHost);
 	}
 }
 
@@ -2386,7 +2415,10 @@ BOOL CIrcProto::SlashProp(IRCPARSE *pParse, char *szMesg)
 	if (pParse->lastString)
 		syntax = g_rgSyntax[uIndex+1];
 
-	for (INT iArg = 0; iArg < syntax.uArgNum && iArg < pParse->nArgs-1; iArg++)
+	// Hoisted: iArg is READ after this loop (the lastString branch), which the
+	// Windows build gets from /Zc:forScope-.
+	INT iArg;
+	for (iArg = 0; iArg < syntax.uArgNum && iArg < pParse->nArgs-1; iArg++)
 		strOutput += " " + StrEncodeCommandParam(syntax.dwArgType[iArg], &iEncoding, pParse->args[iArg+1]);
 	
 	if (pParse->lastString)
@@ -4525,7 +4557,13 @@ void OnInvite(const char *szSender, const char *szFullName, const char *szRoom)
 	bInInvite = TRUE;
 
 	// Issue here: when rule applies, should we still show the invitation dialog box??
-	theApp.m_dynaRules.bMatchAndApplyRules(eOnInvitation, NULL, NULL, CString(GetMyServer()), CString(szSender)+"!"+szFullName, CString(szRoom), CString(""));
+	// Named locals: parameters are CString&. The identity argument is a concatenation,
+	// so the whole expression is captured rather than just a wrapped call.
+	CString strRuleSrvInv(GetMyServer());
+	CString strRuleIdentInv(CString(szSender) + "!" + szFullName);
+	CString strRuleChanInv(szRoom);
+	CString strRuleMsgInv("");
+	theApp.m_dynaRules.bMatchAndApplyRules(eOnInvitation, NULL, NULL, strRuleSrvInv, strRuleIdentInv, strRuleChanInv, strRuleMsgInv);
 
 	CInvitationDlg invdlg;
 	invdlg.m_strMessage.LoadString(ID_JOIN_OFFER);
@@ -4797,7 +4835,12 @@ void ChatServerDisconnect(BOOL bCheckRules, BOOL bResumeConnection)
 		theApp.m_dynaRules.bStopRulesDaemon();
 		theApp.m_dynaRules.bUpdateRuleSetsDaemonExt(TRUE);
 		
-		theApp.m_dynaRules.bMatchAndApplyRules(eOnDisconnect, NULL, NULL, CString(GetMyServer()), CString(GetMyNickName())+strIdent, CString(""), CString(""));
+		// Named locals: as above, the identity argument is a concatenation.
+		CString strRuleSrvDis(GetMyServer());
+		CString strRuleIdentDis(CString(GetMyNickName()) + strIdent);
+		CString strRuleChanDis("");
+		CString strRuleMsgDis("");
+		theApp.m_dynaRules.bMatchAndApplyRules(eOnDisconnect, NULL, NULL, strRuleSrvDis, strRuleIdentDis, strRuleChanDis, strRuleMsgDis);
 	}
 }
 
