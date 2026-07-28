@@ -87,6 +87,32 @@ jobs:
           )
           popd
 
+      # TEMPORARY DIAGNOSTIC - remove once answered.
+      #
+      # protsupp.cpp:4061 is `extern CString strCurrentChannelTopic;`, but
+      # chatprot.h:101 defines that name as an object-like macro
+      # (currentRoom->m_strTopic). protsupp.cpp includes chat.h which includes
+      # chatprot.h, so the macro should be in scope and the line should expand to
+      # `extern CString (currentRoom->m_strTopic);` - which clang rejects and which
+      # should not be valid C++ anywhere. Yet MSVC compiles this file.
+      #
+      # Rather than guess, ask the compiler: preprocess and print what that line
+      # actually becomes. Non-fatal, so a red probe cannot block the goldens.
+      - name: Diagnostic - preprocess protsupp.cpp around DoChannelDialog
+        shell: cmd
+        continue-on-error: true
+        run: |
+          for /f "usebackq delims=" %%I in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do set "VSINSTALL=%%I"
+          call "%VSINSTALL%\VC\Auxiliary\Build\vcvars32.bat"
+          cd v2.5-beta-1-modern
+          cl /nologo /EP /C /D "NDEBUG" /D "ORACLE_HARNESS" /D "_WINDOWS" /D "_MBCS" /D "_AFXDLL" /I "..\artifacts\inc" protsupp.cpp > "%TEMP%\protsupp.i" 2> "%TEMP%\protsupp.err"
+          echo ---- preprocessor stderr (tail) ----
+          powershell -NoProfile -Command "Get-Content \"$env:TEMP\protsupp.err\" -Tail 8"
+          echo ---- expansion around DoChannelDialog ----
+          powershell -NoProfile -Command "$f = Get-Content \"$env:TEMP\protsupp.i\"; $i = ($f | Select-String -Pattern 'DoChannelDialog' | Select-Object -First 1).LineNumber; if ($i) { $f[($i-2)..($i+6)] } else { 'DoChannelDialog not found in the preprocessed output' }"
+          echo ---- is strCurrentChannelTopic defined as a macro at all? ----
+          powershell -NoProfile -Command "Select-String -Path \"$env:TEMP\protsupp.i\" -Pattern 'm_strTopic' | Select-Object -First 5 | ForEach-Object { $_.Line.Trim() }"
+
       # glyphs.json is a frozen *input* to the port (RULEBOOK 6: the TS side
       # consumes oracle/glyphs/glyphs.json verbatim and never re-measures
       # text), so the committed path stays put and the fresh capture goes to
