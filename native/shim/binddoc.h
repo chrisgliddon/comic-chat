@@ -42,9 +42,23 @@ public:
     // that otherwise compiles.
     CWnd* m_pOrigParent;
 
-    CDocObjectServerDoc() : m_pOrigParent(0) {}
+    CDocObjectServerDoc() : m_pOrigParent(0), m_lpRootStg(0) {}
     virtual ~CDocObjectServerDoc() {}
     virtual BOOL SaveModified() { return TRUE; }
+    // Members and methods of the real class that chatdoc.cpp touches. m_lpRootStg is
+    // the OLE root storage; NULL here, and chatdoc.cpp's uses are guarded.
+    LPSTORAGE m_lpRootStg;
+    // chatdoc.h overrides this returning COleIPFrameWnd*, so the signature must
+    // match MFC's exactly - a BOOL return made it a mismatched override and broke
+    // every translation unit that includes chatdoc.h.
+    virtual COleIPFrameWnd* CreateInPlaceFrame(CWnd*) { return 0; }
+    virtual void DestroyInPlaceFrame() {}
+    // Declared by the real binddoc.h (line 115) and called from pageview.cpp, so
+    // the shadow has to carry it too. This is the cost of shadowing a header rather
+    // than shimming it: each member the engine actually uses must be added here as
+    // it turns up.
+    virtual void OnDeactivateUI(BOOL) {}
+    virtual void OnActivateUI() {}
 };
 
 #endif // NATIVE_SHIM_BINDDOC_H

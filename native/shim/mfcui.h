@@ -200,6 +200,30 @@
 #define VK_NEXT             0x22
 #define VK_SHIFT            0x10
 #define VK_CONTROL          0x11
+#define VK_HOME             0x24
+#define VK_END              0x23
+#define VK_DELETE           0x2E
+#define VK_BACK             0x08
+#define VK_SPACE            0x20
+#define VK_MENU             0x12
+
+// Window long/style access. Reports 0 and accepts writes: there is no HWND behind
+// any of this natively, and chatdoc.cpp uses it only to toggle the member-list view
+// between LVS_ICON and LVS_REPORT.
+#define GWL_STYLE           (-16)
+#define GWL_EXSTYLE         (-20)
+#define GWL_ID              (-12)
+#define GWL_USERDATA        (-21)
+#define LVS_ICON            0x0000
+#define LVS_REPORT          0x0001
+#define LVS_SMALLICON       0x0002
+#define LVS_LIST            0x0003
+#define LVS_TYPEMASK        0x0003
+#define LVS_SINGLESEL       0x0004
+#define LVS_SHOWSELALWAYS   0x0008
+#define LVS_NOCOLUMNHEADER  0x4000
+inline LONG GetWindowLong(HWND, int) { return 0; }
+inline LONG SetWindowLong(HWND, int, LONG) { return 0; }
 
 #define TRUE_WIN32          1
 
@@ -216,6 +240,7 @@ typedef struct _findtextex {
 
 // Common-control and dialog flags reached from headers.
 #define OFN_HIDEREADONLY        0x00000004
+#define OFN_EXPLORER            0x00080000
 #define OFN_OVERWRITEPROMPT     0x00000002
 #define OFN_FILEMUSTEXIST       0x00001000
 #define OFN_PATHMUSTEXIST       0x00000800
@@ -312,10 +337,16 @@ typedef struct tagTOOLINFO {
     LPARAM lParam;
 } TOOLINFO, *LPTOOLINFO;
 
+class CMenuFwd;
 class CCmdUI {
 public:
     UINT m_nID;
-    CCmdUI() : m_nID(0) {}
+    // MFC exposes the menu being updated; chatdoc.cpp reaches for it to rebuild
+    // submenus during ON_UPDATE_COMMAND_UI.
+    class CMenu* m_pMenu;
+    class CMenu* m_pSubMenu;
+    UINT m_nIndex;
+    CCmdUI() : m_nID(0), m_pMenu(0), m_pSubMenu(0), m_nIndex(0) {}
     void Enable(BOOL = TRUE) {}
     void SetCheck(int = 1) {}
     void SetRadio(BOOL = TRUE) {}
@@ -339,6 +370,13 @@ public:
     BOOL RedrawWindow(const RECT* = 0, CRgn* = 0, UINT = 0) { return TRUE; }
     virtual BOOL PreCreateWindow(CREATESTRUCT&) { return TRUE; }
     virtual BOOL PreTranslateMessage(MSG*) { return FALSE; }
+    BOOL IsWindowVisible() const { return FALSE; }
+    BOOL IsWindowEnabled() const { return FALSE; }
+    virtual void OnMouseMove(UINT, CPoint) {}
+    virtual void OnLButtonDown(UINT, CPoint) {}
+    virtual void OnLButtonUp(UINT, CPoint) {}
+    virtual void OnRButtonDown(UINT, CPoint) {}
+    virtual void OnRButtonUp(UINT, CPoint) {}
     void Invalidate(BOOL = TRUE) {}
     void UpdateWindow() {}
     BOOL ShowWindow(int) { return TRUE; }
@@ -450,13 +488,33 @@ public:
     CDocument* m_pDocument;
     CView() : m_pDocument(0) {}
     virtual void OnDraw(CDC*) {}
+    virtual void OnInitialUpdate() {}
+    virtual void OnActivateView(BOOL, CView*, CView*) {}
+    virtual void OnUpdate(CView*, LPARAM, CObject*) {}
     virtual BOOL OnPreparePrinting(CPrintInfo*) { return TRUE; }
+    BOOL DoPreparePrinting(CPrintInfo*) { return TRUE; }
     virtual void OnBeginPrinting(CDC*, CPrintInfo*) {}
     virtual void OnEndPrinting(CDC*, CPrintInfo*) {}
     virtual void OnPrint(CDC*, CPrintInfo*) {}
+    virtual void OnPrepareDC(CDC*, CPrintInfo* = 0) {}
     class CDocument* GetDocument() const { return 0; }
 };
-class CScrollView : public CView {};
+class CScrollView : public CView {
+public:
+    // MFC keeps the view's mapping mode here (NOT on CDC, where an earlier version
+    // of this shim wrongly put it - pageview.cpp reads it as a view member).
+    int m_nMapMode;
+    CScrollView() : m_nMapMode(MM_TEXT) {}
+    virtual void OnInitialUpdate() {}
+    void SetScrollSizes(int, SIZE, SIZE = CSize(0,0), SIZE = CSize(0,0)) {}
+    void SetScaleToFitSize(SIZE) {}
+    CPoint GetScrollPosition() const { return CPoint(0, 0); }
+    CPoint GetDeviceScrollPosition() const { return CPoint(0, 0); }
+    void ScrollToPosition(POINT) {}
+    int GetScrollPos(int) const { return 0; }
+    int GetScrollLimit(int) const { return 0; }
+    SIZE GetTotalSize() const { CSize s(0, 0); return s; }
+};
 
 class CDocument : public CCmdTarget {
 public:
@@ -498,6 +556,15 @@ public:
 class COleServerItem : public CCmdTarget {
 public:
     CDocument* GetDocument() const { return 0; }
+};
+
+// CWaitCursor is MFC's RAII busy-cursor. Nothing to do without a window; kept as a
+// type so the `CWaitCursor wait;` declarations compile.
+class CWaitCursor {
+public:
+    CWaitCursor() {}
+    ~CWaitCursor() {}
+    void Restore() {}
 };
 
 class CWinApp : public CCmdTarget {
@@ -562,6 +629,52 @@ public:
 #define LVIS_SELECTED   0x0002
 #define LVIS_FOCUSED    0x0001
 #define LVIS_STATEIMAGEMASK 0xF000
+#define INDEXTOSTATEIMAGEMASK(i)  ((i) << 12)
+#define LVIF_TEXT       0x0001
+#define LVIF_IMAGE      0x0002
+#define LVIF_PARAM      0x0004
+#define LVIF_STATE      0x0008
+#define LVIF_INDENT     0x0010
+#define LPSTR_TEXTCALLBACK  ((LPSTR)(intptr_t)-1)
+#define I_IMAGECALLBACK     (-1)
+#define LVCF_FMT        0x0001
+#define LVCF_WIDTH      0x0002
+#define LVCF_TEXT       0x0004
+#define LVCF_SUBITEM    0x0008
+#define LVCFMT_LEFT     0x0000
+#define LVCFMT_RIGHT    0x0001
+#define LVCFMT_CENTER   0x0002
+#define LVSIL_SMALL     1
+#define LVSIL_NORMAL    0
+#define LVSIL_STATE     2
+
+// Scroll-bar identifiers and clipboard formats.
+#define SB_HORZ         0
+#define SB_VERT         1
+#define SB_CTL          2
+#define SB_BOTH         3
+#define SB_LINEUP       0
+#define SB_LINEDOWN     1
+#define SB_PAGEUP       2
+#define SB_PAGEDOWN     3
+#define SB_THUMBPOSITION 4
+#define SB_THUMBTRACK   5
+#define SB_TOP          6
+#define SB_BOTTOM       7
+#define CF_TEXT         1
+#define CF_BITMAP       2
+#define CF_OEMTEXT      7
+
+// Clipboard. Stubs that report failure: the engine treats a failed OpenClipboard as
+// "cannot copy right now" and skips the operation, which is the correct first-run
+// behaviour. Native clipboard support belongs on NSPasteboard behind a small
+// interface, not here.
+inline BOOL OpenClipboard(HWND) { return FALSE; }
+inline BOOL CloseClipboard() { return TRUE; }
+inline BOOL EmptyClipboard() { return TRUE; }
+inline HANDLE GetClipboardData(UINT) { return (HANDLE)0; }
+inline HANDLE SetClipboardData(UINT, HANDLE) { return (HANDLE)0; }
+inline BOOL IsClipboardFormatAvailable(UINT) { return FALSE; }
 #define LVIS_OVERLAYMASK    0x0F00
 
 class CListCtrl : public CWnd {
@@ -571,10 +684,14 @@ public:
     BOOL SetItemState(int, UINT, UINT) { return TRUE; }
     BOOL DeleteItem(int) { return TRUE; }
     BOOL RedrawItems(int, int) { return TRUE; }
+    void* SetImageList(void*, int) { return 0; }
+    int InsertColumn(int, const LV_COLUMN*) { return -1; }
+    BOOL SetColumnWidth(int, int) { return TRUE; }
     BOOL EnsureVisible(int, BOOL) { return TRUE; }
     CString GetItemText(int, int) const { return CString(); }
     BOOL SetItemText(int, int, LPCTSTR) { return TRUE; }
     int GetItemCount() const { return 0; }
+    UINT GetSelectedCount() const { return 0; }
     BOOL DeleteAllItems() { return TRUE; }
     int InsertItem(const void*) { return 0; }
     DWORD GetItemData(int) const { return 0; }
@@ -592,6 +709,7 @@ class CScrollBar : public CWnd {
 public:
     int SetScrollPos(int, BOOL = TRUE) { return 0; }
     int GetScrollPos() const { return 0; }
+    int GetScrollLimit() const { return 0; }
     void SetScrollRange(int, int, BOOL = TRUE) {}
     BOOL SetScrollInfo(void*, BOOL = TRUE) { return TRUE; }
 };
@@ -650,8 +768,30 @@ public:
     CCommonDialog(CWnd* p = 0) : CDialog((UINT)0, p) {}
 };
 
+typedef struct tagOPENFILENAME {
+    DWORD  lStructSize;
+    HWND   hwndOwner;
+    HINSTANCE hInstance;
+    LPCSTR lpstrFilter, lpstrCustomFilter;
+    DWORD  nMaxCustFilter, nFilterIndex;
+    LPSTR  lpstrFile;
+    DWORD  nMaxFile;
+    LPSTR  lpstrFileTitle;
+    DWORD  nMaxFileTitle;
+    LPCSTR lpstrInitialDir, lpstrTitle;
+    DWORD  Flags;
+    WORD   nFileOffset, nFileExtension;
+    LPCSTR lpstrDefExt;
+    LPARAM lCustData;
+    void*  lpfnHook;
+    LPCSTR lpTemplateName;
+} OPENFILENAME;
+
 class CFileDialog : public CCommonDialog {
 public:
+    // MFC exposes the raw OPENFILENAME so callers can tweak flags; chatdoc.cpp does.
+    OPENFILENAME m_ofn;
+    CString GetFileExt() const { return CString(); }
     CFileDialog(BOOL, LPCTSTR = 0, LPCTSTR = 0, DWORD = 0, LPCTSTR = 0, CWnd* = 0) {}
     CString GetPathName() const { return CString(); }
     CString GetFileName() const { return CString(); }
@@ -663,6 +803,15 @@ public:
 };
 class CMenu : public CObject {
 public:
+    BOOL LoadMenu(UINT) { return FALSE; }
+    BOOL CreatePopupMenu() { return FALSE; }
+    BOOL DestroyMenu() { return TRUE; }
+    BOOL TrackPopupMenu(UINT, int, int, CWnd*, const RECT* = 0) { return FALSE; }
+    UINT GetMenuItemCount() const { return 0; }
+    UINT GetMenuItemID(int) const { return 0; }
+    BOOL DeleteMenu(UINT, UINT) { return TRUE; }
+    BOOL InsertMenu(UINT, UINT, UINT = 0, LPCTSTR = 0) { return TRUE; }
+    BOOL ModifyMenu(UINT, UINT, UINT = 0, LPCTSTR = 0) { return TRUE; }
     CMenu* GetSubMenu(int) { return 0; }
     BOOL AppendMenu(UINT, UINT = 0, LPCTSTR = 0) { return TRUE; }
     UINT CheckMenuItem(UINT, UINT) { return 0; }
@@ -697,7 +846,10 @@ class COleDocObjectItem : public COleClientItem {};
 // CDocObjectServerDoc / CDocObjectServerItem / CDocObjectServer are NOT stubbed
 // here: the engine ships its own implementations in binddoc.h, binditem.h and
 // bindipfw.h, and defining them here too is a redefinition error.
-class COleIPFrameWnd : public CFrameWnd {};
+class COleIPFrameWnd : public CFrameWnd {
+public:
+    void SetActiveView(CView*, BOOL = TRUE) {}
+};
 class COleDocIPFrameWnd : public COleIPFrameWnd {};
 
 inline BOOL AfxOleRegisterServerClass(REFCLSID, LPCTSTR, LPCTSTR, LPCTSTR) { return TRUE; }

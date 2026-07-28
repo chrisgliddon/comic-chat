@@ -12,6 +12,9 @@
 #define HKEY_CURRENT_USER   ((HKEY)(uintptr_t)0x80000001)
 #define HKEY_LOCAL_MACHINE  ((HKEY)(uintptr_t)0x80000002)
 #define KEY_READ            0x20019
+#define KEY_QUERY_VALUE     0x0001
+#define KEY_SET_VALUE       0x0002
+#define KEY_ENUMERATE_SUB_KEYS 0x0008
 #define KEY_WRITE           0x20006
 #define KEY_ALL_ACCESS      0xF003F
 #define REG_SZ              1

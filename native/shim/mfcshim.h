@@ -95,6 +95,10 @@ inline void AfxThrowUserException()         { throw new CUserException(); }
 #define TRY                 try {
 #define CATCH_ALL(e)        } catch (CException* e) { (void)e;
 #define END_CATCH_ALL       }
+// MFC's TRY/END_TRY pair (no explicit CATCH) SWALLOWS anything thrown. Expanding
+// END_TRY to a bare `}` left a try with no handler - "expected catch". chatdoc.cpp
+// relies on the swallow: it wraps DoSave so a failed save cannot propagate.
+#define END_TRY             } catch (CException* _e) { delete _e; }
 #define CATCH(cls, e)       } catch (cls* e) { (void)e;
 #define END_CATCH           }
 #define AND_CATCH_ALL(e)    } catch (CException* e) { (void)e;
@@ -107,6 +111,7 @@ inline void AfxThrowUserException()         { throw new CUserException(); }
 // this port touches is either not serialized at all or goes through the .ccc text
 // codec instead (Tier-1 #10), not CArchive.
 // ---------------------------------------------------------------------------
+class CRuntimeClass;   // forward: CObject::IsKindOf takes one
 class CArchive;
 class CFile;     // defined in gdishim.h, which includes this header
 class CString;   // defined below; CArchive's string methods need it
@@ -115,6 +120,14 @@ class CObject {
 public:
     virtual ~CObject() {}
     virtual void Serialize(CArchive&) {}
+    // IsKindOf normally consults the CRuntimeClass chain that DECLARE_DYNAMIC
+    // builds. Those macros are no-ops here, so there is no chain to walk and this
+    // reports FALSE. pageview.cpp uses it to decide whether a panel element is a
+    // particular subclass - a WRONG TRUE would take the wrong branch, so FALSE is
+    // the safe direction, but any code that depends on a TRUE answer will behave
+    // differently from Windows. If that turns out to matter, the fix is dynamic_cast
+    // at the call site, not a fake runtime-class chain.
+    BOOL IsKindOf(const CRuntimeClass*) const { return FALSE; }
 };
 
 // CArchive - declared because Serialize overrides name it. Note the ORACLE uses
@@ -665,6 +678,23 @@ public:
     void SetRect(LONG l, LONG t, LONG r, LONG b) { left = l; top = t; right = r; bottom = b; }
     void SetRectEmpty() { left = top = right = bottom = 0; }
     BOOL IsRectEmpty() const { return (right <= left || bottom <= top) ? TRUE : FALSE; }
+    void UnionRect(const RECT* a, const RECT* b) {
+        left = a->left < b->left ? a->left : b->left;
+        top = a->top < b->top ? a->top : b->top;
+        right = a->right > b->right ? a->right : b->right;
+        bottom = a->bottom > b->bottom ? a->bottom : b->bottom;
+    }
+    BOOL IntersectRect(const RECT* a, const RECT* b) {
+        left = a->left > b->left ? a->left : b->left;
+        top = a->top > b->top ? a->top : b->top;
+        right = a->right < b->right ? a->right : b->right;
+        bottom = a->bottom < b->bottom ? a->bottom : b->bottom;
+        if (IsRectEmpty()) { SetRectEmpty(); return FALSE; }
+        return TRUE;
+    }
+    void OffsetRect(int dx, int dy) { left += dx; right += dx; top += dy; bottom += dy; }
+    void InflateRect(int dx, int dy) { left -= dx; right += dx; top -= dy; bottom += dy; }
+    BOOL PtInRect(POINT p) const { return p.x >= left && p.x < right && p.y >= top && p.y < bottom; }
 };
 
 #endif // NATIVE_SHIM_MFCSHIM_H

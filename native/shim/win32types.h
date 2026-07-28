@@ -278,6 +278,8 @@ inline BOOL VirtualProtect(void*, size_t, DWORD, PDWORD old) { if (old) *old = P
 #define _MAX_PATH       260
 #define _MAX_FNAME      256
 #define _MAX_EXT        256
+#define _MAX_DRIVE      3
+#define _MAX_DIR        256
 
 // windows.h defines these as macros and the engine relies on it (bbox.cpp uses
 // bare min/max on ints). Deliberately macros, not std::min/std::max: the engine

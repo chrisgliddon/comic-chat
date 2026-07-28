@@ -23,6 +23,8 @@
 #include "win32types.h"
 #include "mfcshim.h"
 #include <stdio.h>
+#include <time.h>
+#include <unistd.h>
 
 // Reaching an unimplemented drawing stub is a programming error, not a runtime
 // condition - it means a code path started painting before the Core Graphics
@@ -104,6 +106,31 @@ inline BOOL SetBrushOrgEx(HDC, int, int, POINT* prev) { if (prev) { prev->x = 0;
 inline HWND GetFocus() { return (HWND)0; }
 inline HWND GetActiveWindow() { return (HWND)0; }
 inline HWND GetDesktopWindow() { return (HWND)0; }
+// Locale-formatted date/time and the local clock. Real enough to be useful:
+// pageview.cpp stamps printed pages with them. Formats are ISO-ish rather than
+// locale-driven, which differs from Windows - but nothing golden-tested depends on
+// the stamp text, and NSDateFormatter is the right answer if it ever matters.
+inline void GetLocalTime(SYSTEMTIME* st) {
+    if (!st) return;
+    time_t now = time(0);
+    struct tm t;
+    localtime_r(&now, &t);
+    st->wYear = (WORD)(t.tm_year + 1900); st->wMonth = (WORD)(t.tm_mon + 1);
+    st->wDayOfWeek = (WORD)t.tm_wday;     st->wDay = (WORD)t.tm_mday;
+    st->wHour = (WORD)t.tm_hour;          st->wMinute = (WORD)t.tm_min;
+    st->wSecond = (WORD)t.tm_sec;         st->wMilliseconds = 0;
+}
+inline int GetDateFormat(DWORD, DWORD, const SYSTEMTIME* st, LPCSTR, LPSTR buf, int n) {
+    if (!buf || n <= 0) return 0;
+    if (!st) { buf[0] = 0; return 0; }
+    return snprintf(buf, (size_t)n, "%04u-%02u-%02u", st->wYear, st->wMonth, st->wDay) + 1;
+}
+inline int GetTimeFormat(DWORD, DWORD, const SYSTEMTIME* st, LPCSTR, LPSTR buf, int n) {
+    if (!buf || n <= 0) return 0;
+    if (!st) { buf[0] = 0; return 0; }
+    return snprintf(buf, (size_t)n, "%02u:%02u:%02u", st->wHour, st->wMinute, st->wSecond) + 1;
+}
+
 inline SHORT GetKeyState(int) { return 0; }
 inline SHORT GetAsyncKeyState(int) { return 0; }
 inline int GetWindowText(HWND, LPSTR buf, int n) { if (buf && n) buf[0] = 0; return 0; }
@@ -151,6 +178,15 @@ inline COLORREF GetSysColor(int) { return RGB(255, 255, 255); }
 #define MM_TEXT         1
 #define MM_TWIPS        6
 #define MM_ANISOTROPIC  8
+#define TA_LEFT         0
+#define TA_RIGHT        2
+#define TA_CENTER       6
+#define TA_TOP          0
+#define TA_BOTTOM       8
+#define TA_BASELINE     24
+#define HORZRES         8
+#define VERTRES         10
+#define LOGPIXELSX_     88
 
 #define TRANSPARENT     1
 #define OPAQUE          2
@@ -159,6 +195,9 @@ inline COLORREF GetSysColor(int) { return RGB(255, 255, 255); }
 #define WINDING         2
 
 #define DIB_RGB_COLORS  0
+#define DIB_PAL_COLORS  1
+#define CBM_INIT        0x04
+inline HBITMAP CreateDIBitmap(HDC, const BITMAPINFOHEADER*, DWORD, const void*, const BITMAPINFO*, UINT) { return (HBITMAP)0; }
 
 #define PS_SOLID        0
 #define PS_DASH         1
@@ -190,6 +229,9 @@ inline COLORREF GetSysColor(int) { return RGB(255, 255, 255); }
 #define DEFAULT_PITCH           0
 #define FF_DONTCARE             0
 #define FW_NORMAL               400
+#define FW_REGULAR              400
+#define FW_LIGHT                300
+#define FW_SEMIBOLD             600
 #define FW_BOLD                 700
 #define LF_FACESIZE             32
 
@@ -488,6 +530,8 @@ public:
     COLORREF SetBkColor(COLORREF c) { return c; }
     COLORREF SetTextColor(COLORREF c) { return c; }
     int SetPolyFillMode(int) { return ALTERNATE; }
+    UINT SetTextAlign(UINT) { return 0; }
+    UINT GetTextAlign() const { return 0; }
     BOOL SetViewportOrg(int, int) { return TRUE; }
     BOOL SetWindowOrg(int, int) { return TRUE; }
     BOOL OffsetWindowOrg(int, int) { return TRUE; }
@@ -637,6 +681,8 @@ public:
         return (DWORD)len;
     }
     virtual void Close() { if (m_fp) { fclose(m_fp); m_fp = 0; } }
+    static void Remove(LPCTSTR path) { if (path) unlink(path); }
+    static void Rename(LPCTSTR from, LPCTSTR to) { if (from && to) rename(from, to); }
 protected:
     FILE* m_fp;
 };
