@@ -472,6 +472,7 @@ class CCoolToolBar : public CToolBar {};
 #define MK_RBUTTON              0x0002
 #define MK_SHIFT                0x0004
 #define MK_CONTROL              0x0008
+#define WHEEL_DELTA             120
 #define TPM_LEFTALIGN           0x0000L
 #define TPM_RIGHTALIGN          0x0008L
 #define TPM_LEFTBUTTON          0x0000L
@@ -569,6 +570,8 @@ public:
     void ScrollToPosition(POINT) {}
     void ScrollToDevicePosition(POINT) {}
     void UpdateBars() {}
+    BOOL OnScrollBy(SIZE, BOOL = TRUE) { return FALSE; }
+    BOOL OnScroll(UINT, UINT, BOOL = TRUE) { return FALSE; }
     int GetScrollPos(int) const { return 0; }
     int GetScrollLimit(int) const { return 0; }
     SIZE GetTotalSize() const { CSize s(0, 0); return s; }

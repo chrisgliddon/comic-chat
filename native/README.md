@@ -17,7 +17,15 @@ That set is the whole `.avb`/DIB asset pipeline (`avbfile` + `dib` + `avatar` +
 geometry core (`vector2d`, `bbox`, `traj`, `arc`, `spline`, `splinutl`) and the
 line-breaking unit (`format`).
 
-Across the whole tree: **27 of 91** `.cpp` files compile, now including `chatdoc` — the document model. `balloon`, `panel`,
+Across the whole tree: **28 of 91** `.cpp` files compile, now including `chatdoc`
+(the document model) and `pageview`.
+
+Of the engine files needed for the corpus replay, only **`protsupp`** is left, and
+its remaining errors are catalogued rather than mysterious: five sites bind a
+`CString` temporary to a non-const reference (the MSVC extension already seen with
+`DashSeg` and `GetBodyFromEmotion` — each needs a named local), three call
+`bChatSendText` with a signature the shim has not matched yet, and the rest are
+missing constants. `balloon`, `panel`,
 `histent` and `fonts` have joined the engine-core set — that is the balloon
 geometry/outline unit and the panel layout unit, which between them own most of the
 Tier-3 goldens. The other 72 are

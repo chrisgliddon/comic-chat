@@ -688,6 +688,11 @@ public:
     void SetRect(LONG l, LONG t, LONG r, LONG b) { left = l; top = t; right = r; bottom = b; }
     void SetRectEmpty() { left = top = right = bottom = 0; }
     BOOL IsRectEmpty() const { return (right <= left || bottom <= top) ? TRUE : FALSE; }
+    // MFC's implicit conversions to LPRECT/LPCRECT. The engine relies on them
+    // pervasively - pageview.cpp calls DPtoLP(rect) and DrawFocusRect(rect) with a
+    // CRect by value - so without these every such site needs an &.
+    operator RECT*() { return this; }
+    operator const RECT*() const { return this; }
     void UnionRect(const RECT* a, const RECT* b) {
         left = a->left < b->left ? a->left : b->left;
         top = a->top < b->top ? a->top : b->top;

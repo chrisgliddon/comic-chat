@@ -44,6 +44,12 @@ LOGPALETTE *gpLogPal = 0;
 // split a character in half mid-line.
 extern "C" int iBytesofChar(BYTE) { return 1; }
 
+// g_screenDpi backs dpiscale.h's DpiScale(). The original sets it in
+// CChatApp::InitInstance from the display; 96 here, which makes DpiScale the identity
+// and matches the dpi the glyph table was captured at. Those two must agree: a
+// different value would scale pixel surfaces away from the advances they sit beside.
+int g_screenDpi = 96;
+
 // The WinInet DLL handle, defined in chat.cpp. NULL: nothing loads WinInet, and
 // urlutil.cpp checks it before use.
 HINSTANCE g_hinstWinInet = 0;

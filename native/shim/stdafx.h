@@ -29,6 +29,10 @@
 // Directory enumeration (FindFirstFile / _findfirst). Needed by the shared Tier-2
 // dump and by backdrop.cpp's art-directory walk.
 #include "io.h"
+// dpiscale.h is a PROJECT header that the engine's own stdafx.h includes, so
+// protsupp.cpp and bodycam.cpp use DpiScale() without including it themselves. It
+// needs MulDiv from gdishim.h, hence its position after that.
+#include "dpiscale.h"
 #endif // __cplusplus
 
 // chat.h and several other engine headers guard with

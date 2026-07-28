@@ -548,8 +548,14 @@ public:
     int SetPolyFillMode(int) { return ALTERNATE; }
     UINT SetTextAlign(UINT) { return 0; }
     UINT GetTextAlign() const { return 0; }
-    BOOL SetViewportOrg(int, int) { return TRUE; }
-    BOOL SetWindowOrg(int, int) { return TRUE; }
+    // These return the PREVIOUS origin in MFC, and pageview.cpp saves and restores
+    // through the return value - a BOOL would compile at the call and then restore
+    // the wrong origin. Zero here because the shim has no viewport state; that is
+    // consistent, since nothing native has moved it.
+    CPoint SetViewportOrg(int, int) { return CPoint(0, 0); }
+    CPoint SetViewportOrg(POINT) { return CPoint(0, 0); }
+    CPoint SetWindowOrg(int, int) { return CPoint(0, 0); }
+    CPoint SetWindowOrg(POINT) { return CPoint(0, 0); }
     BOOL OffsetWindowOrg(int, int) { return TRUE; }
     BOOL OffsetViewportOrg(int, int) { return TRUE; }
     BOOL SetWindowExt(int, int) { return TRUE; }
@@ -623,6 +629,7 @@ public:
     BOOL SelectClipRgn(CRgn*, int) { return TRUE; }
     int IntersectClipRect(int, int, int, int) { return 0; }
     int IntersectClipRect(const RECT*) { return 0; }
+    int ExcludeClipRect(const RECT*) { return 0; }
     // GetClipBox is a QUERY, but a painting-side one: panel.cpp saves and restores
     // the clip box around a draw. Returning an empty rect is safe because nothing
     // native paints yet; when the Core Graphics backend lands this must return the
@@ -760,5 +767,25 @@ static inline void OutputDebugString(LPCSTR s) { if (s) fputs(s, stderr); }
 #else
 static inline void OutputDebugString(LPCSTR) {}
 #endif
+
+// MulDiv, which dpiscale.h's DpiScale() is built on. Real implementation: it rounds
+// to nearest and the engine scales pixel sizes with it, so truncating would shift
+// icon and panel geometry by a pixel here and there.
+static inline int MulDiv(int a, int b, int c) {
+    if (c == 0) return -1;
+    long long n = (long long)a * (long long)b;
+    long long half = (c > 0) ? (c / 2) : -(c / 2);
+    return (int)((n + (n >= 0 ? half : -half)) / c);
+}
+
+// Raw-HDC blit and DC lifecycle entry points, used ::-qualified alongside the CDC
+// members (protsupp.cpp builds a scaled member-list icon this way). Painting, so
+// inert until there is a backend.
+static inline HDC CreateCompatibleDC(HDC) { return (HDC)0; }
+static inline BOOL DeleteDC(HDC) { return TRUE; }
+static inline HBITMAP CreateCompatibleBitmap(HDC, int, int) { return (HBITMAP)0; }
+static inline BOOL StretchBlt(HDC, int, int, int, int, HDC, int, int, int, int, DWORD) { return TRUE; }
+static inline BOOL BitBlt(HDC, int, int, int, int, HDC, int, int, DWORD) { return TRUE; }
+static inline void* SelectObject_HDC(HDC, void*) { return (void*)0; }
 
 #endif // NATIVE_SHIM_GDISHIM_H
