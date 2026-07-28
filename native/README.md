@@ -74,6 +74,17 @@ Working:
   macOS system headers and breaks every translation unit. `-fms-extensions` alone
   is what the engine needs (for redundant member qualification).
 
+- **`min`/`max` are defined at the very END of `stdafx.h`, after every standard
+  header.** libc++ `#undef`s them to protect `std::min`/`std::max`, so defining them
+  earlier — as an earlier version of this shim did, in `win32types.h` — silently
+  loses them again. They must stay macros rather than `std::min`/`std::max` because
+  the engine mixes int/short/double operands freely, which the templates reject.
+
+  Found by CI on its first run, not locally: this machine has Apple clang 21 where
+  the definitions survived, while the `macos-14` runner's clang 15 erased them and
+  three core files stopped compiling. Worth remembering as the shape of bug the
+  native job exists to catch — a shim that works on one toolchain and not another.
+
 ## Why staging, not include paths
 
 `native/stage.sh` builds a symlink farm of the engine sources beside the shim's

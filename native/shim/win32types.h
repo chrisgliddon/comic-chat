@@ -281,15 +281,9 @@ inline BOOL VirtualProtect(void*, size_t, DWORD, PDWORD old) { if (old) *old = P
 #define _MAX_DRIVE      3
 #define _MAX_DIR        256
 
-// windows.h defines these as macros and the engine relies on it (bbox.cpp uses
-// bare min/max on ints). Deliberately macros, not std::min/std::max: the engine
-// mixes int/short/double operands freely, which the templates would reject.
-#ifndef min
-#define min(a, b) (((a) < (b)) ? (a) : (b))
-#endif
-#ifndef max
-#define max(a, b) (((a) > (b)) ? (a) : (b))
-#endif
+// NOTE: min/max are NOT defined here. They are defined at the END of stdafx.h,
+// after every C++ standard header, because libc++ #undefs them - see the comment
+// there. Defining them at this point silently loses them on some toolchains.
 
 #define LOBYTE(w)   ((BYTE)((w) & 0xFF))
 #define HIBYTE(w)   ((BYTE)(((w) >> 8) & 0xFF))

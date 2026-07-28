@@ -83,4 +83,28 @@ extern CPalette   ghPalette;
 extern LOGPALETTE *gpLogPal;
 
 
+// ===========================================================================
+// min/max LAST, after every standard header has been pulled in.
+//
+// windows.h defines these as macros and the engine relies on it (bbox.cpp uses bare
+// min/max on ints). They are macros rather than std::min/std::max on purpose: the
+// engine mixes int/short/double operands freely, which the templates reject.
+//
+// The ORDER is the load-bearing part. libc++ #undefs min and max to protect
+// std::min/std::max, so defining them before <string>/<vector>/<map>/<algorithm>
+// - as an earlier version of this shim did, in win32types.h - loses them again on
+// any toolchain whose libc++ does that undef.
+//
+// This was found by CI, not locally: the development machine runs Apple clang 21,
+// where the definitions survived, while the macos-14 runner's clang 15 erased them
+// and three core files stopped compiling. Exactly the class of bug the native CI
+// job was added to catch, on its first run.
+// ===========================================================================
+#ifndef min
+#define min(a, b) (((a) < (b)) ? (a) : (b))
+#endif
+#ifndef max
+#define max(a, b) (((a) > (b)) ? (a) : (b))
+#endif
+
 #endif // NATIVE_SHIM_STDAFX_H
