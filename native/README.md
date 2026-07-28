@@ -20,12 +20,31 @@ line-breaking unit (`format`).
 Across the whole tree: **28 of 91** `.cpp` files compile, now including `chatdoc`
 (the document model) and `pageview`.
 
-Of the engine files needed for the corpus replay, only **`protsupp`** is left, and
-its remaining errors are catalogued rather than mysterious: five sites bind a
-`CString` temporary to a non-const reference (the MSVC extension already seen with
-`DashSeg` and `GetBodyFromEmotion` — each needs a named local), three call
-`bChatSendText` with a signature the shim has not matched yet, and the rest are
-missing constants. `balloon`, `panel`,
+Of the engine files needed for the corpus replay, only **`protsupp`** is left. Its
+remaining work is catalogued, and one attempt at it has been made and reverted —
+read this before trying again:
+
+- **12 sites bind a `CString` temporary to a non-const reference** — 7 calls to
+  `bMatchAndApplyRules`, 5 to `bChatSendText`. Same MSVC extension as `DashSeg` and
+  `GetBodyFromEmotion`.
+- Widening the parameters to `const CString&` would be one edit instead of twelve,
+  but **it cascades**: `bMatchAndApplyRules` forwards to `iGetFirstMatchingRule`,
+  which also takes `CString&`, through `rules.cpp` — a file that does not compile
+  natively, so the cascade cannot be checked locally. Named locals avoid that.
+- The batch attempt failed for reasons worth knowing: two of the calls **span
+  multiple lines** so a paren-matcher confined to one line mangles them; one
+  introduced a name that **collided with an existing local** (`currentRoom`); and one
+  produced an **ambiguous conditional** (`const char*` ↔ `CString` convertible both
+  ways). Do these deliberately, a few at a time, compiling between.
+- Two non-`CString` items: `protsupp.cpp:1960` passes **three arguments to the
+  two-parameter `MAKELONG`** (a stray trailing comma before `/*wOffset*/`) — MSVC's
+  legacy preprocessor tolerates extra macro arguments and drops the empty third, so
+  removing the comma preserves the value. And `iArg` at 2389 is another
+  `/Zc:forScope-` site that **reads the variable after the loop**, so it needs the
+  hoist.
+
+The revert was deliberate: `protsupp.cpp` is shared with the Windows build, and a
+half-applied batch of twelve interacting edits is worse than none. `balloon`, `panel`,
 `histent` and `fonts` have joined the engine-core set — that is the balloon
 geometry/outline unit and the panel layout unit, which between them own most of the
 Tier-3 goldens. The other 72 are

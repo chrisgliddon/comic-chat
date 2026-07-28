@@ -339,6 +339,9 @@ typedef struct tagTOOLINFO {
 
 class CMenuFwd;
 class CScrollBar;   // CWnd::OnVScroll/OnHScroll take one
+class CFrameWnd;    // returned by CWnd::GetParentFrame
+class CView;        // returned by CFrameWnd::GetActiveView
+class CMDIChildWnd; // returned by CMDIFrameWnd::MDIGetActive
 
 class CCmdUI {
 public:
@@ -406,6 +409,8 @@ public:
     CWnd* GetParent() const { return 0; }
     CWnd* GetDlgItem(int) const { return 0; }
     CMenu* GetMenu() const { return 0; }
+    CFrameWnd* GetParentFrame() const { return 0; }
+    CWnd* GetTopLevelParent() const { return 0; }
     void DrawMenuBar() {}
     void SetFocus() {}
     BOOL EnableWindow(BOOL = TRUE) { return TRUE; }
@@ -422,8 +427,15 @@ public:
     void SetWindowPos(const CWnd*, int, int, int, int, UINT) {}
 };
 
-class CFrameWnd : public CWnd {};
-class CMDIFrameWnd : public CFrameWnd {};
+class CFrameWnd : public CWnd {
+public:
+    void ActivateFrame(int = -1) {}
+    CView* GetActiveView() const { return 0; }
+};
+class CMDIFrameWnd : public CFrameWnd {
+public:
+    CMDIChildWnd* MDIGetActive(BOOL* = 0) const { return 0; }
+};
 class CMDIChildWnd : public CFrameWnd {};
 class CMiniFrameWnd : public CFrameWnd {};
 class CSplitterWnd : public CWnd {};
@@ -705,6 +717,11 @@ public:
 #define LVIF_PARAM      0x0004
 #define LVIF_STATE      0x0008
 #define LVIF_INDENT     0x0010
+#define LVFI_PARAM      0x0001
+#define LVFI_STRING     0x0002
+#define LVFI_PARTIAL    0x0008
+#define LVFI_WRAP       0x0020
+#define LB_ERR          (-1)
 #define LPSTR_TEXTCALLBACK  ((LPSTR)(intptr_t)-1)
 #define I_IMAGECALLBACK     (-1)
 #define LVCF_FMT        0x0001
@@ -754,6 +771,9 @@ public:
     BOOL SetItemState(int, UINT, UINT) { return TRUE; }
     BOOL DeleteItem(int) { return TRUE; }
     BOOL RedrawItems(int, int) { return TRUE; }
+    BOOL GetItem(LV_ITEM*) const { return FALSE; }
+    BOOL SetItem(const LV_ITEM*) { return FALSE; }
+    int FindItem(void*, int = -1) const { return -1; }
     void* SetImageList(void*, int) { return 0; }
     int InsertColumn(int, const LV_COLUMN*) { return -1; }
     BOOL SetColumnWidth(int, int) { return TRUE; }
