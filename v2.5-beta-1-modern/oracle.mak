@@ -133,6 +133,7 @@ HARNESS_OBJS= \
 	"$(ORACLE_INTDIR)\oracleharness.obj" \
 	"$(ORACLE_INTDIR)\ojson.obj" \
 	"$(ORACLE_INTDIR)\avbdump.obj" \
+	"$(ORACLE_INTDIR)\posedump.obj" \
 	"$(ORACLE_INTDIR)\oracleseed.obj"
 
 ALL : "$(OUTDIR)\OracleHarness.exe"
@@ -180,6 +181,10 @@ icchat_i.c icchat.h : base\icchat.idl
 # binaries run the same code against the same assets (see avbdump.h).
 "$(ORACLE_INTDIR)\avbdump.obj" : "$(ORACLE)\avbdump.cpp"
 	$(CPP) $(CPP_PROJ) "$(ORACLE)\avbdump.cpp"
+
+# posedump.cpp holds the Tier-1 #3/#2 dumps, likewise shared with the native build.
+"$(ORACLE_INTDIR)\posedump.obj" : "$(ORACLE)\posedump.cpp"
+	$(CPP) $(CPP_PROJ) "$(ORACLE)\posedump.cpp"
 
 "$(ORACLE_INTDIR)\oracleseed.obj" : "$(ORACLE)\oracleseed.cpp"
 	$(CPP) $(CPP_PROJ) "$(ORACLE)\oracleseed.cpp"

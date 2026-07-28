@@ -1,6 +1,11 @@
 #!/bin/sh
-# verify-avb.sh - build the native Tier-2 dump and diff it against the frozen
-# Windows goldens. Milestone 1 of the native port, and its regression test.
+# verify.sh - build the native dumps and diff them against the frozen Windows
+# goldens. Milestones 1 and 2 of the native port, and their regression test.
+#
+# Milestone 1: the 33 Tier-2 asset manifests (avbfile + dib + avatar + backdrop).
+# Milestone 2: Tier-1 #3 avatario and #2 avatar-pose - pure arithmetic, so a clean
+#   diff there isolates float-to-double widening, the tree-dependent PI used by the
+#   angle metric, and the MSVC RNG from everything else.
 #
 # What a clean run proves, all at once:
 #
@@ -34,7 +39,7 @@ OUT=$BUILD/avbout
 # differ - recordTags and the histograms would be empty.
 
 ./native/stage.sh > /dev/null
-for c in avbmain nativeglue; do
+for c in avbmain posemain nativeglue; do
     ln -sf "$ROOT/native/$c.cpp" "native/stage/$c.cpp"
 done
 
@@ -44,15 +49,20 @@ mkdir -p "$BUILD"
 # userinfo.o: it compiles, but importing it drags in the history and protocol layer
 # (AddAndExecute, GetMembers, the HistoryEntry vtables) for a dump that needs none
 # of it - native/nativeglue.cpp stubs the one symbol it was wanted for.
-UNITS="avbmain nativeglue avbdump ojson oracleseed avbfile dib avatar backdrop avatario vector2d bbox"
+ENGINE="avbfile dib avatar backdrop avatario vector2d bbox"
+SHARED="avbdump posedump ojson oracleseed nativeglue"
+DRIVERS="avbmain posemain"
 
-for u in $UNITS; do
+for u in $ENGINE $SHARED $DRIVERS; do
     clang++ -c $CXXFLAGS -o "$BUILD/$u.o" "native/stage/$u.cpp"
 done
 
-clang++ -o "$BUILD/avbdump" \
-    $(for u in $UNITS; do printf '%s ' "$BUILD/$u.o"; done) \
-    native/shim/msvcrand.cpp -lz
+# posedump links avbdump.o for the OracleAvb* observability sinks: avbfile.cpp calls
+# them under ORACLE_HARNESS whether or not this binary dumps assets.
+OBJS=$(for u in $ENGINE $SHARED; do printf '%s ' "$BUILD/$u.o"; done)
+
+clang++ -o "$BUILD/avbdump"  "$BUILD/avbmain.o"  $OBJS native/shim/msvcrand.cpp -lz
+clang++ -o "$BUILD/posedump" "$BUILD/posemain.o" $OBJS native/shim/msvcrand.cpp -lz
 
 rm -rf "$OUT"
 mkdir -p "$OUT"
@@ -61,6 +71,8 @@ mkdir -p "$OUT"
 match=0
 mismatch=0
 mislist=""
+
+# --- milestone 1: the 33 asset manifests ---
 for g in oracle/avb/*.golden.json; do
     stem=$(basename "$g" .golden.json)
     a="$OUT/$stem.json"
@@ -71,6 +83,19 @@ for g in oracle/avb/*.golden.json; do
         match=$((match + 1))
     else
         mismatch=$((mismatch + 1)); mislist="$mislist $stem"
+    fi
+done
+
+# --- milestone 2: the no-DC Tier-1 dumps ---
+"$BUILD/posedump" "$BUILD/avatario.json" "$BUILD/avatar.json" > /dev/null
+
+for pair in "avatario:oracle/avatario/avatario.golden.json" "avatar:oracle/avatar/avatar.golden.json"; do
+    name=${pair%%:*}
+    golden=${pair##*:}
+    if cmp -s "$golden" "$BUILD/$name.json"; then
+        match=$((match + 1))
+    else
+        mismatch=$((mismatch + 1)); mislist="$mislist $name"
     fi
 done
 
@@ -87,4 +112,5 @@ if [ "$mismatch" -ne 0 ]; then
     exit 1
 fi
 echo ""
-echo "Native macOS build reproduces all $match Windows goldens byte-for-byte."
+echo "Native macOS build reproduces all $match Windows goldens byte-for-byte"
+echo "(33 asset manifests + avatario + avatar-pose)."

@@ -97,8 +97,16 @@ BOOL CChatApp::StartDownloadingBackdrop(LPCSTR, LPCSTR) { NATIVE_UNLINKED("CChat
 // --- balloon.cpp: see the RNG note above ---
 double randfloat() { NATIVE_UNLINKED("randfloat (balloon.cpp) - would desync the pinned RNG sequence"); }
 
-// --- avatario.cpp / protsupp.cpp ---
-BYTE IndexToByte(BYTE) { NATIVE_UNLINKED("IndexToByte (protsupp.cpp)"); }
+// --- protsupp.cpp: IndexToByte / ByteToIndex ---
+// Transcribed from protsupp.cpp:1023-1032, not stubbed: the avatario dump encodes
+// every emotion through them, so an abort would make milestone 2 unreachable and a
+// wrong value would corrupt the wire bytes.
+//
+// They are two-line ASCII digit conversions and the avatario golden exercises the
+// full table, so a transcription error fails immediately rather than lurking. This
+// is still duplication - DELETE BOTH once protsupp.cpp links natively.
+BYTE IndexToByte(BYTE byteIn) { return byteIn + '0'; }
+BYTE ByteToIndex(BYTE byteIn) { return byteIn - '0'; }
 
 // --- protsupp.cpp ---
 void SetMyCharacter(const char*) { NATIVE_UNLINKED("SetMyCharacter (protsupp.cpp)"); }

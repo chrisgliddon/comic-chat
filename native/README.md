@@ -89,10 +89,11 @@ Two shim decisions follow directly from that and should not be relaxed:
   measuring live reintroduces exactly the platform dependence the frozen table
   exists to remove (RULEBOOK 5).
 
-## Milestone 1: PASSED — `--avb` reproduces all 33 goldens byte-for-byte
+## Milestones 1 and 2: PASSED — 35 goldens reproduced byte-for-byte
 
-`native/verify-avb.sh` builds the native dump and diffs it against the frozen
-Windows goldens. Current result: **matched 33, mismatched 0.**
+`native/verify.sh` builds the native dumps and diffs them against the frozen
+Windows goldens. Current result: **matched 35, mismatched 0** — the 33 Tier-2 asset
+manifests plus Tier-1 #3 (avatario) and #2 (avatar-pose).
 
 That single test covers 32 assets, 552 poses, 1612 decoded image slots and ~13.8 MB
 of hashed pixels, and it confirms:
@@ -129,12 +130,24 @@ Two scaffolding files exist only for this milestone and should shrink, not grow:
   case: it consumes the MSVC LCG whose draw order the corpus goldens pin, so a stub
   returning `0.0` would silently desynchronise every later panel.
 
+Milestone 2 is worth separating from milestone 1 because it tests different things.
+The asset manifests exercise byte layout and decode; avatario and avatar-pose are
+pure arithmetic, so a clean diff there isolates float-to-double widening, the
+**tree-dependent `PI`** used by the angle metric (RULEBOOK 1.2 — taking it from
+`M_PI` would shift the nearest-pose search), and the MSVC RNG.
+
+One duplication was accepted to get there and is marked for deletion:
+`IndexToByte`/`ByteToIndex` are transcribed into `native/nativeglue.cpp` from
+`protsupp.cpp:1023-1032`. They are two-line ASCII digit conversions, the avatario
+golden exercises the full table so a transcription error fails immediately, and
+stubbing them to abort would have made milestone 2 unreachable. **Delete both once
+`protsupp.cpp` links natively.**
+
 ## Remaining milestones
 
-2. **The other no-DC dumps** — `--avatario`, `--avatar-pose`, `--codecs` against
-   their frozen goldens. `--textpose` additionally needs the `.rc` string table,
-   which has no native equivalent; the frozen textpose golden lists the strings,
-   so they can be supplied from data.
+2b. **`--codecs`** against its golden — blocked on `ircsock.cpp` compiling.
+   **`--textpose`** needs the `.rc` string table, which has no native equivalent;
+   the frozen textpose golden lists the strings, so they can be supplied from data.
 3. **Core Graphics `CDC`** + the frozen glyph table → the 15 corpus goldens. This
    is the real engineering: ~150 GDI call sites, `StrokeAndFillPath` path
    semantics, and TWIPS mapping.
