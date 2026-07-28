@@ -25,18 +25,45 @@
         abort(); \
     } while (0)
 
+// Stands for "the font the DC already had". MFC's SelectObject returns
+// CFont::FromHandle(hOldFont) - a temporary wrapper around the outgoing GDI font - and it
+// is NEVER null for a valid DC, because a DC always has some font selected. Handing back a
+// real object matters because callers TEST it:
+//
+//     CFont* pOldFont = pDc->SelectObject(m_fontBalloon);   // fonts.cpp:61
+//     ...
+//     if (pOldFont)                                         // fonts.cpp:69
+//         pDc->SelectObject(pOldFont);
+//
+// Returning NULL for "nothing selected yet" made that restore be SKIPPED, so the DC kept
+// Comic Sans selected for the rest of the run. CLabel::WidestWord - which selects no font
+// of its own - then measured in Comic Sans (3885) where Windows measured in the DC's stock
+// System font (3180), and that one number widened every balloon in 14 of 15 corpus cases.
+static CFont g_stockFontSentinel;
+
 CFont* CDC::SelectObject(CFont* p) {
-    // A null font leaves the DC's notion of "pinned" alone: MFC uses
-    // SelectObject(NULL) to mean "no change" in several engine call sites.
-    if (p) {
-        GlyphTableLoad();
-        // Selects the matching entry in the table, so subsequent measurement uses THIS
-        // font's advances. The engine switches between balloon, whisper (italic), title
-        // and shout repeatedly while laying out a page, and each has different widths -
-        // measuring a title with balloon advances would misplace every title.
+    GlyphTableLoad();
+
+    // The PREVIOUSLY selected font - GDI's contract, and the whole mechanism behind the
+    // save/restore idiom. This used to `return p`, which made every restore re-select the
+    // font being saved.
+    CFont* prev = m_pCurFont ? m_pCurFont : &g_stockFontSentinel;
+
+    if (!p || p == &g_stockFontSentinel) {
+        // Back to the DC's original font. m_pCurFont returns to 0 so the next save hands
+        // back the sentinel again. If the capture has no stock entry, the previous
+        // behaviour is kept rather than aborting, so an older glyphs.json still loads.
+        m_pCurFont = 0;
+        if (GlyphSelectStock()) m_pinnedFont = TRUE;
+    } else {
+        // Selects the matching entry, so subsequent measurement uses THIS font's advances.
+        // The engine switches between balloon, whisper (italic), title and shout repeatedly
+        // while laying out a page and each has different widths - measuring a title with
+        // balloon advances would misplace every title.
+        m_pCurFont = p;
         m_pinnedFont = GlyphSelectFont(&p->m_lf) ? TRUE : FALSE;
     }
-    return p;
+    return prev;
 }
 
 SIZE CDC::GetTextExtent(LPCTSTR s, int len) const {

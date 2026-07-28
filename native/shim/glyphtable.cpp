@@ -170,6 +170,18 @@ bool GlyphTableLoad(const char* path) {
                         "  shout measurements will abort. Re-capture with --glyphs.\n", p);
     }
 
+    // Rebind every faceName to its OWN element's string, now that the vector has stopped
+    // growing. ReadFont set it to e.face.c_str(), which points into the caller's local `e`
+    // and dies the moment it is copied in above; rebinding per push_back is not enough
+    // either, because a later reallocation moves the earlier elements. Done here, once,
+    // after the vector is final.
+    //
+    // This was a latent dangling pointer that only became visible when CDC::GetTextFace
+    // started reading faceName - it then reported whatever was left in the freed buffer,
+    // which made the stock 'System' entry claim to be 'Comic Sans MS'.
+    for (size_t i = 0; i < g_fonts.size(); i++)
+        g_fonts[i].m.faceName = g_fonts[i].face.c_str();
+
     // The cFontInfo scalars live ONLY on the legacy top-level `font` object: the
     // multi-font capture emits per-font metrics and advances, but CFontInfo is derived
     // once for the balloon font and was never added to the `fonts` elements. So when the
@@ -287,6 +299,14 @@ bool GlyphSelectFont(const LOGFONT* lf) {
     if (i < 0) return false;
     g_active = i;
     return true;
+}
+
+bool GlyphSelectStock() {
+    if (!g_loaded && !GlyphTableLoad()) return false;
+    for (size_t i = 0; i < g_fonts.size(); i++) {
+        if (g_fonts[i].role == "stock") { g_active = (int)i; return true; }
+    }
+    return false;
 }
 
 int GlyphAdvance(unsigned char ch) {

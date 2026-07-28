@@ -553,7 +553,13 @@ public:
     // m_pinnedFont starts TRUE: the oracle dumps set up the pinned font before any
     // measurement, and a DC that is never given a font at all is only used for
     // painting. A wrong font is caught at SelectObject time instead.
-    CDC() : m_nDcMapMode(MM_TEXT), m_hDC(0), m_bPrinting(FALSE), m_pinnedFont(TRUE) {}
+    CDC() : m_nDcMapMode(MM_TEXT), m_hDC(0), m_bPrinting(FALSE), m_pinnedFont(TRUE),
+            m_pCurFont(0) {}
+    // The font currently selected, so SelectObject can return the PREVIOUS one - which
+    // is the whole mechanism callers use to restore it. Returning the newly selected font
+    // instead (as this did) makes every save/restore pair a no-op, and that is why
+    // CLabel::WidestWord measured in the balloon font where Windows used the stock one.
+    CFont* m_pCurFont;
     HDC GetSafeHdc() const { return (HDC)m_hDC; }
     CFont* GetCurrentFont() const { return 0; }
     // Defined out-of-line in glyphtable_cdc.cpp against the frozen glyph table. NOT a

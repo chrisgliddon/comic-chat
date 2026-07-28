@@ -32,7 +32,20 @@ int main(int argc, char** argv) {
         fprintf(stderr, "glyphcheck: could not load the glyph table\n");
         return 1;
     }
-    const GlyphMetrics* m = GlyphTableMetrics();
+    // The BALLOON font, found by its pinned CFontInfo rather than by table position. The
+    // active entry is now the stock font (what a fresh DC holds), so entry 0 is no longer
+    // the balloon one - and the five cFontInfo scalars checked below are a property of the
+    // balloon font specifically.
+    const GlyphMetrics* m = 0;
+    for (int i = 0; i < GlyphFontCount(); i++) {
+        const GlyphMetrics* c = GlyphFontAt(i);
+        if (c && c->faceName && strcmp(c->faceName, "Comic Sans MS") == 0
+            && c->lfHeight == -240 && !c->lfItalic) { m = c; break; }
+    }
+    if (!m) {
+        fprintf(stderr, "glyphcheck: the table has no upright Comic Sans MS at lfHeight -240\n");
+        return 1;
+    }
 
     // Build the pinned font exactly as CaptureGlyphs did, from the table's own
     // recorded lfHeight and face - so this cannot drift from what was captured.

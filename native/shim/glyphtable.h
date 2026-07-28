@@ -45,6 +45,11 @@ bool GlyphTableReady();
 // no such entry; the caller is expected to refuse to measure rather than fall back.
 bool GlyphSelectFont(const LOGFONT* lf);
 
+// Selects the "stock" entry - the font a fresh DC holds before anything is selected.
+// This is what restoring a NULL previous font must mean, and what WidestWord measures
+// with. Returns false if the capture has no stock entry.
+bool GlyphSelectStock();
+
 // Advance width in TWIPS for a single byte in the ACTIVE font, or -1 if unpinned.
 // Each font covers 0x00-0xFF. The control range below 0x20 is included because
 // CLabel::WidestWord measures one byte past the end of the string (balloon.cpp:738,
