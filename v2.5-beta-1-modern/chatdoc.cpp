@@ -2065,6 +2065,21 @@ CPageView *GetView()
 
 CChatDoc *LookupDoc(const char *channel)
 {
+#ifdef ORACLE_HARNESS
+	if (getenv("COMIC_CHAT_IRC_TRACE"))
+	{
+		fprintf(stderr, "[lookupdoc] want='%s' docs=%d", channel ? channel : "(null)",
+		        (int)g_docs.GetCount());
+		POSITION p2 = g_docs.GetHeadPosition();
+		while (p2)
+		{
+			CChatDoc *d2 = (CChatDoc *) g_docs.GetNext(p2);
+			fprintf(stderr, " [proto=%p chan='%s']", (void*)d2->m_proto,
+			        d2->m_proto ? (LPCSTR) d2->m_proto->m_strChannel : "(no proto)");
+		}
+		fprintf(stderr, "\n");
+	}
+#endif
 	POSITION pos = g_docs.GetHeadPosition();
 	while (pos)
 	{

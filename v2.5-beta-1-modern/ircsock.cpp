@@ -1173,6 +1173,14 @@ void CIrcSocket::HandleCommand(CString& strLine, char *szLine, PIRCPARSE pParse,
 	ASSERT(pIrcPrint);
 
 	SHORT	nCmd = NGetCmd(pParse->args[0]);
+#ifdef ORACLE_HARNESS
+	if (getenv("COMIC_CHAT_IRC_TRACE"))
+		fprintf(stderr, "[cmd] nCmd=%d args0='%s' nArgs=%d nick='%s' user='%s' last='%.30s'\n",
+		        (int)nCmd, pParse->args[0] ? pParse->args[0] : "",
+		        (int)pParse->nArgs, pParse->nick ? pParse->nick : "",
+		        pParse->user ? pParse->user : "",
+		        pParse->lastString ? pParse->lastString : "(null)");
+#endif
 	if (-1 == nCmd)
 	{
 		ASSERT(FALSE);

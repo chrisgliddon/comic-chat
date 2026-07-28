@@ -129,6 +129,7 @@ extern "C" void* GetMime() { return NULL; }
 // has no HTTP downloader; aborting is right for now because silently doing nothing
 // would leave a backdrop permanently blank with no explanation.
 #include "chat.h"
+#include "memblst.h"    // CMemberList, for the participant-pane no-ops at the end
 BOOL CChatApp::StartDownloadingBackdrop(LPCSTR, LPCSTR) { NATIVE_UNLINKED("CChatApp::StartDownloadingBackdrop (chat.cpp)"); }
 
 // randfloat now comes from the real balloon.cpp, which links - so the pinned RNG
@@ -245,3 +246,112 @@ void ShowMOTD(const char* szLUsers, const char* szMOTD) {
 // above) nothing asks it to match, so "no match" is consistent rather than arbitrary.
 BOOL bGetUserMatchFromMask(LPTSTR, void*) { return FALSE; }
 BOOL bIsMatch(void*, LPCTSTR, LPCTSTR, LPCTSTR) { return FALSE; }
+
+// --- setupdlg.cpp: ArtDirsOK ---------------------------------------------------------
+// Transcribed from setupdlg.cpp:1704. It answers "do the art directories hold at least one
+// backdrop AND at least one character", and it must be REAL rather than hardcoded TRUE,
+// because a wrong answer is silently destructive in both directions:
+//
+//   FALSE when art exists  -> AdjustViewMode (protsupp.cpp:152) reads
+//                             `if (g_iViewMode == VM_TEXT || !theApp.m_bFoundArt)` and sends
+//                             the engine into the TEXT view on every channel join.
+//   TRUE when art is absent -> the comic view runs with no characters to draw.
+//
+// A backdrop counts as either .bmp or .bgb, exactly as the original does - .bgb came later and
+// the check accepts both.
+BOOL ArtDirsOK() {
+    struct _finddata_t fd;
+    UINT found = 0;
+    const UINT FOUND_BACKDROPS = 1, FOUND_AVATARS = 2;
+
+    CString pattern = theApp.m_strBackDropDir + "\\*.bmp";
+    long h = _findfirst((char*)(const char*)pattern, &fd);
+    if (h != -1) { found |= FOUND_BACKDROPS; _findclose(h); }
+
+    if (!(found & FOUND_BACKDROPS)) {
+        pattern = theApp.m_strBackDropDir + "\\*.bgb";
+        h = _findfirst((char*)(const char*)pattern, &fd);
+        if (h != -1) { found |= FOUND_BACKDROPS; _findclose(h); }
+    }
+
+    pattern = theApp.m_strAvatarDir + "\\*.avb";
+    h = _findfirst((char*)(const char*)pattern, &fd);
+    if (h != -1) { found |= FOUND_AVATARS; _findclose(h); }
+
+    return found == (FOUND_BACKDROPS | FOUND_AVATARS);
+}
+
+// ChatSetChannel / ChatSetServer - remember the room and server for next time. On Windows these
+// write to the registry through setupdlg.cpp; here they update the same storage the GetMy*
+// accessors read, which is what the engine consults afterwards.
+void ChatSetChannel(const char* szChannel) { if (szChannel) g_myChannel = szChannel; }
+void ChatSetServer(const char* szServer)   { if (szServer)  g_myServer = szServer; }
+
+// --- utils.cpp: CNCSMapStringToPtr ---------------------------------------------------
+// Transcribed from utils.cpp:1653-1695. "NCS" is non-case-sensitive: it lowercases the key
+// before delegating to CMapStringToPtr, because IRC nicknames are case-insensitive.
+//
+// The exception matters and is easy to miss. A key beginning with an apostrophe is an ENCODED
+// nickname - EncodeNick (ircproto.cpp) emits a leading ' for names that needed UTF-8 escaping,
+// and DecodeNick tests for it. Those are compared verbatim, because lowercasing an escaped
+// name would change the escape sequence itself.
+//
+// This is the nick -> CUserInfo map the message path uses (m_mapNickToPtr), so it has to be a
+// real implementation: a stub means no incoming message can ever find its sender.
+BOOL CNCSMapStringToPtr::Lookup(LPCTSTR key, void*& rValue) const {
+    if (!key) return FALSE;
+    if (key[0] == '\'') return CMapStringToPtr::Lookup(key, rValue);
+    CString strLowerKey = key;
+    strLowerKey.MakeLower();
+    return CMapStringToPtr::Lookup(strLowerKey, rValue);
+}
+
+void CNCSMapStringToPtr::SetAt(LPCTSTR key, void* newValue) {
+    if (!key) return;
+    if (key[0] == '\'') { CMapStringToPtr::SetAt(key, newValue); return; }
+    CString strLowerKey = key;
+    strLowerKey.MakeLower();
+    CMapStringToPtr::SetAt(strLowerKey, newValue);
+}
+
+BOOL CNCSMapStringToPtr::RemoveKey(LPCTSTR key) {
+    if (!key) return FALSE;
+    if (key[0] == '\'') return CMapStringToPtr::RemoveKey(key);
+    CString strLowerKey = key;
+    strLowerKey.MakeLower();
+    return CMapStringToPtr::RemoveKey(strLowerKey);
+}
+
+// --- memblst.cpp: CMemberList ---------------------------------------------------------
+// The participant pane - the "mugshots in the upper right" of the original UI. There is no
+// such pane yet in the native front end, so these three are display-only operations with
+// nothing to display to.
+//
+// They are faithful rather than arbitrary. GetSortPosition (memblst.cpp:330) walks the list
+// control comparing sort keys and returns m_MemberListBox.GetItemCount() when it finds no
+// earlier slot; with no control that count is 0, so 0 is precisely what the real code returns
+// for an empty list. Sort and MakeVisible reorder and scroll the control, which is meaningless
+// without one.
+//
+// Participant TRACKING is unaffected: that lives in the document's m_mapNickToPtr and the
+// CUserInfo objects, which are real. Only the on-screen list is missing.
+int  CMemberList::GetSortPosition(CUserInfo*) { return 0; }
+void CMemberList::Sort() {}
+void CMemberList::MakeVisible(CUserInfo*) {}
+
+// --- protsupp.cpp / wmini.cpp: the whisper box and sound -------------------------------
+// The whisper box is a separate little window that collects whispered messages. bAddToWhisperBox
+// returns TRUE when it has CONSUMED the message, and ProcessSay reads it as
+//     if (!bAddToWhisperBox(pui, pui->m_udi.m_uModes, szMesg)) { ...put it in the comic... }
+// so FALSE is not a placeholder - it is the answer that sends every message to the comic, which
+// is what a build with no whisper box should do. Returning TRUE would silently swallow messages.
+BOOL bAddToWhisperBox(CUserInfo*, USHORT, const char*) { return FALSE; }
+BOOL bWhisperInBox(CString, CString, CDWordArray*, USHORT) { return FALSE; }
+
+// Sound effects. FALSE means "no sound was played", which is true.
+BOOL bFindAndPlaySound(const char*, BOOL) { return FALSE; }
+
+// bLegalToSend gates outgoing text. TRUE because the native front end only offers to send when
+// a connection exists; the Windows version also checks flood control and a modal-dialog guard,
+// neither of which applies here.
+BOOL bLegalToSend(BOOL) { return TRUE; }

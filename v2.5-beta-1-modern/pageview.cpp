@@ -812,7 +812,7 @@ void CPageView::OnRButtonDown(UINT nFlags, CPoint point)
 
 
 void StartNewPanel() {
-	CPage *page = (CPage *) (GetView()->GetDocument()->m_pages.GetTail());
+	CPage *page = (CPage *) (GetChatDoc()->m_pages.GetTail());   // see UpdateTitle below
 	page->StartNewPanel();
 }
 
@@ -836,7 +836,7 @@ BOOL Establishing() {
 	CChatDoc *doc = GetChatDoc();
 	CPage *page1 = (CPage *) doc->m_pages.GetHead();
 #else
-	CPage *page1 = (CPage *) GetView()->GetDocument()->m_pages.GetHead();
+	CPage *page1 = (CPage *) GetChatDoc()->m_pages.GetHead();    // see UpdateTitle below
 #endif
 	int count = page1->m_panels.GetCount();
 	if (count <= 1 || (!g_bNewedPanel && count <= 2)) return TRUE;
@@ -988,7 +988,7 @@ void SetPrintOffset(int x, int y)
 
 void ShowInfoX(void *pui, const char *szInfo, BOOL bOnlyInComics, char cHotLinkChar)
 {
-	GetView()->GetDocument()->ShowInfo(pui, szInfo, bOnlyInComics, cHotLinkChar);
+	GetChatDoc()->ShowInfo(pui, szInfo, bOnlyInComics, cHotLinkChar);   // see UpdateTitle below
 }
 
 
@@ -1229,7 +1229,12 @@ void CPageView::ResetExistingPanels(BOOL bAddPage) {
 
 
 void UpdateTitle(CChatDoc *doc) {
-	if (!doc) doc = GetView()->GetDocument();
+	// GetChatDoc(), not GetView()->GetDocument(). They are the same object - GetView()
+	// (chatdoc.cpp:2058) returns GetChatDoc()->m_view - but the indirection requires a CView,
+	// and the native front end has none: it draws the pages with AppKit. Every site in this
+	// file that reached the document through the view crashed on the NULL view, this one on
+	// the PART/QUIT path when a remote user left.
+	if (!doc) doc = GetChatDoc();
 	if (doc->m_pages.IsEmpty()) return;
 	CPage *p = (CPage *) doc->m_pages.GetHead();
 	p->UpdateTitle();

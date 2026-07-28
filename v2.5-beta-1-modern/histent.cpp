@@ -105,7 +105,11 @@ void SayEntry::Execute(int, CChatDoc *)
 		}
 	}
 
-	GetView()->GetDocument()->ProcessLine(m_pui->GetAvatarID(), m_mesg, m_udi.m_uModes, m_udi.m_bbCooked, m_prgdwFormatting);
+	// GetChatDoc() rather than GetView()->GetDocument(): those are the SAME object - GetView()
+	// (chatdoc.cpp:2058) returns GetChatDoc()->m_view, so its document is the chat doc again -
+	// but the roundabout spelling needs a view to exist. The native front end draws with AppKit
+	// and has no CView, so going through one crashed here on every incoming message.
+	GetChatDoc()->ProcessLine(m_pui->GetAvatarID(), m_mesg, m_udi.m_uModes, m_udi.m_bbCooked, m_prgdwFormatting);
 }
 
 
@@ -647,7 +651,7 @@ void AddEntry(CPtrList *lst, CDocument *d) {
 
 
 void AddToHistory(HistoryEntry *ent) {
-	GetView()->GetDocument()->m_history.AddTail((void *) ent);
+	GetChatDoc()->m_history.AddTail((void *) ent);   // same object; see SayEntry::Execute
 }
 
 #define CONVERSATIONSTRING	"#CHATCONVERSATION"

@@ -199,6 +199,12 @@ void DrawLabelText(CGContextRef c, CLabel* lab, int baseX, int baseY) {
 // same API. The engine already knows how to make all of them.
 void DrawBalloon(CGContextRef c, CBalloon* b, int panelLeft, int panelTop) {
     if (!b) return;
+
+    // The engine ASSERTs these in SetBalloonTraj (balloon.cpp:1763-1765) and then dereferences
+    // them anyway, because ASSERT is compiled out of a release build. A balloon can be in the
+    // element list before it has been laid out, so the invariants are checked here rather than
+    // crashing inside the engine.
+    if (!b->m_spline || !b->m_fInfo || !b->m_fontI) return;
     CDC dc;
     dc.m_cgCtx = (void*)c;
     dc.m_nDcMapMode = MM_TWIPS;
@@ -224,6 +230,12 @@ void DrawBalloon(CGContextRef c, CBalloon* b, int panelLeft, int panelTop) {
 // handling and mask semantics that already exist and are already correct.
 void DrawBody(CGContextRef c, CBody* body, int panelLeft, int panelTop) {
     if (!body) return;
+
+    // A body whose avatar is not loaded must be SKIPPED. CBodyDouble::DrawBody
+    // (bodycam.cpp:519) does `int flags = av->m_flags;` with no null check, and this happens
+    // for real: a remote IRC user gets a CUserInfo as soon as they speak, and their character
+    // may not have resolved yet.
+    if (!GetAvatar(body->m_avatarID)) return;
 
     // A DC whose only job is to carry the context. Painting members are no-ops in the shim
     // except the blitter, which is all a body needs.
@@ -275,14 +287,27 @@ void DrawPanel(CGContextRef c, CPanel* panel, int px, int py) {
     POSITION ep = panel->m_elements.GetHeadPosition();
     while (ep) {
         CPanelElement* e = (CPanelElement*)panel->m_elements.GetNext(ep);
-        int t = e->GetType();
-        if (t & PE_BALLOON) {
-            DrawBalloon(c, (CBalloon*)e, px, py);
-        } else if (t == PE_UNKNOWN) {
-            // A plain CLabel: the panel title and the STARRING list. CBody and CBackDrop
-            // also derive from CPanelElement and also report PE_UNKNOWN, but they live in
-            // m_bodies / m_backDrop rather than m_elements, so this list is labels only.
-            DrawLabelText(c, (CLabel*)e, px, py);
+        if (!e) continue;
+
+        // dynamic_cast, NOT GetType(). GetType() separates balloons (PE_BALLOON) from
+        // everything else, but everything else is PE_UNKNOWN - and m_elements genuinely holds
+        // more than one kind of it. AddStars (panel.cpp:1534) adds a CBodyUnary for each
+        // mugshot icon in the STARRING list, right beside the CStarLabel naming that
+        // participant. An earlier version of this loop assumed PE_UNKNOWN meant CLabel and
+        // followed m_fontI on a body, which crashed the moment a remote user joined and the
+        // title panel was rebuilt.
+        //
+        // CPanelElement::Draw is virtual, so these types are polymorphic and RTTI is the
+        // honest way to tell them apart - better than inventing a discriminator the engine
+        // does not have.
+        if (CBalloon* balloon = dynamic_cast<CBalloon*>(e)) {
+            DrawBalloon(c, balloon, px, py);
+        } else if (CLabel* lab = dynamic_cast<CLabel*>(e)) {
+            // The panel title, the STARRING heading, and one CStarLabel per participant.
+            DrawLabelText(c, lab, px, py);
+        } else if (CBody* body = dynamic_cast<CBody*>(e)) {
+            // A STARRING mugshot, drawn by the engine like any other body.
+            DrawBody(c, body, px, py);
         }
     }
     CGContextRestoreGState(c);

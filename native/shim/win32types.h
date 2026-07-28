@@ -392,8 +392,24 @@ typedef struct tagBITMAPFILEHEADER {
 #define lstrcpyn    strncpy
 #define lstrcat     strcat
 #define lstrlen     strlen
-#define lstrcmp     strcmp
-#define lstrcmpi    strcasecmp
+// lstrcmp/lstrcmpi must return EXACTLY -1, 0 or +1, not the raw character difference.
+//
+// This is not pedantry. NGetCmd (ircsock.cpp:92) binary-searches the IRC command table and
+// steers with `if (-1 == nRet)`. strcasecmp returns the difference between the first differing
+// characters, so a "less than" of -8 was read as "greater than" and the search walked the
+// wrong half: PRIVMSG and JOIN came back as unknown commands while MODE and QUIT happened to
+// resolve. The visible symptom was an IRC client that connected, joined, and then silently
+// ignored every message anyone sent.
+//
+// MSVC's lstrcmpi does normalise to -1/0/1, which is why the engine could rely on it.
+static inline int lstrcmp(LPCSTR a, LPCSTR b) {
+    int r = strcmp(a ? a : "", b ? b : "");
+    return (r < 0) ? -1 : (r > 0 ? 1 : 0);
+}
+static inline int lstrcmpi(LPCSTR a, LPCSTR b) {
+    int r = strcasecmp(a ? a : "", b ? b : "");
+    return (r < 0) ? -1 : (r > 0 ? 1 : 0);
+}
 // __T is the inner half of MSVC's _T macro; avbfile.cpp reaches it directly.
 #ifndef __T
 #define __T(x)      x
@@ -498,6 +514,20 @@ static inline const char* NativePath(const char* p, char* buf, size_t n) {
 //
 // No recursion: the macro is defined AFTER this function's body has been preprocessed,
 // so the fopen call inside it is still the real one.
+// MSVC's strdup returns NULL for a NULL argument; macOS's dereferences it and crashes. The
+// engine RELIES on the tolerant behaviour: histent.h:134 is
+//     ChangeBackDropEntry(const char* backName, const char* backURL) {
+//         m_backName = strdup(backName); m_backURL = strdup(backURL); }
+// and CChatDoc::InitHistory constructs one with NULL for backURL on every channel join. So
+// this is not defensive programming, it is the platform difference the shim exists to absorb.
+//
+// No recursion: the macro is defined after this function's body has been preprocessed.
+static inline char* NativeStrdup(const char* s) {
+    return s ? strdup(s) : (char*)0;
+}
+#define strdup(s)   NativeStrdup(s)
+#define _strdup(s)  NativeStrdup(s)
+
 static inline FILE* NativeFopen(const char* path, const char* mode) {
     char buf[NATIVE_PATH_MAX];
     if (!path) return (FILE*)0;

@@ -23,6 +23,7 @@ class CPageView;
 #include "panel.h"
 #include "glyphtable.h"
 #include "stringtable.h"
+#include "bodycam.h"
 #include "ircproto.h"
 #include "ircsock.h"
 #include "defines.h"
@@ -42,6 +43,7 @@ void InitializeAvatars();
 void LoadEmotionStrings();
 CAvatarX* LoadAvatar(const char* avName);
 int PointsToTwips(int pts);
+BOOL ArtDirsOK();
 
 namespace {
 
@@ -122,6 +124,17 @@ bool NativeSessionStart(const char* treeDir) {
     theApp.m_strBackDropDir   = CString(treeDir) + "\\ComicArt";
     theApp.m_strAvatarDir     = theApp.m_strBackDropDir;
 
+    // m_bFoundArt is LOAD-BEARING, not informational. AdjustViewMode (protsupp.cpp:152) reads
+    //     if (g_iViewMode == VM_TEXT || !theApp.m_bFoundArt) doc->OnViewText();
+    // and the room-entry path calls AdjustViewMode, so leaving it FALSE sent the engine into
+    // the TEXT view on every channel join - which then reached into CChatView and aborted.
+    // Windows sets it inside SetArtDir; the native path assigns the directories itself (to
+    // avoid SetArtDir's early-out when they are unchanged), so it must set this too.
+    theApp.m_bFoundArt = ArtDirsOK();
+    if (!theApp.m_bFoundArt)
+        fprintf(stderr, "session: ComicArt not found under '%s' - characters will be missing\n",
+                treeDir);
+
     InitializeBackDrops();
     LoadEmotionStrings();
     InitializeEmotionRules();
@@ -132,18 +145,39 @@ bool NativeSessionStart(const char* treeDir) {
     g_doc->m_view = NULL;         // see CNativeChatDoc
     g_doc->m_bComicView = TRUE;
     g_doc->SetComicsTitle("Comic Chat");
+    // The BODY CAM. GetBodyCam() (chatdoc.cpp:2028) returns pDoc->m_bodyCam, and RefreshBodyCam
+    // dereferences it WITHOUT a null check (bodycam.cpp:868) - so an unset one crashed the
+    // moment the engine set the local avatar, which InitHistory does on every channel join.
+    //
+    // A real instance rather than a guard: CBodyCam's constructor only initialises members and
+    // DPI-scales the emotion-wheel metrics, and its window creation is behind a VERIFY that
+    // fails harmlessly with no window server. It is also the object the self-view and emotion
+    // wheel will be driven from, so it belongs here anyway.
+    g_doc->m_bodyCam = new CBodyCam;
+
     g_doc->InitMyDocument();
 
-    // ONE protocol object, shared by the connection and the document.
+    // m_enterInfos entry 0 is g_enterInfo, which is what GetRoomInfoFromName falls back to
+    // when a room is not in the list (chat.cpp:1870 indexes entry 0 and overwrites its
+    // channel). Seeding it is what makes that fallback safe rather than an empty-array index.
+    if (theApp.m_enterInfos.GetSize() == 0) theApp.m_enterInfos.Add(&g_enterInfo);
+
+    // TWO protocol objects, and they must stay distinct - this is the engine's own structure,
+    // not an accident:
     //
-    // CChatDoc's constructor already does m_proto = NewDefaultProto(this) and g_docs.AddHead
-    // (chatdoc.cpp:184,193), so the document arrives with its own proto and is registered for
-    // lookup. Creating a second one for cui.m_pvIrcProto - which is what GetIrcProto() returns
-    // - meant the connection set the channel on one object while LookupDoc matched against the
-    // other, so an incoming PRIVMSG resolved to no document and was dropped.
+    //   cui.m_pvIrcProto  the CONNECTION-level proto. CommunicationInits creates it once with
+    //                     NewDefaultProto(NULL), and GetIrcProto() returns it. Connection
+    //                     status and every outgoing query go through it.
+    //   doc->m_proto      the ROOM-level proto, replaced on every join: the JOIN handler calls
+    //                     bProcessAddChannel(channel, NewDefaultProto(NULL), ...) and that
+    //                     function does `delete doc->m_proto` before installing the new one
+    //                     (protsupp.cpp:4321).
     //
-    // currentRoom is the same pointer, because protsupp.cpp treats it as the active room.
-    cui.m_pvIrcProto = g_doc->m_proto;
+    // Aliasing them - which looked like a simplification, since CChatDoc's constructor already
+    // makes a proto - meant the join DELETED the object GetIrcProto() returns. The next query
+    // then read m_pSock through a dangling pointer, got NULL, and crashed. So the
+    // simplification was actively wrong, and the duplication is load-bearing.
+    if (!cui.m_pvIrcProto) cui.m_pvIrcProto = NewDefaultProto(NULL);
     currentRoom = g_doc->m_proto;
 
     // The engine looks up "who am I" through g_puiSelf when deciding whether a message is
@@ -219,6 +253,11 @@ bool NativeSessionConnect(const char* server, int port, const char* nickname,
     if (channel && *channel) {
         g_enterInfo.m_strChannel = channel;
         theApp.m_iOnConnectAction = CA_JOINROOM;
+
+        // The channel is NOT set on the proto here. bProcessAddChannel installs a fresh room
+        // proto on join and sets its channel itself, which is what LookupDoc then matches -
+        // setting it on the doc's initial proto only mattered while the two protos were
+        // wrongly aliased.
     } else {
         theApp.m_iOnConnectAction = CA_NOACTION;
     }

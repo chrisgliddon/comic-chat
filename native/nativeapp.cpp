@@ -249,3 +249,97 @@ void CChatApp::CompleteConnection() {
     m_strConnectedServer = (s && *s) ? s : "";
     m_strConnectedService = m_strConnectedServer;
 }
+
+// --- chat.cpp: the room-info list -----------------------------------------------------
+// m_enterInfos is the array of rooms the app knows about. It is REAL state that the engine
+// consults on join and on message routing, not a UI cache, so these are transcribed from
+// chat.cpp:1827-1900 rather than stubbed.
+//
+// The important behaviour is the fallback at the end of GetRoomInfoFromName: when nothing
+// matches and bNullOK is FALSE, it returns entry 0 with its channel OVERWRITTEN to the name
+// asked for. Entry 0 is g_enterInfo, so a lookup for an unknown room quietly retargets the
+// default room info - callers rely on always getting a usable CRoomInfo back. Returning NULL
+// instead would crash them.
+//
+// The clone matching (bCloneOK) accepts "#room2" as a clone of "#room": prefix match plus
+// digits to the end. Comic Chat spawned numbered clones when a room filled up.
+CRoomInfo* CChatApp::GetRoomInfoFromName(CString strChannelName, PINT piIndex,
+                                         BOOL bCloneOK, BOOL bNullOK) {
+    INT iRoomInfos = m_enterInfos.GetSize();
+    INT iRoomIndex;
+    CRoomInfo* pEnterInfo = NULL;
+
+    for (iRoomIndex = iRoomInfos - 1; iRoomIndex >= 0; iRoomIndex--) {
+        pEnterInfo = (CRoomInfo*) m_enterInfos.GetAt(iRoomIndex);
+        if (!pEnterInfo) continue;
+        // NOTE the sense: CompareNoCase returns 0 when EQUAL, so a non-zero result here means
+        // "different", and the match falls through to the goto below. Transcribed as-is.
+        if (pEnterInfo->m_strChannel.CompareNoCase(strChannelName)) {
+            if (bCloneOK) {
+                CString strUpperChannelName = strChannelName;
+                CString strUpperEnterRoom = pEnterInfo->m_strChannel;
+                strUpperChannelName.MakeUpper();
+                strUpperEnterRoom.MakeUpper();
+                if (0 == strUpperChannelName.Find(strUpperEnterRoom)) {
+                    INT iIndex = strUpperEnterRoom.GetLength();
+                    INT iMax = strUpperChannelName.GetLength();
+                    while (iIndex < iMax && isdigit((unsigned char)strUpperChannelName[iIndex]))
+                        iIndex++;
+                    if (iIndex == iMax) goto exit;      // a clone
+                }
+            }
+        } else {
+            goto exit;
+        }
+    }
+    pEnterInfo = NULL;
+
+exit:
+    if (!pEnterInfo) {
+        if (bNullOK) {
+            iRoomIndex = -1;
+        } else if (m_enterInfos.GetSize() > 0) {
+            pEnterInfo = (CRoomInfo*) m_enterInfos.GetAt(iRoomIndex = 0);
+            if (pEnterInfo) pEnterInfo->m_strChannel = strChannelName;
+        } else {
+            // The native session seeds m_enterInfos with &g_enterInfo, so this should not
+            // happen; reporting -1 is safer than indexing an empty array.
+            iRoomIndex = -1;
+        }
+    }
+    if (piIndex) *piIndex = iRoomIndex;
+    return pEnterInfo;
+}
+
+INT CChatApp::AddRoomInfo(CRoomInfo* pEnterInfo) {
+    if (!pEnterInfo) return -1;
+    m_enterInfos.Add(pEnterInfo);
+    return (INT)m_enterInfos.GetSize() - 1;
+}
+
+void CChatApp::RemoveRoomInfo(INT iIndex) {
+    if (iIndex >= 0 && iIndex < m_enterInfos.GetSize()) m_enterInfos.RemoveAt(iIndex);
+}
+
+void CChatApp::CleanRoomInfos() {
+    // Entry 0 is g_enterInfo, which the session owns and must not be deleted.
+    while (m_enterInfos.GetSize() > 1) m_enterInfos.RemoveAt(m_enterInfos.GetSize() - 1);
+}
+
+// HrAllocBuffer - the shared conversion buffers (m_szBuffer / m_wszBuffer) that EncodeNick and
+// friends convert through. Transcribed from chat.cpp:319; the native app object already
+// allocates them at construction, so this only has to honour a request to grow.
+HRESULT CChatApp::HrAllocBuffer(SHORT nMaxMsgLength) {
+    SHORT nWanted = (SHORT)(nMaxMsgLength + 1);
+    if (m_szBuffer && m_wszBuffer && m_nBufferSize >= nWanted) return S_OK;
+    delete[] m_szBuffer;
+    delete[] m_wszBuffer;
+    if (nWanted < 2048) nWanted = 2048;
+    m_szBuffer  = new CHAR[nWanted];
+    m_wszBuffer = new WCHAR[nWanted];
+    if (!m_szBuffer || !m_wszBuffer) { m_nBufferSize = 0; return E_OUTOFMEMORY; }
+    *m_szBuffer = 0;
+    *m_wszBuffer = 0;
+    m_nBufferSize = nWanted;
+    return S_OK;
+}

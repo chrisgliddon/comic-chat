@@ -1554,6 +1554,11 @@ void ProcessSay(CChatDoc *doc, CUserInfo *pui, char *szMesg, BYTE msgType, CDWor
 	CRoomInfo*	proto = doc ? doc->m_proto : currentRoom; // XXX fix for multiprotocol!
 	CString		strActionMesg;
 	BOOL		bFloodChecked = FALSE;
+#ifdef ORACLE_HARNESS
+	if (getenv("COMIC_CHAT_IRC_TRACE"))
+		fprintf(stderr, "[processsay] doc=%p pui=%p type=0x%02x mesg='%.40s'\n",
+		        (void*)doc, (void*)pui, (unsigned)msgType, szMesg ? szMesg : "");
+#endif
 
 	if ((msgType & MT_PRIVATEMSG) && !AcceptWhispers())
 		goto exitCheckFlood;
@@ -4421,6 +4426,11 @@ void OnTextMsg(CChatDoc *doc, char *szNickname, const char *szUserIdent, char *s
 
 	CUserInfo	*pui = PuiFromDocNickIdent(&doc, szNickname, szUserIdent, TRUE /*bSkipObscuredChannels*/, TRUE /*bAddExternalIfNotThere*/);
 
+#ifdef ORACLE_HARNESS
+	if (getenv("COMIC_CHAT_IRC_TRACE"))
+		fprintf(stderr, "[ontextmsg] nick='%s' doc=%p pui=%p mesg='%.40s'\n",
+		        szNickname ? szNickname : "", (void*)doc, (void*)pui, szMesg ? szMesg : "");
+#endif
 	if (pui)		 // old code:	&& !pui->Ignored() && !pui->IsFlooding())
 	{
 		if (*szMesg != '#' || !ProcessComment(doc, pui, szMesg, msgType))

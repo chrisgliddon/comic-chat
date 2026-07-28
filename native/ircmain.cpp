@@ -31,11 +31,34 @@ class CPageView;
 #include "panel.h"
 
 #include <CoreFoundation/CoreFoundation.h>
+#include <execinfo.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+// A crash here is driven by network input from a run-loop callback, and attaching a debugger
+// changes the timing enough that the connection often does not even complete - so the process
+// has to report its own backtrace.
+static void CrashHandler(int sig) {
+    void* frames[32];
+    int n = backtrace(frames, 32);
+    fprintf(stderr, "\n*** signal %d ***\n", sig);
+    char** syms = backtrace_symbols(frames, n);
+    if (syms) {
+        for (int i = 0; i < n; i++) fprintf(stderr, "  %s\n", syms[i]);
+        free(syms);
+    }
+    fflush(stderr);
+    _exit(128 + sig);
+}
+
 int main(int argc, char** argv) {
+    signal(SIGSEGV, CrashHandler);
+    signal(SIGBUS,  CrashHandler);
+    signal(SIGILL,  CrashHandler);
+    signal(SIGTRAP, CrashHandler);
+
     if (argc < 4) {
         fprintf(stderr, "usage: irccheck <server> <port> <nick> [#channel] [seconds]\n");
         return 2;

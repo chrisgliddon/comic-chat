@@ -1060,14 +1060,30 @@ BOOL CIrcProto::bExecuteQuery(enumQueryPurpose qp,
 
 #ifdef ORACLE_HARNESS
 	if (getenv("COMIC_CHAT_IRC_TRACE"))
+	{
+		// Defensive on purpose: these CStrings can be constructed from a NULL char* (JOIN has
+		// no trailing parameter, so pParse->lastString is NULL at ircsock.cpp:1443), and a
+		// trace that dereferences them crashes where the engine would not.
+		LPCTSTR szChan = (LPCTSTR) strChannelName;
+		LPCTSTR szMask = (LPCTSTR) strNicknameMask;
 		fprintf(stderr, "[query] qp=%d ct=%d dt=%d chan='%s' mask='%s'\n",
-		        (int)qp, (int)ct, (int)dt, (LPCTSTR)strChannelName, (LPCTSTR)strNicknameMask);
+		        (int)qp, (int)ct, (int)dt, szChan ? szChan : "(null)", szMask ? szMask : "(null)");
+	}
+#endif
+#ifdef ORACLE_HARNESS
+	if (getenv("COMIC_CHAT_IRC_TRACE")) { fprintf(stderr, "[query] A this=%p sock=%p\n", (void*)this, (void*)m_pSock); fflush(stderr); }
 #endif
 	// Make sure we are connected...
 	if (GetConnectionStatus() == CX_DISCONNECTED)
 		return FALSE;
+#ifdef ORACLE_HARNESS
+	if (getenv("COMIC_CHAT_IRC_TRACE")) { fprintf(stderr, "[query] B status ok\n"); fflush(stderr); }
+#endif
 
 	pQuery = new CCQuery(qp, ct, dt, pvData, strChannelName, strNicknameMask, !strNicknameMask.IsEmpty() && ctWho == ct /*bCreatePrUserMatch*/);
+#ifdef ORACLE_HARNESS
+	if (getenv("COMIC_CHAT_IRC_TRACE")) { fprintf(stderr, "[query] C query=%p\n", (void*)pQuery); fflush(stderr); }
+#endif
 	if (!pQuery)
 	{
 		ASSERT(FALSE);
