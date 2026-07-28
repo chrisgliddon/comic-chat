@@ -921,7 +921,7 @@ BOOL ProcessComment(CChatDoc *doc, CUserInfo *pui, char *szMesg, BYTE msgType) {
 				else
 					strProfile = theApp.m_myProfile;
 
-				sprintf(GetOutBuff(), "#%s%s", HERESINFOPREFIX, strProfile);
+				sprintf(GetOutBuff(), "#%s%s", HERESINFOPREFIX, (LPCSTR) strProfile);
 				VERIFY(proto->bChatSendPrivMesg(pui->GetName(), NULL /*szAnnotations*/, GetOutBuff() /*szMesg*/, NULL /*szNMText*/, FALSE /*bAsNotice*/, BM_HERESINFO /*uModes*/));
 			}
 		}
@@ -1140,12 +1140,12 @@ void CRoomInfo::ReplyVersion(CUserInfo *pui)
 		strMode.LoadString(IDS_TEXT_MODE);
 
 	sprintf(GetOutBuff(), "%c%.*s %s %s%c", 0x01, g_nVersionLen - 1,
-		    versionID+1, strVersion, strMode, 0x01);
+		    versionID+1, (LPCSTR) strVersion, (LPCSTR) strMode, 0x01);
 	VERIFY(bChatSendPrivMesg(pui->GetName(), NULL, GetOutBuff(), NULL, TRUE));
 }
 
 void CRoomInfo::ReplyPing(CUserInfo *pui, CString strMesg) {
-	sprintf(GetOutBuff(), "%c%.*s %s%c", 0x01, g_nPingLen - 1, pingID+1, strMesg, 0x1);
+	sprintf(GetOutBuff(), "%c%.*s %s%c", 0x01, g_nPingLen - 1, pingID+1, (LPCSTR) strMesg, 0x1);
 	VERIFY(bChatSendPrivMesg(pui->GetName(), NULL, GetOutBuff(), NULL, TRUE));
 }
 
@@ -1221,7 +1221,7 @@ void ShowEmail(CUserInfo *pui, CString strAddress) {
 		if (strAddress.IsEmpty()) AfxMessageBox(IDS_NO_EMAIL_ADDRESS);
 		else {
 			CString command;
-			command.Format("mailto:%s", strAddress);
+			command.Format("mailto:%s", (LPCSTR) strAddress);
 			FLaunchBrowser(command);
 		}
 		pui->DecrementRequestInfo(RF_EMAIL);
@@ -3715,23 +3715,23 @@ void CRoomInfo::UpdateStatus() {
 
 void CRoomInfo::ChatSetOperator(CUserInfo *pui, int mode) {
 	if (mode == UM_HOST) {
-		sprintf(GetOutBuff(), "MODE %s +o %s\r\n", m_strChannel, pui->GetName());
+		sprintf(GetOutBuff(), "MODE %s +o %s\r\n", (LPCSTR) m_strChannel, (LPCSTR) pui->GetName());
 		SendMessageText(GetOutBuff());
 	} else {
 		if (pui->IsOperator()) {
-			sprintf(GetOutBuff(), "MODE %s -o %s\r\n", m_strChannel, pui->GetName());
+			sprintf(GetOutBuff(), "MODE %s -o %s\r\n", (LPCSTR) m_strChannel, (LPCSTR) pui->GetName());
 			SendMessageText(GetOutBuff());
 		}
 
 		if (mode == UM_SPEAKER) {
 			BOOL bIsModerated = currentRoom->m_dwModes & CM_MODERATED;
 			if (bIsModerated) {
-				sprintf(GetOutBuff(), "MODE %s +v %s\r\n", m_strChannel, pui->GetName());
+				sprintf(GetOutBuff(), "MODE %s +v %s\r\n", (LPCSTR) m_strChannel, (LPCSTR) pui->GetName());
 				SendMessageText(GetOutBuff());
 			}
 		}
 		if (mode == UM_SPECTATOR) {
-			sprintf(GetOutBuff(), "MODE %s -v %s\r\n", m_strChannel, pui->GetName());
+			sprintf(GetOutBuff(), "MODE %s -v %s\r\n", (LPCSTR) m_strChannel, (LPCSTR) pui->GetName());
 			SendMessageText(GetOutBuff());
 		}
 	}

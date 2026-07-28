@@ -37,326 +37,276 @@ __attribute__((used)) void stub_f2() __asm__("_ConferenceListen");
 __attribute__((used)) void stub_f2() { NativeUiStubAbort("_ConferenceListen"); }
 __attribute__((used)) void stub_f3() __asm__("_FindSubStringForINTLThatFits");
 __attribute__((used)) void stub_f3() { NativeUiStubAbort("_FindSubStringForINTLThatFits"); }
-__attribute__((used)) void stub_f4() __asm__("__Z15AddToServerListPKc");
-__attribute__((used)) void stub_f4() { NativeUiStubAbort("AddToServerList(char const*)"); }
-__attribute__((used)) void stub_f5() __asm__("__Z9ArtDirsOKv");
-__attribute__((used)) void stub_f5() { NativeUiStubAbort("ArtDirsOK()"); }
-__attribute__((used)) void stub_f6() __asm__("__Z16bAddToWhisperBoxP9CUserInfotPKc");
-__attribute__((used)) void stub_f6() { NativeUiStubAbort("bAddToWhisperBox(CUserInfo*, unsigned short, char const*)"); }
-__attribute__((used)) void stub_f7() __asm__("__Z17bFindAndPlaySoundPKcii");
-__attribute__((used)) void stub_f7() { NativeUiStubAbort("bFindAndPlaySound(char const*, int, int)"); }
-__attribute__((used)) void stub_f8() __asm__("__Z21bGetUserMatchFromMaskPcP14tagPRUSERMATCH");
-__attribute__((used)) void stub_f8() { NativeUiStubAbort("bGetUserMatchFromMask(char*, tagPRUSERMATCH*)"); }
-__attribute__((used)) void stub_f9() __asm__("__Z8bIsMatchP14tagPRUSERMATCHPKcS2_S2_");
-__attribute__((used)) void stub_f9() { NativeUiStubAbort("bIsMatch(tagPRUSERMATCH*, char const*, char const*, char const*)"); }
-__attribute__((used)) void stub_f10() __asm__("__Z12bLegalToSendi");
-__attribute__((used)) void stub_f10() { NativeUiStubAbort("bLegalToSend(int)"); }
-__attribute__((used)) void stub_f11() __asm__("__Z13bWhisperInBox7CStringS_P11CDWordArrayt");
-__attribute__((used)) void stub_f11() { NativeUiStubAbort("bWhisperInBox(CString, CString, CDWordArray*, unsigned short)"); }
-__attribute__((used)) void stub_f12() __asm__("__ZN15CBackgroundPageD1Ev");
-__attribute__((used)) void stub_f12() { NativeUiStubAbort("CBackgroundPage::~CBackgroundPage()"); }
-__attribute__((used)) void stub_f13() __asm__("__ZN15CBackgroundPageC1Ev");
-__attribute__((used)) void stub_f13() { NativeUiStubAbort("CBackgroundPage::CBackgroundPage()"); }
-__attribute__((used)) void stub_f14() __asm__("__ZN7CBanDlgC1EP4CWnd");
-__attribute__((used)) void stub_f14() { NativeUiStubAbort("CBanDlg::CBanDlg(CWnd*)"); }
-__attribute__((used)) void stub_f15() __asm__("__ZN11CCDaemonExt24bAddChannelToCurrentListER7CString");
-__attribute__((used)) void stub_f15() { NativeUiStubAbort("CCDaemonExt::bAddChannelToCurrentList(CString&)"); }
-__attribute__((used)) void stub_f16() __asm__("__ZN11CCDaemonExt21bAddUserToCurrentListEP5CUser");
-__attribute__((used)) void stub_f16() { NativeUiStubAbort("CCDaemonExt::bAddUserToCurrentList(CUser*)"); }
-__attribute__((used)) void stub_f17() __asm__("__ZN11CCDaemonExt15bOnEndOfListingEP12CCDynaNotifsP7CCNotif");
-__attribute__((used)) void stub_f17() { NativeUiStubAbort("CCDaemonExt::bOnEndOfListing(CCDynaNotifs*, CCNotif*)"); }
-__attribute__((used)) void stub_f18() __asm__("__ZN11CCDaemonExt15bOnEndOfListingEP11CCDynaRulesP6CCRule16enumQueryPurpose");
-__attribute__((used)) void stub_f18() { NativeUiStubAbort("CCDaemonExt::bOnEndOfListing(CCDynaRules*, CCRule*, enumQueryPurpose)"); }
-__attribute__((used)) void stub_f19() __asm__("__ZN12CCDynaNotifs13bDaemonNeededEv");
-__attribute__((used)) void stub_f19() { NativeUiStubAbort("CCDynaNotifs::bDaemonNeeded()"); }
-__attribute__((used)) void stub_f20() __asm__("__ZN12CCDynaNotifs18bStartNotifsDaemonEji");
-__attribute__((used)) void stub_f20() { NativeUiStubAbort("CCDynaNotifs::bStartNotifsDaemon(unsigned int, int)"); }
-__attribute__((used)) void stub_f21() __asm__("__ZN12CCDynaNotifs17bStopNotifsDaemonEv");
-__attribute__((used)) void stub_f21() { NativeUiStubAbort("CCDynaNotifs::bStopNotifsDaemon()"); }
-__attribute__((used)) void stub_f22() __asm__("__ZN12CCDynaNotifs22bUpdateNotifsDaemonExtEi");
-__attribute__((used)) void stub_f22() { NativeUiStubAbort("CCDynaNotifs::bUpdateNotifsDaemonExt(int)"); }
-__attribute__((used)) void stub_f23() __asm__("__ZN11CCDynaRules13bDaemonNeededEv");
-__attribute__((used)) void stub_f23() { NativeUiStubAbort("CCDynaRules::bDaemonNeeded()"); }
-__attribute__((used)) void stub_f24() __asm__("__ZN11CCDynaRules19bMatchAndApplyRulesE10enumEventsP11enumActionsS2_R7CStringS4_S4_S4_");
-__attribute__((used)) void stub_f24() { NativeUiStubAbort("CCDynaRules::bMatchAndApplyRules(enumEvents, enumActions*, enumActions*, CString&, CString&, CString&, CString&)"); }
-__attribute__((used)) void stub_f25() __asm__("__ZN11CCDynaRules17bStartRulesDaemonEji");
-__attribute__((used)) void stub_f25() { NativeUiStubAbort("CCDynaRules::bStartRulesDaemon(unsigned int, int)"); }
-__attribute__((used)) void stub_f26() __asm__("__ZN11CCDynaRules16bStopRulesDaemonEv");
-__attribute__((used)) void stub_f26() { NativeUiStubAbort("CCDynaRules::bStopRulesDaemon()"); }
-__attribute__((used)) void stub_f27() __asm__("__ZN11CCDynaRules24bUpdateRuleSetsDaemonExtEi");
-__attribute__((used)) void stub_f27() { NativeUiStubAbort("CCDynaRules::bUpdateRuleSetsDaemonExt(int)"); }
-__attribute__((used)) void stub_f28() __asm__("__ZN17CChannelCreateDlgC1EP4CWnd");
-__attribute__((used)) void stub_f28() { NativeUiStubAbort("CChannelCreateDlg::CChannelCreateDlg(CWnd*)"); }
-__attribute__((used)) void stub_f29() __asm__("__ZN11CChannelDlgC1EP4CWnd");
-__attribute__((used)) void stub_f29() { NativeUiStubAbort("CChannelDlg::CChannelDlg(CWnd*)"); }
-__attribute__((used)) void stub_f30() __asm__("__ZN12CChannelPropC1EP4CWnd");
-__attribute__((used)) void stub_f30() { NativeUiStubAbort("CChannelProp::CChannelProp(CWnd*)"); }
-__attribute__((used)) void stub_f31() __asm__("__ZN14CCharacterPageD1Ev");
-__attribute__((used)) void stub_f31() { NativeUiStubAbort("CCharacterPage::~CCharacterPage()"); }
-__attribute__((used)) void stub_f32() __asm__("__ZN14CCharacterPageC1Ev");
-__attribute__((used)) void stub_f32() { NativeUiStubAbort("CCharacterPage::CCharacterPage()"); }
-__attribute__((used)) void stub_f33() __asm__("__ZN8CChatApp11AddRoomInfoEP9CRoomInfo");
-__attribute__((used)) void stub_f33() { NativeUiStubAbort("CChatApp::AddRoomInfo(CRoomInfo*)"); }
-__attribute__((used)) void stub_f34() __asm__("__ZN8CChatApp14CleanRoomInfosEv");
-__attribute__((used)) void stub_f34() { NativeUiStubAbort("CChatApp::CleanRoomInfos()"); }
-__attribute__((used)) void stub_f35() __asm__("__ZN8CChatApp18CompleteConnectionEv");
-__attribute__((used)) void stub_f35() { NativeUiStubAbort("CChatApp::CompleteConnection()"); }
-__attribute__((used)) void stub_f36() __asm__("__ZN8CChatApp10DoModalDlgEP4CWndi");
-__attribute__((used)) void stub_f36() { NativeUiStubAbort("CChatApp::DoModalDlg(CWnd*, int)"); }
-__attribute__((used)) void stub_f37() __asm__("__ZN8CChatApp15DoOptionsDialogEij");
-__attribute__((used)) void stub_f37() { NativeUiStubAbort("CChatApp::DoOptionsDialog(int, unsigned int)"); }
-__attribute__((used)) void stub_f38() __asm__("__ZN8CChatApp21GetDesktopOrFavoritesEi");
-__attribute__((used)) void stub_f38() { NativeUiStubAbort("CChatApp::GetDesktopOrFavorites(int)"); }
-__attribute__((used)) void stub_f39() __asm__("__ZN8CChatApp19GetRoomInfoFromNameE7CStringPiii");
-__attribute__((used)) void stub_f39() { NativeUiStubAbort("CChatApp::GetRoomInfoFromName(CString, int*, int, int)"); }
-__attribute__((used)) void stub_f40() __asm__("__ZN8CChatApp13HrAllocBufferEs");
-__attribute__((used)) void stub_f40() { NativeUiStubAbort("CChatApp::HrAllocBuffer(short)"); }
-__attribute__((used)) void stub_f41() __asm__("__ZN8CChatApp14OnChatroomListEv");
-__attribute__((used)) void stub_f41() { NativeUiStubAbort("CChatApp::OnChatroomList()"); }
-__attribute__((used)) void stub_f42() __asm__("__ZN8CChatApp12OnDisconnectEv");
-__attribute__((used)) void stub_f42() { NativeUiStubAbort("CChatApp::OnDisconnect()"); }
-__attribute__((used)) void stub_f43() __asm__("__ZN8CChatApp18OnViewStatuswindowEv");
-__attribute__((used)) void stub_f43() { NativeUiStubAbort("CChatApp::OnViewStatuswindow()"); }
-__attribute__((used)) void stub_f44() __asm__("__ZN8CChatApp14RemoveRoomInfoEi");
-__attribute__((used)) void stub_f44() { NativeUiStubAbort("CChatApp::RemoveRoomInfo(int)"); }
-__attribute__((used)) void stub_f45() __asm__("__ZN8CChatApp16ResumeConnectionEv");
-__attribute__((used)) void stub_f45() { NativeUiStubAbort("CChatApp::ResumeConnection()"); }
-__attribute__((used)) void stub_f46() __asm__("__ZN8CChatApp9SaveToRegEi");
-__attribute__((used)) void stub_f46() { NativeUiStubAbort("CChatApp::SaveToReg(int)"); }
-__attribute__((used)) void stub_f47() __asm__("__ZN8CChatApp19SetStatusPaneStringEiPKc");
-__attribute__((used)) void stub_f47() { NativeUiStubAbort("CChatApp::SetStatusPaneString(int, char const*)"); }
-__attribute__((used)) void stub_f48() __asm__("__ZN8CChatApp22StartDownloadingAvatarEP9CUserInfoP8CChatDoci");
-__attribute__((used)) void stub_f48() { NativeUiStubAbort("CChatApp::StartDownloadingAvatar(CUserInfo*, CChatDoc*, int)"); }
-__attribute__((used)) void stub_f49() __asm__("__ZN8CChatDoc15ChatLoadLocatorER8CArchiveiiPs");
-__attribute__((used)) void stub_f49() { NativeUiStubAbort("CChatDoc::ChatLoadLocator(CArchive&, int, int, short*)"); }
-__attribute__((used)) void stub_f50() __asm__("__ZN8CChatDoc15ChatSaveLocatorER8CArchive");
-__attribute__((used)) void stub_f50() { NativeUiStubAbort("CChatDoc::ChatSaveLocator(CArchive&)"); }
-__attribute__((used)) void stub_f51() __asm__("__ZN9CChatItemC1EP8CChatDoc");
-__attribute__((used)) void stub_f51() { NativeUiStubAbort("CChatItem::CChatItem(CChatDoc*)"); }
-__attribute__((used)) void stub_f52() __asm__("__ZN19CChatPasswordDialogC1EPKcS1_iP4CWnd");
-__attribute__((used)) void stub_f52() { NativeUiStubAbort("CChatPasswordDialog::CChatPasswordDialog(char const*, char const*, int, CWnd*)"); }
-__attribute__((used)) void stub_f53() __asm__("__ZN11CChatServer15WriteToRegistryEPv");
-__attribute__((used)) void stub_f53() { NativeUiStubAbort("CChatServer::WriteToRegistry(void*)"); }
-__attribute__((used)) void stub_f54() __asm__("__ZN21CChatServiceConnector21BeginConnectToServiceEPKc");
-__attribute__((used)) void stub_f54() { NativeUiStubAbort("CChatServiceConnector::BeginConnectToService(char const*)"); }
-__attribute__((used)) void stub_f55() __asm__("__ZN21CChatServiceConnector7CleanupEi");
-__attribute__((used)) void stub_f55() { NativeUiStubAbort("CChatServiceConnector::Cleanup(int)"); }
-__attribute__((used)) void stub_f56() __asm__("__ZN16CChatServiceList14GetRegistryKeyEjPKc");
-__attribute__((used)) void stub_f56() { NativeUiStubAbort("CChatServiceList::GetRegistryKey(unsigned int, char const*)"); }
-__attribute__((used)) void stub_f57() __asm__("__ZN16CChatServiceList29GetServiceNameFromDisplayNameEPKcR7CString");
-__attribute__((used)) void stub_f57() { NativeUiStubAbort("CChatServiceList::GetServiceNameFromDisplayName(char const*, CString&)"); }
-__attribute__((used)) void stub_f58() __asm__("__ZN16CChatServiceList18ReleaseRegistryKeyEPv");
-__attribute__((used)) void stub_f58() { NativeUiStubAbort("CChatServiceList::ReleaseRegistryKey(void*)"); }
-__attribute__((used)) void stub_f59() __asm__("__ZN9CChatView23CleanUpBeforeChangeViewEv");
-__attribute__((used)) void stub_f59() { NativeUiStubAbort("CChatView::CleanUpBeforeChangeView()"); }
-__attribute__((used)) void stub_f60() __asm__("__ZN9CChatView15CreateComicViewEi");
-__attribute__((used)) void stub_f60() { NativeUiStubAbort("CChatView::CreateComicView(int)"); }
-__attribute__((used)) void stub_f61() __asm__("__ZN9CChatView14CreateTextViewEi");
-__attribute__((used)) void stub_f61() { NativeUiStubAbort("CChatView::CreateTextView(int)"); }
-__attribute__((used)) void stub_f62() __asm__("__ZN7CCNotif6AddRefEv");
-__attribute__((used)) void stub_f62() { NativeUiStubAbort("CCNotif::AddRef()"); }
-__attribute__((used)) void stub_f63() __asm__("__ZN7CCNotif7ReleaseEv");
-__attribute__((used)) void stub_f63() { NativeUiStubAbort("CCNotif::Release()"); }
-__attribute__((used)) void stub_f64() __asm__("__ZN6CCRule6AddRefEv");
-__attribute__((used)) void stub_f64() { NativeUiStubAbort("CCRule::AddRef()"); }
-__attribute__((used)) void stub_f65() __asm__("__ZN6CCRule7ReleaseEv");
-__attribute__((used)) void stub_f65() { NativeUiStubAbort("CCRule::Release()"); }
-__attribute__((used)) void stub_f66() __asm__("__Z15ChatReceiveFileP9CUserInfoPc");
-__attribute__((used)) void stub_f66() { NativeUiStubAbort("ChatReceiveFile(CUserInfo*, char*)"); }
-__attribute__((used)) void stub_f67() __asm__("__Z14ChatSetChannelPKc");
-__attribute__((used)) void stub_f67() { NativeUiStubAbort("ChatSetChannel(char const*)"); }
-__attribute__((used)) void stub_f68() __asm__("__ZN14CInvitationDlgC1EP4CWnd");
-__attribute__((used)) void stub_f68() { NativeUiStubAbort("CInvitationDlg::CInvitationDlg(CWnd*)"); }
-__attribute__((used)) void stub_f69() __asm__("__ZN10CInviteDlgC1EP4CWnd");
-__attribute__((used)) void stub_f69() { NativeUiStubAbort("CInviteDlg::CInviteDlg(CWnd*)"); }
-__attribute__((used)) void stub_f70() __asm__("__ZN11CKickDialogC1EP4CWnd");
-__attribute__((used)) void stub_f70() { NativeUiStubAbort("CKickDialog::CKickDialog(CWnd*)"); }
-__attribute__((used)) void stub_f71() __asm__("__ZN6CMacro6InvokeEPKcP9CUserInfoii");
-__attribute__((used)) void stub_f71() { NativeUiStubAbort("CMacro::Invoke(char const*, CUserInfo*, int, int)"); }
-__attribute__((used)) void stub_f72() __asm__("__ZN11CMemberList15GetSortPositionEP9CUserInfo");
-__attribute__((used)) void stub_f72() { NativeUiStubAbort("CMemberList::GetSortPosition(CUserInfo*)"); }
-__attribute__((used)) void stub_f73() __asm__("__ZN11CMemberList11MakeVisibleEP9CUserInfo");
-__attribute__((used)) void stub_f73() { NativeUiStubAbort("CMemberList::MakeVisible(CUserInfo*)"); }
-__attribute__((used)) void stub_f74() __asm__("__ZN11CMemberList4SortEv");
-__attribute__((used)) void stub_f74() { NativeUiStubAbort("CMemberList::Sort()"); }
-__attribute__((used)) void stub_f75() __asm__("__ZNK18CNCSMapStringToPtr6LookupEPKcRPv");
-__attribute__((used)) void stub_f75() { NativeUiStubAbort("CNCSMapStringToPtr::Lookup(char const*, void*&) const"); }
-__attribute__((used)) void stub_f76() __asm__("__ZN18CNCSMapStringToPtr9RemoveKeyEPKc");
-__attribute__((used)) void stub_f76() { NativeUiStubAbort("CNCSMapStringToPtr::RemoveKey(char const*)"); }
-__attribute__((used)) void stub_f77() __asm__("__ZN18CNCSMapStringToPtr5SetAtEPKcPv");
-__attribute__((used)) void stub_f77() { NativeUiStubAbort("CNCSMapStringToPtr::SetAt(char const*, void*)"); }
-__attribute__((used)) void stub_f78() __asm__("__ZN12CNicknameDlgC1EP4CWnd");
-__attribute__((used)) void stub_f78() { NativeUiStubAbort("CNicknameDlg::CNicknameDlg(CWnd*)"); }
-__attribute__((used)) void stub_f79() __asm__("__ZN12CPasswordDlgC1EP4CWnd");
-__attribute__((used)) void stub_f79() { NativeUiStubAbort("CPasswordDlg::CPasswordDlg(CWnd*)"); }
-__attribute__((used)) void stub_f80() __asm__("__ZN13CPersonalPageD1Ev");
-__attribute__((used)) void stub_f80() { NativeUiStubAbort("CPersonalPage::~CPersonalPage()"); }
-__attribute__((used)) void stub_f81() __asm__("__ZN13CPersonalPageC1Ej");
-__attribute__((used)) void stub_f81() { NativeUiStubAbort("CPersonalPage::CPersonalPage(unsigned int)"); }
-__attribute__((used)) void stub_f82() __asm__("__Z20CreateUniqueFileNamePKcS0_S0_P7CString");
-__attribute__((used)) void stub_f82() { NativeUiStubAbort("CreateUniqueFileName(char const*, char const*, char const*, CString*)"); }
-__attribute__((used)) void stub_f83() __asm__("__ZN5CRoom17CalculateSortByteEv");
-__attribute__((used)) void stub_f83() { NativeUiStubAbort("CRoom::CalculateSortByte()"); }
-__attribute__((used)) void stub_f84() __asm__("__ZN9CRoomInfo12ChatSendFileEP9CUserInfo");
-__attribute__((used)) void stub_f84() { NativeUiStubAbort("CRoomInfo::ChatSendFile(CUserInfo*)"); }
-__attribute__((used)) void stub_f85() __asm__("__ZN9CRoomList13AddToRoomListEi");
-__attribute__((used)) void stub_f85() { NativeUiStubAbort("CRoomList::AddToRoomList(int)"); }
-__attribute__((used)) void stub_f86() __asm__("__ZN9CRoomList13AnnounceCountEv");
-__attribute__((used)) void stub_f86() { NativeUiStubAbort("CRoomList::AnnounceCount()"); }
-__attribute__((used)) void stub_f87() __asm__("__ZN9CRoomList9SortRoomsEi");
-__attribute__((used)) void stub_f87() { NativeUiStubAbort("CRoomList::SortRooms(int)"); }
-__attribute__((used)) void stub_f88() __asm__("__ZN16CRoomListPersist7AddRoomEP5CRoom");
-__attribute__((used)) void stub_f88() { NativeUiStubAbort("CRoomListPersist::AddRoom(CRoom*)"); }
-__attribute__((used)) void stub_f89() __asm__("__ZN16CRoomListPersist9MakeEmptyEv");
-__attribute__((used)) void stub_f89() { NativeUiStubAbort("CRoomListPersist::MakeEmpty()"); }
-__attribute__((used)) void stub_f90() __asm__("__ZN8CRtfCtrl23DefineDefaultCharFormatEv");
-__attribute__((used)) void stub_f90() { NativeUiStubAbort("CRtfCtrl::DefineDefaultCharFormat()"); }
-__attribute__((used)) void stub_f91() __asm__("__ZN8CRtfCtrl21wGetConsistentFormatsEv");
-__attribute__((used)) void stub_f91() { NativeUiStubAbort("CRtfCtrl::wGetConsistentFormats()"); }
-__attribute__((used)) void stub_f92() __asm__("__ZN7CSayWnd12OnActionsSayEv");
-__attribute__((used)) void stub_f92() { NativeUiStubAbort("CSayWnd::OnActionsSay()"); }
-__attribute__((used)) void stub_f93() __asm__("__ZN7CSayWnd14OnActionsThinkEv");
-__attribute__((used)) void stub_f93() { NativeUiStubAbort("CSayWnd::OnActionsThink()"); }
-__attribute__((used)) void stub_f94() __asm__("__ZN7CSayWnd16OnActionsWhisperEv");
-__attribute__((used)) void stub_f94() { NativeUiStubAbort("CSayWnd::OnActionsWhisper()"); }
-__attribute__((used)) void stub_f95() __asm__("__ZN7CSayWnd11OnPlaySoundEv");
-__attribute__((used)) void stub_f95() { NativeUiStubAbort("CSayWnd::OnPlaySound()"); }
-__attribute__((used)) void stub_f96() __asm__("__ZN7CSayWnd12OnSendActionEv");
-__attribute__((used)) void stub_f96() { NativeUiStubAbort("CSayWnd::OnSendAction()"); }
-__attribute__((used)) void stub_f97() __asm__("__ZN7CSayWnd21SwitchSelectionFormatEt");
-__attribute__((used)) void stub_f97() { NativeUiStubAbort("CSayWnd::SwitchSelectionFormat(unsigned short)"); }
-__attribute__((used)) void stub_f98() __asm__("__ZN10CSetupPageD1Ev");
-__attribute__((used)) void stub_f98() { NativeUiStubAbort("CSetupPage::~CSetupPage()"); }
-__attribute__((used)) void stub_f99() __asm__("__ZN10CSetupPageC1Ev");
-__attribute__((used)) void stub_f99() { NativeUiStubAbort("CSetupPage::CSetupPage()"); }
-__attribute__((used)) void stub_f100() __asm__("__ZN7CTabBar9AddMDITabEPKcP8CChatDoci");
-__attribute__((used)) void stub_f100() { NativeUiStubAbort("CTabBar::AddMDITab(char const*, CChatDoc*, int)"); }
-__attribute__((used)) void stub_f101() __asm__("__ZN7CTabBar9DelMDITabEi");
-__attribute__((used)) void stub_f101() { NativeUiStubAbort("CTabBar::DelMDITab(int)"); }
-__attribute__((used)) void stub_f102() __asm__("__ZN7CTabBar10FindTabNumEP8CChatDoc");
-__attribute__((used)) void stub_f102() { NativeUiStubAbort("CTabBar::FindTabNum(CChatDoc*)"); }
-__attribute__((used)) void stub_f103() __asm__("__ZN7CTabBar10SetTabIconEii");
-__attribute__((used)) void stub_f103() { NativeUiStubAbort("CTabBar::SetTabIcon(int, int)"); }
-__attribute__((used)) void stub_f104() __asm__("__ZN9CTextCore15bSetInsertBlankEs");
-__attribute__((used)) void stub_f104() { NativeUiStubAbort("CTextCore::bSetInsertBlank(short)"); }
-__attribute__((used)) void stub_f105() __asm__("__ZN9CTextCore12iDisplayInfoEPKcjS1_jS1_j8MSG_TYPE13MEMBER_STATUSP11_charformatiPji");
-__attribute__((used)) void stub_f105() { NativeUiStubAbort("CTextCore::iDisplayInfo(char const*, unsigned int, char const*, unsigned int, char const*, unsigned int, MSG_TYPE, MEMBER_STATUS, _charformat*, int, unsigned int*, int)"); }
-__attribute__((used)) void stub_f106() __asm__("__ZN9CTextViewD2Ev");
-__attribute__((used)) void stub_f106() { NativeUiStubAbort("CTextView::~CTextView()"); }
-__attribute__((used)) void stub_f107() __asm__("__ZN9CTextView13ClearTextViewEv");
-__attribute__((used)) void stub_f107() { NativeUiStubAbort("CTextView::ClearTextView()"); }
-__attribute__((used)) void stub_f108() __asm__("__ZN9CTextViewC2Ev");
-__attribute__((used)) void stub_f108() { NativeUiStubAbort("CTextView::CTextView()"); }
-__attribute__((used)) void stub_f109() __asm__("__ZN9CTextView11DisplayJoinEPKcc");
-__attribute__((used)) void stub_f109() { NativeUiStubAbort("CTextView::DisplayJoin(char const*, char)"); }
-__attribute__((used)) void stub_f110() __asm__("__ZN9CTextView17DisplayNickChangeEP9CUserInfoPKc");
-__attribute__((used)) void stub_f110() { NativeUiStubAbort("CTextView::DisplayNickChange(CUserInfo*, char const*)"); }
-__attribute__((used)) void stub_f111() __asm__("__ZN9CTextView11DisplayPartEPKcc");
-__attribute__((used)) void stub_f111() { NativeUiStubAbort("CTextView::DisplayPart(char const*, char)"); }
-__attribute__((used)) void stub_f112() __asm__("__ZN9CTextView15OnBeginPrintingEP3CDCP10CPrintInfo");
-__attribute__((used)) void stub_f112() { NativeUiStubAbort("CTextView::OnBeginPrinting(CDC*, CPrintInfo*)"); }
-__attribute__((used)) void stub_f113() __asm__("__ZN9CTextView8OnCreateEP15tagCREATESTRUCT");
-__attribute__((used)) void stub_f113() { NativeUiStubAbort("CTextView::OnCreate(tagCREATESTRUCT*)"); }
-__attribute__((used)) void stub_f114() __asm__("__ZN9CTextView6OnDrawEP3CDC");
-__attribute__((used)) void stub_f114() { NativeUiStubAbort("CTextView::OnDraw(CDC*)"); }
-__attribute__((used)) void stub_f115() __asm__("__ZN9CTextView13OnEndPrintingEP3CDCP10CPrintInfo");
-__attribute__((used)) void stub_f115() { NativeUiStubAbort("CTextView::OnEndPrinting(CDC*, CPrintInfo*)"); }
-__attribute__((used)) void stub_f116() __asm__("__ZN9CTextView8OnNotifyEmlPl");
-__attribute__((used)) void stub_f116() { NativeUiStubAbort("CTextView::OnNotify(unsigned long, long, long*)"); }
-__attribute__((used)) void stub_f117() __asm__("__ZN9CTextView17OnPreparePrintingEP10CPrintInfo");
-__attribute__((used)) void stub_f117() { NativeUiStubAbort("CTextView::OnPreparePrinting(CPrintInfo*)"); }
-__attribute__((used)) void stub_f118() __asm__("__ZN9CTextView7OnPrintEP3CDCP10CPrintInfo");
-__attribute__((used)) void stub_f118() { NativeUiStubAbort("CTextView::OnPrint(CDC*, CPrintInfo*)"); }
-__attribute__((used)) void stub_f119() __asm__("__ZN9CTextView13SetURLBrowserEi");
-__attribute__((used)) void stub_f119() { NativeUiStubAbort("CTextView::SetURLBrowser(int)"); }
-__attribute__((used)) void stub_f120() __asm__("__ZN9CTextView8ShowInfoEP9CUserInfoPKc");
-__attribute__((used)) void stub_f120() { NativeUiStubAbort("CTextView::ShowInfo(CUserInfo*, char const*)"); }
-__attribute__((used)) void stub_f121() __asm__("__ZN9CTextView8TextLineEP9CUserInfoPKcS3_S3_thP11CDWordArrayc");
-__attribute__((used)) void stub_f121() { NativeUiStubAbort("CTextView::TextLine(CUserInfo*, char const*, char const*, char const*, unsigned short, unsigned char, CDWordArray*, char)"); }
-__attribute__((used)) void stub_f122() __asm__("__ZN5CUser7ReleaseEv");
-__attribute__((used)) void stub_f122() { NativeUiStubAbort("CUser::Release()"); }
-__attribute__((used)) void stub_f123() __asm__("__ZN9CUserList13AddToUserListEi");
-__attribute__((used)) void stub_f123() { NativeUiStubAbort("CUserList::AddToUserList(int)"); }
-__attribute__((used)) void stub_f124() __asm__("__ZN9CUserList13AnnounceCountEv");
-__attribute__((used)) void stub_f124() { NativeUiStubAbort("CUserList::AnnounceCount()"); }
-__attribute__((used)) void stub_f125() __asm__("__ZN9CUserList4SortEi");
-__attribute__((used)) void stub_f125() { NativeUiStubAbort("CUserList::Sort(int)"); }
-__attribute__((used)) void stub_f126() __asm__("__ZN16CUserListPersist7AddUserEP5CUser");
-__attribute__((used)) void stub_f126() { NativeUiStubAbort("CUserListPersist::AddUser(CUser*)"); }
-__attribute__((used)) void stub_f127() __asm__("__ZN11CWhisperBox14GetCurrentEditEv");
-__attribute__((used)) void stub_f127() { NativeUiStubAbort("CWhisperBox::GetCurrentEdit()"); }
-__attribute__((used)) void stub_f128() __asm__("__Z15ForwardToSayWndj");
-__attribute__((used)) void stub_f128() { NativeUiStubAbort("ForwardToSayWnd(unsigned int)"); }
-__attribute__((used)) void stub_f129() __asm__("__Z14GetMyCharacterv");
-__attribute__((used)) void stub_f129() { NativeUiStubAbort("GetMyCharacter()"); }
-__attribute__((used)) void stub_f130() __asm__("__Z10GetMyEmailv");
-__attribute__((used)) void stub_f130() { NativeUiStubAbort("GetMyEmail()"); }
-__attribute__((used)) void stub_f131() __asm__("__Z13GetMyHomePagev");
-__attribute__((used)) void stub_f131() { NativeUiStubAbort("GetMyHomePage()"); }
-__attribute__((used)) void stub_f132() __asm__("__Z10GetMyIdentv");
-__attribute__((used)) void stub_f132() { NativeUiStubAbort("GetMyIdent()"); }
-__attribute__((used)) void stub_f133() __asm__("__Z9GetMyNamev");
-__attribute__((used)) void stub_f133() { NativeUiStubAbort("GetMyName()"); }
-__attribute__((used)) void stub_f134() __asm__("__Z13GetMyNickNamev");
-__attribute__((used)) void stub_f134() { NativeUiStubAbort("GetMyNickName()"); }
-__attribute__((used)) void stub_f135() __asm__("__Z19GetMyPhysicalServerv");
-__attribute__((used)) void stub_f135() { NativeUiStubAbort("GetMyPhysicalServer()"); }
-__attribute__((used)) void stub_f136() __asm__("__Z13GetMyRealNamev");
-__attribute__((used)) void stub_f136() { NativeUiStubAbort("GetMyRealName()"); }
-__attribute__((used)) void stub_f137() __asm__("__Z15GetMyScreenNamev");
-__attribute__((used)) void stub_f137() { NativeUiStubAbort("GetMyScreenName()"); }
-__attribute__((used)) void stub_f138() __asm__("__Z11GetMyServerv");
-__attribute__((used)) void stub_f138() { NativeUiStubAbort("GetMyServer()"); }
-__attribute__((used)) void stub_f139() __asm__("__Z21GetMyServerPrettyNameR7CString");
-__attribute__((used)) void stub_f139() { NativeUiStubAbort("GetMyServerPrettyName(CString&)"); }
-__attribute__((used)) void stub_f140() __asm__("__Z13GetMyUserNamev");
-__attribute__((used)) void stub_f140() { NativeUiStubAbort("GetMyUserName()"); }
-__attribute__((used)) void stub_f141() __asm__("__Z22GetSupportedSoundTypesv");
-__attribute__((used)) void stub_f141() { NativeUiStubAbort("GetSupportedSoundTypes()"); }
-__attribute__((used)) void stub_f142() __asm__("__Z16GetVersionStringR7CString");
-__attribute__((used)) void stub_f142() { NativeUiStubAbort("GetVersionString(CString&)"); }
-__attribute__((used)) void stub_f143() __asm__("__Z17OnChatroomListAuxPKc");
-__attribute__((used)) void stub_f143() { NativeUiStubAbort("OnChatroomListAux(char const*)"); }
-__attribute__((used)) void stub_f144() __asm__("__Z13OnUserListAuxPKcS0_S0_");
-__attribute__((used)) void stub_f144() { NativeUiStubAbort("OnUserListAux(char const*, char const*, char const*)"); }
-__attribute__((used)) void stub_f145() __asm__("__Z18OurJIS_to_ShiftJISPhiPS_i");
-__attribute__((used)) void stub_f145() { NativeUiStubAbort("OurJIS_to_ShiftJIS(unsigned char*, int, unsigned char**, int)"); }
-__attribute__((used)) void stub_f146() __asm__("__Z24RatingAccessDeniedDialogPvPKcS1_S_");
-__attribute__((used)) void stub_f146() { NativeUiStubAbort("RatingAccessDeniedDialog(void*, char const*, char const*, void*)"); }
-__attribute__((used)) void stub_f147() __asm__("__Z21RatingCheckUserAccessPKcS0_S0_PvjPS1_");
-__attribute__((used)) void stub_f147() { NativeUiStubAbort("RatingCheckUserAccess(char const*, char const*, char const*, void*, unsigned int, void**)"); }
-__attribute__((used)) void stub_f148() __asm__("__Z18RatingEnabledQueryv");
-__attribute__((used)) void stub_f148() { NativeUiStubAbort("RatingEnabledQuery()"); }
-__attribute__((used)) void stub_f149() __asm__("__Z17RatingFreeDetailsPv");
-__attribute__((used)) void stub_f149() { NativeUiStubAbort("RatingFreeDetails(void*)"); }
-__attribute__((used)) void stub_f150() __asm__("__Z13SetComicsFontv");
-__attribute__((used)) void stub_f150() { NativeUiStubAbort("SetComicsFont()"); }
-__attribute__((used)) void stub_f151() __asm__("__Z10SetMyIdentPKc");
-__attribute__((used)) void stub_f151() { NativeUiStubAbort("SetMyIdent(char const*)"); }
-__attribute__((used)) void stub_f152() __asm__("__Z9SetMyNamePKc");
-__attribute__((used)) void stub_f152() { NativeUiStubAbort("SetMyName(char const*)"); }
-__attribute__((used)) void stub_f153() __asm__("__Z13SetMyNameNickPKc");
-__attribute__((used)) void stub_f153() { NativeUiStubAbort("SetMyNameNick(char const*)"); }
-__attribute__((used)) void stub_f154() __asm__("__Z11SetTextFontv");
-__attribute__((used)) void stub_f154() { NativeUiStubAbort("SetTextFont()"); }
-__attribute__((used)) void stub_f155() __asm__("__Z17ShowMemberContextii");
-__attribute__((used)) void stub_f155() { NativeUiStubAbort("ShowMemberContext(int, int)"); }
-__attribute__((used)) void stub_f156() __asm__("__Z8ShowMOTDPKcS0_");
-__attribute__((used)) void stub_f156() { NativeUiStubAbort("ShowMOTD(char const*, char const*)"); }
-__attribute__((used)) void stub_f157() __asm__("__Z16sndPlayMidiSoundPKcj");
-__attribute__((used)) void stub_f157() { NativeUiStubAbort("sndPlayMidiSound(char const*, unsigned int)"); }
-__attribute__((used)) void stub_f158() __asm__("__Z7stristrPKcS0_");
-__attribute__((used)) void stub_f158() { NativeUiStubAbort("stristr(char const*, char const*)"); }
-__attribute__((used)) void stub_f159() __asm__("__Z10TrimQuotesR7CString");
-__attribute__((used)) void stub_f159() { NativeUiStubAbort("TrimQuotes(CString&)"); }
-__attribute__((used)) void stub_f160() __asm__("__Z7UnConstPKc");
-__attribute__((used)) void stub_f160() { NativeUiStubAbort("UnConst(char const*)"); }
-__attribute__((used)) void stub_f161() __asm__("__Z16UpdateSpectatorsP8CChatDoci");
-__attribute__((used)) void stub_f161() { NativeUiStubAbort("UpdateSpectators(CChatDoc*, int)"); }
-__attribute__((used)) void stub_f162() __asm__("__Z10WhisperBoxP9CUserInfoii");
-__attribute__((used)) void stub_f162() { NativeUiStubAbort("WhisperBox(CUserInfo*, int, int)"); }
-__attribute__((used)) void stub_f163() __asm__("__Z8WriteRTFP13CRichEditCtrlPKc");
-__attribute__((used)) void stub_f163() { NativeUiStubAbort("WriteRTF(CRichEditCtrl*, char const*)"); }
+__attribute__((used)) void stub_f4() __asm__("__Z9ArtDirsOKv");
+__attribute__((used)) void stub_f4() { NativeUiStubAbort("ArtDirsOK()"); }
+__attribute__((used)) void stub_f5() __asm__("__Z16bAddToWhisperBoxP9CUserInfotPKc");
+__attribute__((used)) void stub_f5() { NativeUiStubAbort("bAddToWhisperBox(CUserInfo*, unsigned short, char const*)"); }
+__attribute__((used)) void stub_f6() __asm__("__Z17bFindAndPlaySoundPKcii");
+__attribute__((used)) void stub_f6() { NativeUiStubAbort("bFindAndPlaySound(char const*, int, int)"); }
+__attribute__((used)) void stub_f7() __asm__("__Z21bGetUserMatchFromMaskPcP14tagPRUSERMATCH");
+__attribute__((used)) void stub_f7() { NativeUiStubAbort("bGetUserMatchFromMask(char*, tagPRUSERMATCH*)"); }
+__attribute__((used)) void stub_f8() __asm__("__Z8bIsMatchP14tagPRUSERMATCHPKcS2_S2_");
+__attribute__((used)) void stub_f8() { NativeUiStubAbort("bIsMatch(tagPRUSERMATCH*, char const*, char const*, char const*)"); }
+__attribute__((used)) void stub_f9() __asm__("__Z12bLegalToSendi");
+__attribute__((used)) void stub_f9() { NativeUiStubAbort("bLegalToSend(int)"); }
+__attribute__((used)) void stub_f10() __asm__("__Z13bWhisperInBox7CStringS_P11CDWordArrayt");
+__attribute__((used)) void stub_f10() { NativeUiStubAbort("bWhisperInBox(CString, CString, CDWordArray*, unsigned short)"); }
+__attribute__((used)) void stub_f11() __asm__("__ZN15CBackgroundPageD1Ev");
+__attribute__((used)) void stub_f11() { NativeUiStubAbort("CBackgroundPage::~CBackgroundPage()"); }
+__attribute__((used)) void stub_f12() __asm__("__ZN15CBackgroundPageC1Ev");
+__attribute__((used)) void stub_f12() { NativeUiStubAbort("CBackgroundPage::CBackgroundPage()"); }
+__attribute__((used)) void stub_f13() __asm__("__ZN7CBanDlgC1EP4CWnd");
+__attribute__((used)) void stub_f13() { NativeUiStubAbort("CBanDlg::CBanDlg(CWnd*)"); }
+__attribute__((used)) void stub_f14() __asm__("__ZN11CCDaemonExt24bAddChannelToCurrentListER7CString");
+__attribute__((used)) void stub_f14() { NativeUiStubAbort("CCDaemonExt::bAddChannelToCurrentList(CString&)"); }
+__attribute__((used)) void stub_f15() __asm__("__ZN11CCDaemonExt21bAddUserToCurrentListEP5CUser");
+__attribute__((used)) void stub_f15() { NativeUiStubAbort("CCDaemonExt::bAddUserToCurrentList(CUser*)"); }
+__attribute__((used)) void stub_f16() __asm__("__ZN11CCDaemonExt15bOnEndOfListingEP12CCDynaNotifsP7CCNotif");
+__attribute__((used)) void stub_f16() { NativeUiStubAbort("CCDaemonExt::bOnEndOfListing(CCDynaNotifs*, CCNotif*)"); }
+__attribute__((used)) void stub_f17() __asm__("__ZN11CCDaemonExt15bOnEndOfListingEP11CCDynaRulesP6CCRule16enumQueryPurpose");
+__attribute__((used)) void stub_f17() { NativeUiStubAbort("CCDaemonExt::bOnEndOfListing(CCDynaRules*, CCRule*, enumQueryPurpose)"); }
+__attribute__((used)) void stub_f18() __asm__("__ZN12CCDynaNotifs17bStopNotifsDaemonEv");
+__attribute__((used)) void stub_f18() { NativeUiStubAbort("CCDynaNotifs::bStopNotifsDaemon()"); }
+__attribute__((used)) void stub_f19() __asm__("__ZN12CCDynaNotifs22bUpdateNotifsDaemonExtEi");
+__attribute__((used)) void stub_f19() { NativeUiStubAbort("CCDynaNotifs::bUpdateNotifsDaemonExt(int)"); }
+__attribute__((used)) void stub_f20() __asm__("__ZN11CCDynaRules16bStopRulesDaemonEv");
+__attribute__((used)) void stub_f20() { NativeUiStubAbort("CCDynaRules::bStopRulesDaemon()"); }
+__attribute__((used)) void stub_f21() __asm__("__ZN11CCDynaRules24bUpdateRuleSetsDaemonExtEi");
+__attribute__((used)) void stub_f21() { NativeUiStubAbort("CCDynaRules::bUpdateRuleSetsDaemonExt(int)"); }
+__attribute__((used)) void stub_f22() __asm__("__ZN17CChannelCreateDlgC1EP4CWnd");
+__attribute__((used)) void stub_f22() { NativeUiStubAbort("CChannelCreateDlg::CChannelCreateDlg(CWnd*)"); }
+__attribute__((used)) void stub_f23() __asm__("__ZN11CChannelDlgC1EP4CWnd");
+__attribute__((used)) void stub_f23() { NativeUiStubAbort("CChannelDlg::CChannelDlg(CWnd*)"); }
+__attribute__((used)) void stub_f24() __asm__("__ZN12CChannelPropC1EP4CWnd");
+__attribute__((used)) void stub_f24() { NativeUiStubAbort("CChannelProp::CChannelProp(CWnd*)"); }
+__attribute__((used)) void stub_f25() __asm__("__ZN14CCharacterPageD1Ev");
+__attribute__((used)) void stub_f25() { NativeUiStubAbort("CCharacterPage::~CCharacterPage()"); }
+__attribute__((used)) void stub_f26() __asm__("__ZN14CCharacterPageC1Ev");
+__attribute__((used)) void stub_f26() { NativeUiStubAbort("CCharacterPage::CCharacterPage()"); }
+__attribute__((used)) void stub_f27() __asm__("__ZN8CChatApp11AddRoomInfoEP9CRoomInfo");
+__attribute__((used)) void stub_f27() { NativeUiStubAbort("CChatApp::AddRoomInfo(CRoomInfo*)"); }
+__attribute__((used)) void stub_f28() __asm__("__ZN8CChatApp14CleanRoomInfosEv");
+__attribute__((used)) void stub_f28() { NativeUiStubAbort("CChatApp::CleanRoomInfos()"); }
+__attribute__((used)) void stub_f29() __asm__("__ZN8CChatApp10DoModalDlgEP4CWndi");
+__attribute__((used)) void stub_f29() { NativeUiStubAbort("CChatApp::DoModalDlg(CWnd*, int)"); }
+__attribute__((used)) void stub_f30() __asm__("__ZN8CChatApp15DoOptionsDialogEij");
+__attribute__((used)) void stub_f30() { NativeUiStubAbort("CChatApp::DoOptionsDialog(int, unsigned int)"); }
+__attribute__((used)) void stub_f31() __asm__("__ZN8CChatApp21GetDesktopOrFavoritesEi");
+__attribute__((used)) void stub_f31() { NativeUiStubAbort("CChatApp::GetDesktopOrFavorites(int)"); }
+__attribute__((used)) void stub_f32() __asm__("__ZN8CChatApp19GetRoomInfoFromNameE7CStringPiii");
+__attribute__((used)) void stub_f32() { NativeUiStubAbort("CChatApp::GetRoomInfoFromName(CString, int*, int, int)"); }
+__attribute__((used)) void stub_f33() __asm__("__ZN8CChatApp13HrAllocBufferEs");
+__attribute__((used)) void stub_f33() { NativeUiStubAbort("CChatApp::HrAllocBuffer(short)"); }
+__attribute__((used)) void stub_f34() __asm__("__ZN8CChatApp14OnChatroomListEv");
+__attribute__((used)) void stub_f34() { NativeUiStubAbort("CChatApp::OnChatroomList()"); }
+__attribute__((used)) void stub_f35() __asm__("__ZN8CChatApp12OnDisconnectEv");
+__attribute__((used)) void stub_f35() { NativeUiStubAbort("CChatApp::OnDisconnect()"); }
+__attribute__((used)) void stub_f36() __asm__("__ZN8CChatApp18OnViewStatuswindowEv");
+__attribute__((used)) void stub_f36() { NativeUiStubAbort("CChatApp::OnViewStatuswindow()"); }
+__attribute__((used)) void stub_f37() __asm__("__ZN8CChatApp14RemoveRoomInfoEi");
+__attribute__((used)) void stub_f37() { NativeUiStubAbort("CChatApp::RemoveRoomInfo(int)"); }
+__attribute__((used)) void stub_f38() __asm__("__ZN8CChatApp16ResumeConnectionEv");
+__attribute__((used)) void stub_f38() { NativeUiStubAbort("CChatApp::ResumeConnection()"); }
+__attribute__((used)) void stub_f39() __asm__("__ZN8CChatApp9SaveToRegEi");
+__attribute__((used)) void stub_f39() { NativeUiStubAbort("CChatApp::SaveToReg(int)"); }
+__attribute__((used)) void stub_f40() __asm__("__ZN8CChatApp22StartDownloadingAvatarEP9CUserInfoP8CChatDoci");
+__attribute__((used)) void stub_f40() { NativeUiStubAbort("CChatApp::StartDownloadingAvatar(CUserInfo*, CChatDoc*, int)"); }
+__attribute__((used)) void stub_f41() __asm__("__ZN8CChatDoc15ChatLoadLocatorER8CArchiveiiPs");
+__attribute__((used)) void stub_f41() { NativeUiStubAbort("CChatDoc::ChatLoadLocator(CArchive&, int, int, short*)"); }
+__attribute__((used)) void stub_f42() __asm__("__ZN8CChatDoc15ChatSaveLocatorER8CArchive");
+__attribute__((used)) void stub_f42() { NativeUiStubAbort("CChatDoc::ChatSaveLocator(CArchive&)"); }
+__attribute__((used)) void stub_f43() __asm__("__ZN9CChatItemC1EP8CChatDoc");
+__attribute__((used)) void stub_f43() { NativeUiStubAbort("CChatItem::CChatItem(CChatDoc*)"); }
+__attribute__((used)) void stub_f44() __asm__("__ZN19CChatPasswordDialogC1EPKcS1_iP4CWnd");
+__attribute__((used)) void stub_f44() { NativeUiStubAbort("CChatPasswordDialog::CChatPasswordDialog(char const*, char const*, int, CWnd*)"); }
+__attribute__((used)) void stub_f45() __asm__("__ZN11CChatServer15WriteToRegistryEPv");
+__attribute__((used)) void stub_f45() { NativeUiStubAbort("CChatServer::WriteToRegistry(void*)"); }
+__attribute__((used)) void stub_f46() __asm__("__ZN21CChatServiceConnector21BeginConnectToServiceEPKc");
+__attribute__((used)) void stub_f46() { NativeUiStubAbort("CChatServiceConnector::BeginConnectToService(char const*)"); }
+__attribute__((used)) void stub_f47() __asm__("__ZN21CChatServiceConnector7CleanupEi");
+__attribute__((used)) void stub_f47() { NativeUiStubAbort("CChatServiceConnector::Cleanup(int)"); }
+__attribute__((used)) void stub_f48() __asm__("__ZN16CChatServiceList14GetRegistryKeyEjPKc");
+__attribute__((used)) void stub_f48() { NativeUiStubAbort("CChatServiceList::GetRegistryKey(unsigned int, char const*)"); }
+__attribute__((used)) void stub_f49() __asm__("__ZN16CChatServiceList29GetServiceNameFromDisplayNameEPKcR7CString");
+__attribute__((used)) void stub_f49() { NativeUiStubAbort("CChatServiceList::GetServiceNameFromDisplayName(char const*, CString&)"); }
+__attribute__((used)) void stub_f50() __asm__("__ZN16CChatServiceList18ReleaseRegistryKeyEPv");
+__attribute__((used)) void stub_f50() { NativeUiStubAbort("CChatServiceList::ReleaseRegistryKey(void*)"); }
+__attribute__((used)) void stub_f51() __asm__("__ZN9CChatView23CleanUpBeforeChangeViewEv");
+__attribute__((used)) void stub_f51() { NativeUiStubAbort("CChatView::CleanUpBeforeChangeView()"); }
+__attribute__((used)) void stub_f52() __asm__("__ZN9CChatView15CreateComicViewEi");
+__attribute__((used)) void stub_f52() { NativeUiStubAbort("CChatView::CreateComicView(int)"); }
+__attribute__((used)) void stub_f53() __asm__("__ZN9CChatView14CreateTextViewEi");
+__attribute__((used)) void stub_f53() { NativeUiStubAbort("CChatView::CreateTextView(int)"); }
+__attribute__((used)) void stub_f54() __asm__("__ZN7CCNotif6AddRefEv");
+__attribute__((used)) void stub_f54() { NativeUiStubAbort("CCNotif::AddRef()"); }
+__attribute__((used)) void stub_f55() __asm__("__ZN7CCNotif7ReleaseEv");
+__attribute__((used)) void stub_f55() { NativeUiStubAbort("CCNotif::Release()"); }
+__attribute__((used)) void stub_f56() __asm__("__ZN6CCRule6AddRefEv");
+__attribute__((used)) void stub_f56() { NativeUiStubAbort("CCRule::AddRef()"); }
+__attribute__((used)) void stub_f57() __asm__("__ZN6CCRule7ReleaseEv");
+__attribute__((used)) void stub_f57() { NativeUiStubAbort("CCRule::Release()"); }
+__attribute__((used)) void stub_f58() __asm__("__Z15ChatReceiveFileP9CUserInfoPc");
+__attribute__((used)) void stub_f58() { NativeUiStubAbort("ChatReceiveFile(CUserInfo*, char*)"); }
+__attribute__((used)) void stub_f59() __asm__("__Z14ChatSetChannelPKc");
+__attribute__((used)) void stub_f59() { NativeUiStubAbort("ChatSetChannel(char const*)"); }
+__attribute__((used)) void stub_f60() __asm__("__ZN14CInvitationDlgC1EP4CWnd");
+__attribute__((used)) void stub_f60() { NativeUiStubAbort("CInvitationDlg::CInvitationDlg(CWnd*)"); }
+__attribute__((used)) void stub_f61() __asm__("__ZN10CInviteDlgC1EP4CWnd");
+__attribute__((used)) void stub_f61() { NativeUiStubAbort("CInviteDlg::CInviteDlg(CWnd*)"); }
+__attribute__((used)) void stub_f62() __asm__("__ZN11CKickDialogC1EP4CWnd");
+__attribute__((used)) void stub_f62() { NativeUiStubAbort("CKickDialog::CKickDialog(CWnd*)"); }
+__attribute__((used)) void stub_f63() __asm__("__ZN6CMacro6InvokeEPKcP9CUserInfoii");
+__attribute__((used)) void stub_f63() { NativeUiStubAbort("CMacro::Invoke(char const*, CUserInfo*, int, int)"); }
+__attribute__((used)) void stub_f64() __asm__("__ZN11CMemberList15GetSortPositionEP9CUserInfo");
+__attribute__((used)) void stub_f64() { NativeUiStubAbort("CMemberList::GetSortPosition(CUserInfo*)"); }
+__attribute__((used)) void stub_f65() __asm__("__ZN11CMemberList11MakeVisibleEP9CUserInfo");
+__attribute__((used)) void stub_f65() { NativeUiStubAbort("CMemberList::MakeVisible(CUserInfo*)"); }
+__attribute__((used)) void stub_f66() __asm__("__ZN11CMemberList4SortEv");
+__attribute__((used)) void stub_f66() { NativeUiStubAbort("CMemberList::Sort()"); }
+__attribute__((used)) void stub_f67() __asm__("__ZNK18CNCSMapStringToPtr6LookupEPKcRPv");
+__attribute__((used)) void stub_f67() { NativeUiStubAbort("CNCSMapStringToPtr::Lookup(char const*, void*&) const"); }
+__attribute__((used)) void stub_f68() __asm__("__ZN18CNCSMapStringToPtr9RemoveKeyEPKc");
+__attribute__((used)) void stub_f68() { NativeUiStubAbort("CNCSMapStringToPtr::RemoveKey(char const*)"); }
+__attribute__((used)) void stub_f69() __asm__("__ZN18CNCSMapStringToPtr5SetAtEPKcPv");
+__attribute__((used)) void stub_f69() { NativeUiStubAbort("CNCSMapStringToPtr::SetAt(char const*, void*)"); }
+__attribute__((used)) void stub_f70() __asm__("__ZN12CNicknameDlgC1EP4CWnd");
+__attribute__((used)) void stub_f70() { NativeUiStubAbort("CNicknameDlg::CNicknameDlg(CWnd*)"); }
+__attribute__((used)) void stub_f71() __asm__("__ZN12CPasswordDlgC1EP4CWnd");
+__attribute__((used)) void stub_f71() { NativeUiStubAbort("CPasswordDlg::CPasswordDlg(CWnd*)"); }
+__attribute__((used)) void stub_f72() __asm__("__ZN13CPersonalPageD1Ev");
+__attribute__((used)) void stub_f72() { NativeUiStubAbort("CPersonalPage::~CPersonalPage()"); }
+__attribute__((used)) void stub_f73() __asm__("__ZN13CPersonalPageC1Ej");
+__attribute__((used)) void stub_f73() { NativeUiStubAbort("CPersonalPage::CPersonalPage(unsigned int)"); }
+__attribute__((used)) void stub_f74() __asm__("__Z20CreateUniqueFileNamePKcS0_S0_P7CString");
+__attribute__((used)) void stub_f74() { NativeUiStubAbort("CreateUniqueFileName(char const*, char const*, char const*, CString*)"); }
+__attribute__((used)) void stub_f75() __asm__("__ZN5CRoom17CalculateSortByteEv");
+__attribute__((used)) void stub_f75() { NativeUiStubAbort("CRoom::CalculateSortByte()"); }
+__attribute__((used)) void stub_f76() __asm__("__ZN9CRoomInfo12ChatSendFileEP9CUserInfo");
+__attribute__((used)) void stub_f76() { NativeUiStubAbort("CRoomInfo::ChatSendFile(CUserInfo*)"); }
+__attribute__((used)) void stub_f77() __asm__("__ZN9CRoomList13AddToRoomListEi");
+__attribute__((used)) void stub_f77() { NativeUiStubAbort("CRoomList::AddToRoomList(int)"); }
+__attribute__((used)) void stub_f78() __asm__("__ZN9CRoomList13AnnounceCountEv");
+__attribute__((used)) void stub_f78() { NativeUiStubAbort("CRoomList::AnnounceCount()"); }
+__attribute__((used)) void stub_f79() __asm__("__ZN9CRoomList9SortRoomsEi");
+__attribute__((used)) void stub_f79() { NativeUiStubAbort("CRoomList::SortRooms(int)"); }
+__attribute__((used)) void stub_f80() __asm__("__ZN16CRoomListPersist7AddRoomEP5CRoom");
+__attribute__((used)) void stub_f80() { NativeUiStubAbort("CRoomListPersist::AddRoom(CRoom*)"); }
+__attribute__((used)) void stub_f81() __asm__("__ZN16CRoomListPersist9MakeEmptyEv");
+__attribute__((used)) void stub_f81() { NativeUiStubAbort("CRoomListPersist::MakeEmpty()"); }
+__attribute__((used)) void stub_f82() __asm__("__ZN8CRtfCtrl23DefineDefaultCharFormatEv");
+__attribute__((used)) void stub_f82() { NativeUiStubAbort("CRtfCtrl::DefineDefaultCharFormat()"); }
+__attribute__((used)) void stub_f83() __asm__("__ZN8CRtfCtrl21wGetConsistentFormatsEv");
+__attribute__((used)) void stub_f83() { NativeUiStubAbort("CRtfCtrl::wGetConsistentFormats()"); }
+__attribute__((used)) void stub_f84() __asm__("__ZN7CSayWnd12OnActionsSayEv");
+__attribute__((used)) void stub_f84() { NativeUiStubAbort("CSayWnd::OnActionsSay()"); }
+__attribute__((used)) void stub_f85() __asm__("__ZN7CSayWnd14OnActionsThinkEv");
+__attribute__((used)) void stub_f85() { NativeUiStubAbort("CSayWnd::OnActionsThink()"); }
+__attribute__((used)) void stub_f86() __asm__("__ZN7CSayWnd16OnActionsWhisperEv");
+__attribute__((used)) void stub_f86() { NativeUiStubAbort("CSayWnd::OnActionsWhisper()"); }
+__attribute__((used)) void stub_f87() __asm__("__ZN7CSayWnd11OnPlaySoundEv");
+__attribute__((used)) void stub_f87() { NativeUiStubAbort("CSayWnd::OnPlaySound()"); }
+__attribute__((used)) void stub_f88() __asm__("__ZN7CSayWnd12OnSendActionEv");
+__attribute__((used)) void stub_f88() { NativeUiStubAbort("CSayWnd::OnSendAction()"); }
+__attribute__((used)) void stub_f89() __asm__("__ZN7CSayWnd21SwitchSelectionFormatEt");
+__attribute__((used)) void stub_f89() { NativeUiStubAbort("CSayWnd::SwitchSelectionFormat(unsigned short)"); }
+__attribute__((used)) void stub_f90() __asm__("__ZN10CSetupPageD1Ev");
+__attribute__((used)) void stub_f90() { NativeUiStubAbort("CSetupPage::~CSetupPage()"); }
+__attribute__((used)) void stub_f91() __asm__("__ZN10CSetupPageC1Ev");
+__attribute__((used)) void stub_f91() { NativeUiStubAbort("CSetupPage::CSetupPage()"); }
+__attribute__((used)) void stub_f92() __asm__("__ZN7CTabBar9AddMDITabEPKcP8CChatDoci");
+__attribute__((used)) void stub_f92() { NativeUiStubAbort("CTabBar::AddMDITab(char const*, CChatDoc*, int)"); }
+__attribute__((used)) void stub_f93() __asm__("__ZN7CTabBar9DelMDITabEi");
+__attribute__((used)) void stub_f93() { NativeUiStubAbort("CTabBar::DelMDITab(int)"); }
+__attribute__((used)) void stub_f94() __asm__("__ZN7CTabBar10FindTabNumEP8CChatDoc");
+__attribute__((used)) void stub_f94() { NativeUiStubAbort("CTabBar::FindTabNum(CChatDoc*)"); }
+__attribute__((used)) void stub_f95() __asm__("__ZN7CTabBar10SetTabIconEii");
+__attribute__((used)) void stub_f95() { NativeUiStubAbort("CTabBar::SetTabIcon(int, int)"); }
+__attribute__((used)) void stub_f96() __asm__("__ZN9CTextCore15bSetInsertBlankEs");
+__attribute__((used)) void stub_f96() { NativeUiStubAbort("CTextCore::bSetInsertBlank(short)"); }
+__attribute__((used)) void stub_f97() __asm__("__ZN9CTextCore12iDisplayInfoEPKcjS1_jS1_j8MSG_TYPE13MEMBER_STATUSP11_charformatiPji");
+__attribute__((used)) void stub_f97() { NativeUiStubAbort("CTextCore::iDisplayInfo(char const*, unsigned int, char const*, unsigned int, char const*, unsigned int, MSG_TYPE, MEMBER_STATUS, _charformat*, int, unsigned int*, int)"); }
+__attribute__((used)) void stub_f98() __asm__("__ZN9CTextViewD2Ev");
+__attribute__((used)) void stub_f98() { NativeUiStubAbort("CTextView::~CTextView()"); }
+__attribute__((used)) void stub_f99() __asm__("__ZN9CTextView13ClearTextViewEv");
+__attribute__((used)) void stub_f99() { NativeUiStubAbort("CTextView::ClearTextView()"); }
+__attribute__((used)) void stub_f100() __asm__("__ZN9CTextViewC2Ev");
+__attribute__((used)) void stub_f100() { NativeUiStubAbort("CTextView::CTextView()"); }
+__attribute__((used)) void stub_f101() __asm__("__ZN9CTextView11DisplayJoinEPKcc");
+__attribute__((used)) void stub_f101() { NativeUiStubAbort("CTextView::DisplayJoin(char const*, char)"); }
+__attribute__((used)) void stub_f102() __asm__("__ZN9CTextView17DisplayNickChangeEP9CUserInfoPKc");
+__attribute__((used)) void stub_f102() { NativeUiStubAbort("CTextView::DisplayNickChange(CUserInfo*, char const*)"); }
+__attribute__((used)) void stub_f103() __asm__("__ZN9CTextView11DisplayPartEPKcc");
+__attribute__((used)) void stub_f103() { NativeUiStubAbort("CTextView::DisplayPart(char const*, char)"); }
+__attribute__((used)) void stub_f104() __asm__("__ZN9CTextView15OnBeginPrintingEP3CDCP10CPrintInfo");
+__attribute__((used)) void stub_f104() { NativeUiStubAbort("CTextView::OnBeginPrinting(CDC*, CPrintInfo*)"); }
+__attribute__((used)) void stub_f105() __asm__("__ZN9CTextView8OnCreateEP15tagCREATESTRUCT");
+__attribute__((used)) void stub_f105() { NativeUiStubAbort("CTextView::OnCreate(tagCREATESTRUCT*)"); }
+__attribute__((used)) void stub_f106() __asm__("__ZN9CTextView6OnDrawEP3CDC");
+__attribute__((used)) void stub_f106() { NativeUiStubAbort("CTextView::OnDraw(CDC*)"); }
+__attribute__((used)) void stub_f107() __asm__("__ZN9CTextView13OnEndPrintingEP3CDCP10CPrintInfo");
+__attribute__((used)) void stub_f107() { NativeUiStubAbort("CTextView::OnEndPrinting(CDC*, CPrintInfo*)"); }
+__attribute__((used)) void stub_f108() __asm__("__ZN9CTextView8OnNotifyEmlPl");
+__attribute__((used)) void stub_f108() { NativeUiStubAbort("CTextView::OnNotify(unsigned long, long, long*)"); }
+__attribute__((used)) void stub_f109() __asm__("__ZN9CTextView17OnPreparePrintingEP10CPrintInfo");
+__attribute__((used)) void stub_f109() { NativeUiStubAbort("CTextView::OnPreparePrinting(CPrintInfo*)"); }
+__attribute__((used)) void stub_f110() __asm__("__ZN9CTextView7OnPrintEP3CDCP10CPrintInfo");
+__attribute__((used)) void stub_f110() { NativeUiStubAbort("CTextView::OnPrint(CDC*, CPrintInfo*)"); }
+__attribute__((used)) void stub_f111() __asm__("__ZN9CTextView13SetURLBrowserEi");
+__attribute__((used)) void stub_f111() { NativeUiStubAbort("CTextView::SetURLBrowser(int)"); }
+__attribute__((used)) void stub_f112() __asm__("__ZN9CTextView8ShowInfoEP9CUserInfoPKc");
+__attribute__((used)) void stub_f112() { NativeUiStubAbort("CTextView::ShowInfo(CUserInfo*, char const*)"); }
+__attribute__((used)) void stub_f113() __asm__("__ZN9CTextView8TextLineEP9CUserInfoPKcS3_S3_thP11CDWordArrayc");
+__attribute__((used)) void stub_f113() { NativeUiStubAbort("CTextView::TextLine(CUserInfo*, char const*, char const*, char const*, unsigned short, unsigned char, CDWordArray*, char)"); }
+__attribute__((used)) void stub_f114() __asm__("__ZN5CUser7ReleaseEv");
+__attribute__((used)) void stub_f114() { NativeUiStubAbort("CUser::Release()"); }
+__attribute__((used)) void stub_f115() __asm__("__ZN9CUserList13AddToUserListEi");
+__attribute__((used)) void stub_f115() { NativeUiStubAbort("CUserList::AddToUserList(int)"); }
+__attribute__((used)) void stub_f116() __asm__("__ZN9CUserList13AnnounceCountEv");
+__attribute__((used)) void stub_f116() { NativeUiStubAbort("CUserList::AnnounceCount()"); }
+__attribute__((used)) void stub_f117() __asm__("__ZN9CUserList4SortEi");
+__attribute__((used)) void stub_f117() { NativeUiStubAbort("CUserList::Sort(int)"); }
+__attribute__((used)) void stub_f118() __asm__("__ZN16CUserListPersist7AddUserEP5CUser");
+__attribute__((used)) void stub_f118() { NativeUiStubAbort("CUserListPersist::AddUser(CUser*)"); }
+__attribute__((used)) void stub_f119() __asm__("__ZN11CWhisperBox14GetCurrentEditEv");
+__attribute__((used)) void stub_f119() { NativeUiStubAbort("CWhisperBox::GetCurrentEdit()"); }
+__attribute__((used)) void stub_f120() __asm__("__Z15ForwardToSayWndj");
+__attribute__((used)) void stub_f120() { NativeUiStubAbort("ForwardToSayWnd(unsigned int)"); }
+__attribute__((used)) void stub_f121() __asm__("__Z22GetSupportedSoundTypesv");
+__attribute__((used)) void stub_f121() { NativeUiStubAbort("GetSupportedSoundTypes()"); }
+__attribute__((used)) void stub_f122() __asm__("__Z16GetVersionStringR7CString");
+__attribute__((used)) void stub_f122() { NativeUiStubAbort("GetVersionString(CString&)"); }
+__attribute__((used)) void stub_f123() __asm__("__Z17OnChatroomListAuxPKc");
+__attribute__((used)) void stub_f123() { NativeUiStubAbort("OnChatroomListAux(char const*)"); }
+__attribute__((used)) void stub_f124() __asm__("__Z13OnUserListAuxPKcS0_S0_");
+__attribute__((used)) void stub_f124() { NativeUiStubAbort("OnUserListAux(char const*, char const*, char const*)"); }
+__attribute__((used)) void stub_f125() __asm__("__Z18OurJIS_to_ShiftJISPhiPS_i");
+__attribute__((used)) void stub_f125() { NativeUiStubAbort("OurJIS_to_ShiftJIS(unsigned char*, int, unsigned char**, int)"); }
+__attribute__((used)) void stub_f126() __asm__("__Z24RatingAccessDeniedDialogPvPKcS1_S_");
+__attribute__((used)) void stub_f126() { NativeUiStubAbort("RatingAccessDeniedDialog(void*, char const*, char const*, void*)"); }
+__attribute__((used)) void stub_f127() __asm__("__Z21RatingCheckUserAccessPKcS0_S0_PvjPS1_");
+__attribute__((used)) void stub_f127() { NativeUiStubAbort("RatingCheckUserAccess(char const*, char const*, char const*, void*, unsigned int, void**)"); }
+__attribute__((used)) void stub_f128() __asm__("__Z18RatingEnabledQueryv");
+__attribute__((used)) void stub_f128() { NativeUiStubAbort("RatingEnabledQuery()"); }
+__attribute__((used)) void stub_f129() __asm__("__Z17RatingFreeDetailsPv");
+__attribute__((used)) void stub_f129() { NativeUiStubAbort("RatingFreeDetails(void*)"); }
+__attribute__((used)) void stub_f130() __asm__("__Z13SetComicsFontv");
+__attribute__((used)) void stub_f130() { NativeUiStubAbort("SetComicsFont()"); }
+__attribute__((used)) void stub_f131() __asm__("__Z11SetTextFontv");
+__attribute__((used)) void stub_f131() { NativeUiStubAbort("SetTextFont()"); }
+__attribute__((used)) void stub_f132() __asm__("__Z17ShowMemberContextii");
+__attribute__((used)) void stub_f132() { NativeUiStubAbort("ShowMemberContext(int, int)"); }
+__attribute__((used)) void stub_f133() __asm__("__Z16sndPlayMidiSoundPKcj");
+__attribute__((used)) void stub_f133() { NativeUiStubAbort("sndPlayMidiSound(char const*, unsigned int)"); }
+__attribute__((used)) void stub_f134() __asm__("__Z7stristrPKcS0_");
+__attribute__((used)) void stub_f134() { NativeUiStubAbort("stristr(char const*, char const*)"); }
+__attribute__((used)) void stub_f135() __asm__("__Z10TrimQuotesR7CString");
+__attribute__((used)) void stub_f135() { NativeUiStubAbort("TrimQuotes(CString&)"); }
+__attribute__((used)) void stub_f136() __asm__("__Z7UnConstPKc");
+__attribute__((used)) void stub_f136() { NativeUiStubAbort("UnConst(char const*)"); }
+__attribute__((used)) void stub_f137() __asm__("__Z10WhisperBoxP9CUserInfoii");
+__attribute__((used)) void stub_f137() { NativeUiStubAbort("WhisperBox(CUserInfo*, int, int)"); }
+__attribute__((used)) void stub_f138() __asm__("__Z8WriteRTFP13CRichEditCtrlPKc");
+__attribute__((used)) void stub_f138() { NativeUiStubAbort("WriteRTF(CRichEditCtrl*, char const*)"); }
 
 __attribute__((used)) void stub_vcall() { NativeUiStubAbort("virtual call through a stubbed vtable"); }
 typedef void (*VFn)();

@@ -138,7 +138,110 @@ BOOL CChatApp::StartDownloadingBackdrop(LPCSTR, LPCSTR) { NATIVE_UNLINKED("CChat
 // transcription that stood here is gone - as its comment said it should be.
 
 // --- protsupp.cpp ---
-void SetMyCharacter(const char*) { NATIVE_UNLINKED("SetMyCharacter (protsupp.cpp)"); }
+// SetMyCharacter is real now - see the identity block at the end of this file.
 
 // SetMyPUIAvatarID now comes from the real userinfo.cpp, which links.
 
+
+// --- setupdlg.cpp: the identity accessors -------------------------------------------
+// REAL storage, not stubs. These are the user's nickname, real name, ident and server, and
+// the IRC layer reads them back when it builds its registration: CIrcSocket::HrIrcLogin sends
+//
+//     NICK <GetMyName()>
+//     USER <m_pszUserName> ... :<GetMyRealName()>
+//
+// so a stub aborts the moment a connection is attempted, and one returning "" would register
+// with an empty nick and be rejected by the server.
+//
+// On Windows these live in setupdlg.cpp, which is 3000 lines of property-sheet dialogs backed
+// by the registry. The native front end owns identity instead - it is app configuration, not
+// engine behaviour - so this is the storage those dialogs would have written to. Defaults are
+// chosen so a session works before anything has been configured.
+namespace {
+CString g_myNick     = "comicchat";
+CString g_myIdent    = "comicchat";
+CString g_myRealName = "Comic Chat (macOS)";
+CString g_myUserName = "comicchat";
+CString g_myServer;
+CString g_myChannel;
+CString g_myCharacter = "bolo";
+CString g_myHomePage;
+CString g_myEmail;
+}
+
+const char* GetMyName()           { return (LPCSTR)g_myNick; }
+const char* GetMyScreenName()     { return (LPCSTR)g_myNick; }
+const char* GetMyNickName()       { return (LPCSTR)g_myNick; }
+const char* GetMyIdent()          { return (LPCSTR)g_myIdent; }
+const char* GetMyRealName()       { return (LPCSTR)g_myRealName; }
+const char* GetMyUserName()       { return (LPCSTR)g_myUserName; }
+const char* GetMyServer()         { return (LPCSTR)g_myServer; }
+const char* GetMyPhysicalServer() { return (LPCSTR)g_myServer; }
+const char* GetMyCharacter()      { return (LPCSTR)g_myCharacter; }
+const char* GetMyChannel()        { return (LPCSTR)g_myChannel; }
+const char* GetMyHomePage()       { return (LPCSTR)g_myHomePage; }
+const char* GetMyEmail()          { return (LPCSTR)g_myEmail; }
+
+void SetMyName(const char* s)      { if (s) g_myNick = s; }
+void SetMyNameNick(const char* s)  { if (s) g_myNick = s; }
+void SetMyIdent(const char* s)     { if (s) g_myIdent = s; }
+void SetMyRealName(const char* s)  { if (s) g_myRealName = s; }
+void SetMyCharacter(const char* s) { if (s) g_myCharacter = s; }
+void SetMyHomePage(const char* s)  { if (s) g_myHomePage = s; }
+
+// Set by the session when a connection is started, so the rules engine and the status line
+// can report which server this is.
+void NativeSetMyServer(const char* s) { if (s) g_myServer = s; }
+
+void GetMyServerDisplayName(CString& str) { str = g_myServer; }
+
+// GetMyServerPrettyName - the server name as shown to the user. On Windows this looks up a
+// friendly label in the server list ("MSN Chat" for a comicsrv host); with a direct connection
+// the hostname the user typed IS the pretty name.
+void GetMyServerPrettyName(CString& str) { str = GetMyServer(); }
+
+// --- rules.cpp: the automation engine ------------------------------------------------
+// Comic Chat lets a user define RULES ("when someone joins, greet them", "ignore this nick")
+// and NOTIFICATIONS, edited through property sheets and stored in the registry. rules.cpp is
+// 3600 lines of that, most of it dialog code.
+//
+// A session with no rules configured is the normal case, and its answer is "nothing matched" -
+// which is what these return. That is faithful rather than a placeholder: the engine calls
+// bMatchAndApplyRules on every join, leave, connect and message, and on Windows with an empty
+// rule set it returns FALSE too.
+//
+// Only the ARGUMENTS are read (they are copied into the m_*Cach members before matching), so
+// returning FALSE without touching them loses nothing.
+BOOL CCDynaRules::bMatchAndApplyRules(enumEvents, enumActions*, enumActions*,
+                                      CString&, CString&, CString&, CString&) {
+    return FALSE;
+}
+// GetFlags is defined inline in rules.h, so it is already available.
+BOOL CCDynaRules::bDaemonNeeded() { return FALSE; }
+BOOL CCDynaRules::bStartRulesDaemon(UINT, BOOL) { return FALSE; }
+BOOL CCDynaNotifs::bDaemonNeeded() { return FALSE; }
+BOOL CCDynaNotifs::bStartNotifsDaemon(UINT, BOOL) { return FALSE; }
+
+// --- chatsrv.cpp / motd.cpp / protsupp.cpp: settings and secondary UI ------------------
+// AddToServerList maintains the recent-servers list that the connect dialog offers. Returns
+// NULL - "not added" - because the native front end has no server list yet: the user supplies
+// a hostname directly. Nothing on the connection path uses the return value.
+class CChatService;
+CChatService* AddToServerList(LPCSTR) { return 0; }
+
+// UpdateSpectators refreshes the member-list pane's spectator section. No pane yet, and it
+// touches no engine state, so doing nothing is faithful rather than deferred.
+void UpdateSpectators(CChatDoc*, BOOL) {}
+
+// ShowMOTD opens the message-of-the-day window. The MOTD text is still received and kept by
+// CIrcSocket (m_strMOTD), so nothing is lost - only the window is missing.
+void ShowMOTD(const char* szLUsers, const char* szMOTD) {
+    if (szMOTD && *szMOTD) fprintf(stderr, "[motd] %.400s\n", szMOTD);
+    (void)szLUsers;
+}
+
+// The identity-mask matcher, used by the rules engine to decide whether a user matches a
+// pattern like "nick!*@*.example.com". With no rules configured (see bMatchAndApplyRules
+// above) nothing asks it to match, so "no match" is consistent rather than arbitrary.
+BOOL bGetUserMatchFromMask(LPTSTR, void*) { return FALSE; }
+BOOL bIsMatch(void*, LPCTSTR, LPCTSTR, LPCTSTR) { return FALSE; }

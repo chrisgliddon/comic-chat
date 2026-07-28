@@ -19,13 +19,15 @@ NATIVE_UNITS="avbdump posedump ojson oracleseed
               format fonts balloon panel pageview
               chatdoc histent protsupp userinfo doskey urlutil sjis2jis
               ircproto ircsock query ccommon status bodycam
-              render cgblit session"
+              render cgblit session asyncsocket"
 
 # Entry points, each linked against the set above.
 #   oracleharness -> native/build/harness   (corpus replay + every --dump mode)
 #   avbmain       -> native/build/avbdump
 #   posemain      -> native/build/posedump
 #   glyphmain     -> native/build/glyphcheck (standalone: needs no engine object)
+#   sessionmain   -> native/build/sessioncheck (the app's own path, without AppKit)
+#   ircmain       -> native/build/irccheck     (connects to a real IRC server)
 
 NATIVE_FRAMEWORKS="-framework ApplicationServices -framework CoreText -framework CoreFoundation"
 
@@ -34,14 +36,14 @@ NATIVE_CXXFLAGS="-std=c++14 -O1 -w -Wno-error=non-pod-varargs -fms-extensions -D
 # Stages sources and symlinks the out-of-tree drivers and shim .cpp files into it.
 native_stage() {
     ./native/stage.sh > /dev/null
-    for c in avbmain posemain glyphmain nativeglue nativeapp; do
+    for c in avbmain posemain glyphmain sessionmain ircmain nativeglue nativeapp; do
         ln -sf "$PWD/native/$c.cpp" "native/stage/$c.cpp"
     done
     ln -sf "$PWD/native/render.cpp"  "native/stage/render.cpp"
     ln -sf "$PWD/native/session.cpp" "native/stage/session.cpp"
     ln -sf "$PWD/native/session.h"   "native/stage/session.h"
     ln -sf "$PWD/native/render.h"   "native/stage/render.h"
-    for c in glyphtable glyphtable_cdc stringtable cgblit; do
+    for c in glyphtable glyphtable_cdc stringtable cgblit asyncsocket; do
         ln -sf "$PWD/native/shim/$c.cpp" "native/stage/$c.cpp"
     done
 }

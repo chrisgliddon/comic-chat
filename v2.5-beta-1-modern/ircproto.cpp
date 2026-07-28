@@ -474,6 +474,12 @@ short nGetBreakingPoint(int iEncodingType, const char *szBody, short nBodyLen, s
 
 void CIrcProto::SendMessageText(char *szMesg) {
 	TRACE("Sending message: %s\n", szMesg);
+#ifdef ORACLE_HARNESS
+	// COMIC_CHAT_IRC_TRACE shows both directions of the protocol. For IRC work this is the
+	// only view that matters: "status stayed at connected" is the same symptom whether the
+	// JOIN was never composed, never sent, or sent and refused.
+	if (getenv("COMIC_CHAT_IRC_TRACE")) { fprintf(stderr, ">>> %s", szMesg); fflush(stderr); }
+#endif
 	m_pSock->Send(szMesg, strlen(szMesg));
 }
 
@@ -769,7 +775,7 @@ LPCSTR pszNewClientData)
 void CIrcProto::ChatPartChannel(CDocument *doc1, BOOL) {
 	CChatDoc *doc = (CChatDoc*) doc1;
 	if (m_bInRoom) {
-		sprintf(GetOutBuff(), "PART %s\r\n", m_strChannel);  // exit gracefully
+		sprintf(GetOutBuff(), "PART %s\r\n", (LPCSTR) m_strChannel);  // exit gracefully
 		SendMessageText(GetOutBuff());
 	}
 
@@ -814,12 +820,12 @@ void CIrcProto::ChatJoinAux(CRoomInfo &enterInfo)
 {
 	ASSERT(!enterInfo.m_strChannel.IsEmpty());
 	if (enterInfo.m_strPassword.IsEmpty())
-		sprintf(GetOutBuff(), "JOIN %s\r\n", enterInfo.m_strChannel);
+		sprintf(GetOutBuff(), "JOIN %s\r\n", (LPCSTR) enterInfo.m_strChannel);
 	else
 	{
 		int iEncoding = (enterInfo.m_strChannel[0] == '#' || enterInfo.m_strChannel[0] == '&') ? ENC_DBCS : ENC_UTF8;
 		CString strPwd = EncodeString(enterInfo.m_strPassword, iEncoding);
-		sprintf(GetOutBuff(), "JOIN %s %s\r\n", enterInfo.m_strChannel, strPwd);
+		sprintf(GetOutBuff(), "JOIN %s %s\r\n", (LPCSTR) enterInfo.m_strChannel, (LPCSTR) strPwd);
 	}
 
 	SendMessageText(GetOutBuff());
@@ -849,7 +855,7 @@ void CIrcProto::ChatCreateAux(CRoomInfo &enterInfo)
 		strParams += " " + strPwd;
 	}
 
-	sprintf(GetOutBuff(), "CREATE %s%s\r\n", enterInfo.m_strChannel, strParams);
+	sprintf(GetOutBuff(), "CREATE %s%s\r\n", (LPCSTR) enterInfo.m_strChannel, (LPCSTR) strParams);
 	SendMessageText(GetOutBuff());
 }
 
@@ -858,7 +864,7 @@ BOOL CIrcProto::ChatKickUser(const char *szNickname, const char *szReason)
 {
 	if (szReason && *szReason)
 		szReason = EncodeString(szReason);
-	sprintf (GetOutBuff(), "KICK %s %s :%s\r\n", m_strChannel, szNickname, szReason ? szReason : "");
+	sprintf (GetOutBuff(), "KICK %s %s :%s\r\n", (LPCSTR) m_strChannel, szNickname, szReason ? szReason : "");
 	SendMessageText(GetOutBuff());
 	return TRUE;
 }
@@ -972,14 +978,14 @@ BOOL CIrcProto::ChatSetMode(DWORD newMode, DWORD newMaxUsers, const char *szNewP
 	if (*modeBuff) {
 		if (newUnSets & CM_CHANNELKEY) szKey = strCurrentChannelKey;
 		else szKey = "";
-		sprintf(GetOutBuff(), "MODE %s -%s %s\r\n", m_strChannel, modeBuff, szKey);
+		sprintf(GetOutBuff(), "MODE %s -%s %s\r\n", (LPCSTR) m_strChannel, modeBuff, szKey);
 		SendMessageText(GetOutBuff());
 	}
 	GetModeChars(newSets, modeBuff);
 	if (*modeBuff) {
 		if (!(newSets & CM_CHANNELKEY)) szKey = "";
 		else szKey = szNewPasswd;
-		sprintf(GetOutBuff(), "MODE %s +%s %s %s\r\n", m_strChannel, modeBuff, szMaxUsers, szKey);
+		sprintf(GetOutBuff(), "MODE %s +%s %s %s\r\n", (LPCSTR) m_strChannel, modeBuff, szMaxUsers, szKey);
 		SendMessageText(GetOutBuff());
 	} 
 	return TRUE;
@@ -1022,7 +1028,7 @@ void CIrcProto::ChatBanUser(CUserInfo *pui)
 		VERIFY(bExecuteQuery(qpBanDlg, ctWhoIs, dtMax, NULL, m_strChannel, pui->GetName()));
 	else
 	{
-		sprintf(GetOutBuff(), "MODE %s +b\r\n", m_strChannel);
+		sprintf(GetOutBuff(), "MODE %s +b\r\n", (LPCSTR) m_strChannel);
 		SendMessageText(GetOutBuff());
 	}
 }
@@ -1052,6 +1058,11 @@ BOOL CIrcProto::bExecuteQuery(enumQueryPurpose qp,
 	UINT			cbFilter = 0;
 	CCQuery*		pQuery;
 
+#ifdef ORACLE_HARNESS
+	if (getenv("COMIC_CHAT_IRC_TRACE"))
+		fprintf(stderr, "[query] qp=%d ct=%d dt=%d chan='%s' mask='%s'\n",
+		        (int)qp, (int)ct, (int)dt, (LPCTSTR)strChannelName, (LPCTSTR)strNicknameMask);
+#endif
 	// Make sure we are connected...
 	if (GetConnectionStatus() == CX_DISCONNECTED)
 		return FALSE;
@@ -1101,7 +1112,7 @@ BOOL CIrcProto::bExecuteQuery(enumQueryPurpose qp,
 			if (strChannelName.IsEmpty())
 				strcpy(GetOutBuff(), "WHO\r\n");
 			else
-				sprintf(GetOutBuff(), "WHO %s\r\n", strChannelName);
+				sprintf(GetOutBuff(), "WHO %s\r\n", (LPCSTR) strChannelName);
 		break;
 
 	case ctWhoIs:
@@ -1113,10 +1124,10 @@ BOOL CIrcProto::bExecuteQuery(enumQueryPurpose qp,
 		switch (qp)
 		{
 		case qpSetTopic:
-			sprintf(GetOutBuff(), "TOPIC %s :%s\r\n", strChannelName, (char*) pvData);
+			sprintf(GetOutBuff(), "TOPIC %s :%s\r\n", (LPCSTR) strChannelName, (char*) pvData);
 			break;
 		case qpListMembers:
-			sprintf(GetOutBuff(), "TOPIC %s\r\n", strChannelName);
+			sprintf(GetOutBuff(), "TOPIC %s\r\n", (LPCSTR) strChannelName);
 			break;
 		default:
 			ASSERT(FALSE);
@@ -1178,7 +1189,7 @@ BOOL CIrcProto::bExecuteQuery(enumQueryPurpose qp,
 			ASSERT(FALSE);
 		}
 
-		sprintf(GetOutBuff(), "MODE %s %s\r\n", strNicknameMask, szModes);
+		sprintf(GetOutBuff(), "MODE %s %s\r\n", (LPCSTR) strNicknameMask, szModes);
 		break;
 	}
 

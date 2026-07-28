@@ -1118,6 +1118,9 @@ void CIrcProto::OnLogin()
 
 
 void CIrcSocket::ProcessMessage(char *szLine) {
+#ifdef ORACLE_HARNESS
+	if (getenv("COMIC_CHAT_IRC_TRACE")) { fprintf(stderr, "<<< %s\n", szLine); fflush(stderr); }
+#endif
 	IRCPARSE	parse;
 	CIrcPrint	ircPrint;
 	CString		strLine;
@@ -2071,7 +2074,7 @@ void CIrcSocket::HandleResultCode(CString &strLine, char *szLine, PIRCPARSE pPar
 							else
 							{
 								g_strBan = strBan;
-								sprintf(GetOutBuff(), "MODE %s +b\r\n", pQuery->GetChannelName());
+								sprintf(GetOutBuff(), "MODE %s +b\r\n", (LPCSTR) pQuery->GetChannelName());
 								currentRoom->SendMessageText(GetOutBuff());
 							}
 							break;

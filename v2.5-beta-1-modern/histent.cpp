@@ -128,7 +128,7 @@ void SayEntry::WriteSelf(CArchive &ar)
 
 	BOOL bNeedFree = QuoteReturns(&szMesg);
 
-	strOut.Format("say\t%s\t%s\t%s\r\n", m_name, strOtherArgs, szMesg);
+	strOut.Format("say\t%s\t%s\t%s\r\n", m_name, (LPCSTR) strOtherArgs, szMesg);
 	
 	if (bNeedFree)
 		free((void *) szMesg);

@@ -1009,28 +1009,51 @@ inline void AfxOleUnlockApp() {}
 // base class in a header. Real networking will use BSD sockets directly.
 class CAsyncSocket : public CObject {
 public:
-    // MFC exposes the raw socket; protsupp.cpp reads it to poll connection state.
-    // INVALID_SOCKET, since nothing is connected.
+    // REAL, over BSD sockets plus a run-loop source. See native/shim/asyncsocket.cpp.
+    //
+    // The mapping that matters: MFC's CAsyncSocket is asynchronous via WSAAsyncSelect, which
+    // posts a window message when a socket becomes readable/writable/closed, so the virtuals
+    // below are called on the UI thread from the message loop. A CFSocket attached to the
+    // main run loop has exactly those semantics - callbacks on the main thread, no blocking,
+    // no reader thread and therefore no locking around engine state. That correspondence is
+    // why this can be a thin adapter rather than a redesign.
     int m_hSocket;   // SOCKET; spelled int because winsock.h comes after this header
-    CAsyncSocket() : m_hSocket(-1) {}   // INVALID_SOCKET
-    virtual ~CAsyncSocket() {}
+
+    CAsyncSocket();
+    virtual ~CAsyncSocket();
+
     virtual void OnReceive(int) {}
     virtual void OnSend(int) {}
     virtual void OnConnect(int) {}
     virtual void OnClose(int) {}
-    BOOL Create(UINT = 0, int = 0, long = 0, LPCTSTR = 0) { return FALSE; }
-    BOOL Connect(LPCTSTR, UINT) { return FALSE; }
-    int Send(const void*, int, int = 0) { return -1; }
-    int Receive(void*, int, int = 0) { return -1; }
-    void Close() {}
-    // GetSockName/GetPeerName report failure: nothing is connected, and ircproto.cpp
-    // treats a failure as "no local address yet" and returns 0 rather than proceeding
-    // with garbage.
-    BOOL GetSockName(SOCKADDR*, int*) { return FALSE; }
-    BOOL GetPeerName(SOCKADDR*, int*) { return FALSE; }
-    BOOL AsyncSelect(long = 0) { return FALSE; }
-    BOOL IOCtl(long, DWORD*) { return FALSE; }
-    BOOL ShutDown(int = 0) { return FALSE; }
+    virtual void OnOutOfBandData(int) {}
+    virtual void OnAccept(int) {}
+
+    BOOL Create(UINT nSocketPort = 0, int nSocketType = 1 /*SOCK_STREAM*/,
+                long lEvent = 0, LPCTSTR lpszSocketAddress = 0);
+    BOOL Connect(LPCTSTR lpszHostAddress, UINT nHostPort);
+    BOOL Connect(const SOCKADDR* pSockAddr, int nSockAddrLen);
+    int  Send(const void* buf, int len, int flags = 0);
+    int  Receive(void* buf, int len, int flags = 0);
+    void Close();
+    BOOL GetSockName(SOCKADDR* p, int* len);
+    BOOL GetPeerName(SOCKADDR* p, int* len);
+    BOOL AsyncSelect(long lEvent = 0);
+    BOOL IOCtl(long lCommand, DWORD* lpArgument);
+    BOOL ShutDown(int nHow = 0);
+    BOOL Attach(int hSocket, long lEvent = 0);
+    int  Detach();
+
+    // Public, like m_hSocket above, because the run-loop callback in asyncsocket.cpp cannot
+    // be a friend: its signature has to be CFSocketCallBack exactly, and spelling CF types in
+    // this header would drag CoreFoundation into all ~35 translation units that include it.
+    void* m_cfSocket;      // CFSocketRef
+    void* m_rlSource;      // CFRunLoopSourceRef
+    long  m_events;        // the FD_* set most recently selected
+    int   m_connecting;    // a non-blocking connect is outstanding
+    void  Unregister();
+    void  Register(long lEvent);
+
     BOOL Listen(int = 5) { return FALSE; }
     BOOL Bind(UINT, LPCTSTR = 0) { return FALSE; }
     BOOL Accept(CAsyncSocket&, SOCKADDR* = 0, int* = 0) { return FALSE; }

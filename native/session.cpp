@@ -23,6 +23,11 @@ class CPageView;
 #include "panel.h"
 #include "glyphtable.h"
 #include "stringtable.h"
+#include "ircproto.h"
+#include "ircsock.h"
+#include "defines.h"
+
+#include <CoreFoundation/CoreFoundation.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -129,6 +134,11 @@ bool NativeSessionStart(const char* treeDir) {
     g_doc->SetComicsTitle("Comic Chat");
     g_doc->InitMyDocument();
 
+    // The protocol object. CommunicationInits() would normally do this, but it also runs
+    // NetMeeting init, AfxSocketInit and the identd listener; NewDefaultProto is the part that
+    // matters, and it is what GetIrcProto() reads out of cui.
+    if (!cui.m_pvIrcProto) cui.m_pvIrcProto = NewDefaultProto(g_doc);
+
     g_started = true;
     return true;
 }
@@ -167,6 +177,99 @@ CPage* NativeSessionCurrentPage() {
     // AddNewPage does AddHead and AddLine uses GetTail, so the page being composed is the
     // TAIL - the head is the oldest. Getting this backwards shows an empty page.
     return (CPage*)g_doc->m_pages.GetTail();
+}
+
+// --- IRC ---------------------------------------------------------------------------
+
+extern CIrcSocket serverConn;
+// GetIrcProto() is a MACRO in ui.h (cui.GetIrcProtoPv() cast to CIrcProto*), not a function -
+// declaring it as one collides with the macro expansion.
+void SetMyName(const char* szCharName);
+void NativeSetMyServer(const char* server);
+void SetMyNameNick(const char* szNickname);
+const char* GetMyName();
+
+bool NativeSessionConnect(const char* server, int port, const char* nickname,
+                          const char* channel) {
+    if (!g_started || !server || !*server) return false;
+    if (port <= 0) port = 6667;
+
+    // The engine reads the nick back out of its own settings when it builds the NICK/USER
+    // registration in CIrcSocket::HrIrcLogin, so it has to be set here rather than passed.
+    if (nickname && *nickname) {
+        SetMyName(nickname);
+        SetMyNameNick(nickname);
+    }
+
+    // The room to join on login. CIrcProto::OnLogin does ChatJoinChannel(g_enterInfo) when
+    // m_iOnConnectAction is CA_JOINROOM, so filling this in is what makes the engine join by
+    // itself - and leaving it empty is what made it send a bare "JOIN" that the server
+    // rejected with 461.
+    if (channel && *channel) {
+        g_enterInfo.m_strChannel = channel;
+        theApp.m_iOnConnectAction = CA_JOINROOM;
+    } else {
+        theApp.m_iOnConnectAction = CA_NOACTION;
+    }
+
+    // Recorded before connecting: CChatApp::CompleteConnection and the rules engine both read
+    // the server name back, and the connection completes asynchronously.
+    NativeSetMyServer(server);
+
+    // HrInitAlloc sizes the socket's line buffers. Without it OnReceive has nowhere to put
+    // the bytes it reads, so this is not optional even though nothing else calls it here.
+    serverConn.HrInitAlloc(2048);
+
+    if (!serverConn.Create()) {
+        fprintf(stderr, "session: could not create the socket\n");
+        return false;
+    }
+    GetIrcProto()->SetConnectionStatus(CX_CONNECTING);
+
+    // Non-blocking: FALSE with WSAEWOULDBLOCK means "in progress", which is success as far as
+    // starting a connection goes. The real outcome arrives at CIrcSocket::OnConnect, driven by
+    // the run loop (native/shim/asyncsocket.cpp).
+    BOOL ok = serverConn.Connect(server, (UINT)port);
+    if (!ok && GetLastError() != (DWORD)WSAEWOULDBLOCK) {
+        fprintf(stderr, "session: connect to %s:%d failed immediately (err %u)\n",
+                server, port, (unsigned)GetLastError());
+        GetIrcProto()->SetConnectionStatus(CX_DISCONNECTED);
+        return false;
+    }
+    return true;
+}
+
+int NativeSessionConnectionStatus() {
+    if (!g_started) return CX_DISCONNECTED;
+    return GetIrcProto()->GetConnectionStatus();
+}
+
+const char* NativeSessionConnectionStatusText() {
+    switch (NativeSessionConnectionStatus()) {
+        case CX_DISCONNECTED: return "disconnected";
+        case CX_CONNECTING:   return "connecting";
+        case CX_NOCHANNEL:    return "connected";
+        case CX_INCHANNEL:    return "in channel";
+        default:              return "unknown";
+    }
+}
+
+void NativeSessionJoin(const char* channel) {
+    if (!g_started || !channel || !*channel) return;
+    CRoomInfo info;
+    info.m_strChannel = channel;
+    GetIrcProto()->ChatJoinChannel(info);
+}
+
+void NativeSessionSendToChannel(const char* text) {
+    if (!g_started || !text || !*text) return;
+    // The engine both transmits this and adds it to the local comic, which is the behaviour
+    // the Windows client has: your own line appears in your own comic as it is sent.
+    GetIrcProto()->bChatSendToChannel(NULL, text, NULL, 1 /*BM_SAY*/);
+}
+
+void NativeSessionRunLoopOnce(double seconds) {
+    CFRunLoopRunInMode(kCFRunLoopDefaultMode, seconds, true);
 }
 
 int NativeSessionPageCount() {

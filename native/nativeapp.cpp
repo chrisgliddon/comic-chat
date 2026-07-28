@@ -218,3 +218,34 @@ void CCItemPtrArray::FreeRemoveAll() {}
 // CListObject::FreeList is called from those destructors' base. Empty: nothing was
 // ever added to the lists, because nothing constructed them for real.
 void CListObject::FreeList() {}
+
+// --- status reporting ----------------------------------------------------------------
+// The engine narrates its own progress through the status bar: connecting, registering,
+// MOTD, channel joined, errors. On Windows this writes into a CStatusBar pane.
+//
+// Printed rather than discarded, because during a connection these ARE the diagnostics -
+// "reached a stub" tells you nothing about why an IRC registration was rejected, whereas the
+// engine's own status text usually says exactly. The AppKit shell shows the same strings in
+// its window title.
+void CChatApp::SetStatusPaneString(int pane, const char* text) {
+    if (text && *text) fprintf(stderr, "[status %d] %s\n", pane, text);
+}
+
+// CompleteConnection - called by the engine once the socket is up.
+//
+// The Windows implementation (chat.cpp:2587) only does bookkeeping for m_SrvConnector: it
+// copies the name of the server that connector chose, and marks it as last-accessed. The
+// native front end connects DIRECTLY (see NativeSessionConnect) precisely because the
+// connector drives itself through AfxGetMainWnd()->SendMessage and SetTimer, so there is no
+// connector state here and calling the real version would dereference a NULL
+// GetConnectingServer().
+//
+// What it must still do is record which server is connected, because the rules engine and the
+// status line read it back. The session stores that name via NativeSetMyServer, so this copies
+// it into the app object where the engine expects it.
+extern const char* GetMyServer();
+void CChatApp::CompleteConnection() {
+    const char* s = GetMyServer();
+    m_strConnectedServer = (s && *s) ? s : "";
+    m_strConnectedService = m_strConnectedServer;
+}

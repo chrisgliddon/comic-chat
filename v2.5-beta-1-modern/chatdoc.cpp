@@ -1474,7 +1474,7 @@ void CChatDoc::UpdateMacroMenu()
 		if (theApp.m_macros[nTmp].m_bDefined)
 		{
 			CString strMacroName;
-			strMacroName.Format("%s\tAlt+%d", theApp.m_macros[nTmp].m_strName, nTmp);
+			strMacroName.Format("%s\tAlt+%d", (LPCSTR) theApp.m_macros[nTmp].m_strName, nTmp);
 			VERIFY(pMenuMacros->AppendMenu(MF_STRING, ID_MACRO_A0+nTmp, strMacroName));
 			bMacroPresent = TRUE;
 		}

@@ -180,7 +180,7 @@ const char *CUserInfo::GetQualifiedName() {
 	const char *nick = GetScreenName();
 	static CString strQName;
 	if (theApp.m_bShowIdentity && !m_fullName.IsEmpty()) {
-		strQName.Format("%s (%s)", nick, m_fullName);
+		strQName.Format("%s (%s)", nick, (LPCSTR) m_fullName);
 		return strQName;
 	} else return nick;
 }
