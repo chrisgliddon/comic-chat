@@ -1,0 +1,70 @@
+name: Native macOS port
+
+# Guards the native port's central claim: that the macOS build reproduces the
+# frozen Windows goldens byte-for-byte. Until this existed, native/verify.sh only
+# ever ran on one developer's machine, so a shim regression could sit undetected
+# while the Windows oracle stayed green - the two builds are verified by different
+# CI and only this workflow ties them together.
+#
+# Same branch model as oracle.yml: dev runs nothing, staging and production gate.
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - staging
+      - production
+    paths:
+      - ".github/workflows/native.yml"
+      - "native/**"
+      # The shared dump code and the goldens it is compared against.
+      - "oracle/harness/**"
+      - "oracle/avb/**"
+      - "oracle/avatario/**"
+      - "oracle/avatar/**"
+      # Any engine source can move the native build, exactly as for the Windows one.
+      - "v2.5-beta-1-modern/**"
+      - "artifacts/inc/**"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Build engine natively, diff dumps against frozen goldens
+    # arm64, matching the development machine. The shim's integer-width assumptions
+    # are LP64-specific, so running on an x86_64 runner would test something
+    # different (and is worth adding separately if it ever matters).
+    runs-on: macos-14
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v5
+
+      - name: Show toolchain
+        run: |
+          clang++ --version
+          uname -m
+
+      # Reports how much of the engine compiles. Informational: it must not fail the
+      # job, because most of the 91 files are MFC dialogs and OLE embedding that are
+      # deliberately not being ported. The number moving DOWN is what matters, and
+      # the verify step below is what actually gates.
+      - name: Engine compile status
+        run: ./native/build.sh
+
+      - name: Verify dumps against frozen Windows goldens
+        run: ./native/verify.sh
+
+      - name: Upload native dumps
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: native-dumps-${{ github.sha }}
+          path: |
+            native/build/avbout/*.json
+            native/build/avatario.json
+            native/build/avatar.json
+            native/build/avbdump.log
+          if-no-files-found: warn
+          retention-days: 30
