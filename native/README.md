@@ -20,8 +20,28 @@ line-breaking unit (`format`).
 Across the whole tree: **29 of 91** `.cpp` files compile, including `chatdoc` (the
 document model), `pageview`, `balloon`, `panel` and `protsupp`.
 
-**Every engine file the corpus replay needs now compiles** — `protsupp` was the last
-one. 29 of 91 across the tree.
+**Every engine file the corpus replay needs now compiles, and so does the oracle
+harness itself** — 29 of 91 across the tree. The corpus replay is therefore a linking
+problem now, and the surface has been measured rather than guessed at:
+
+**158 undefined symbols**, and every one is in a subsystem this port had already
+decided to drop:
+
+| count | category |
+| --- | --- |
+| 53 | MFC dialogs, property pages, windows, controls |
+| 88 | other UI/app methods — `CChatApp::OnDisconnect`, `DoModalDlg`, whisper boxes, room-info management |
+| 5 | rules / notifications engine |
+| 4 | NetMeeting / conference |
+| 3 | CJK / INTL (`GetMime`, `bSB2DBKatakana`) — the deferred Tier-1 #13 |
+| 2 | sound / MCI |
+| 3 | globals (`serverConn`, `g_rgIrcCmd`, …) |
+
+None is engine geometry, layout or asset handling — those all compile and link. So the
+next step is a stub file in the established shape: **abort on call, not silently
+no-op**, so that running a corpus case names whichever one the replay actually reaches
+instead of quietly producing a wrong dump. That list is also the honest inventory of
+what a native app would have to replace with AppKit rather than port.
 
 The `protsupp` work is worth reading before touching similar files, because the two
 failed batch attempts taught more than the successful pass:

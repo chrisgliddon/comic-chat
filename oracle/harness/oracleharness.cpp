@@ -1442,6 +1442,7 @@ static void InitHarness(const char* treeDir) {
 static CPtrList userInfoList;
 
 static CAvatarX* LoadAvatarNoThrow(const char* name) {
+#ifdef _MSC_VER
     CAvatarX* av = NULL;
     __try {
         av = LoadAvatar(name);
@@ -1449,6 +1450,13 @@ static CAvatarX* LoadAvatarNoThrow(const char* name) {
         av = NULL;
     }
     return av;
+#else
+    // No SEH on clang, so an access violation inside the loader becomes a real crash
+    // instead of a NULL return. That is the honest behaviour rather than a silent
+    // platform difference - and the Windows harness is where to diagnose which avatar
+    // did it. Same treatment as the guards in avbdump.cpp.
+    return LoadAvatar(name);
+#endif
 }
 
 static USHORT LoadAvatarByName(const char* name) {

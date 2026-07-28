@@ -92,6 +92,10 @@ typedef void*               HHOOK;
 // REFIID. Defined once; the COM floor further down no longer redeclares it
 // (a struct redefinition, unlike a repeated typedef, is an error).
 typedef struct _GUID { DWORD Data1; WORD Data2; WORD Data3; BYTE Data4[8]; } GUID, IID, CLSID;
+// GUID_NULL: the harness stubs the COM type-library IIDs with it.
+#ifdef __cplusplus
+static const GUID GUID_NULL = { 0, 0, 0, { 0, 0, 0, 0, 0, 0, 0, 0 } };
+#endif
 
 // WCHAR/BSTR/VARIANT appear in the OLE automation declarations. The native build
 // drops OLE entirely, but the types are referenced from headers the engine core
@@ -479,5 +483,21 @@ class CFont;
 class CBitmap;
 class CWnd;
 #endif // __cplusplus
+
+// ---------------------------------------------------------------------------
+// Process/module entry points the oracle harness itself uses for AfxWinInit. Inert:
+// there is no module handle and no Win32 command line, and AfxWinInit is a no-op in
+// the shim, so nothing reads either value.
+// ---------------------------------------------------------------------------
+#ifdef __cplusplus
+static inline HINSTANCE GetModuleHandle(LPCSTR) { return (HINSTANCE)0; }
+static inline LPSTR GetCommandLine() { return (LPSTR)""; }
+static inline DWORD GetModuleFileName(HINSTANCE, LPSTR buf, DWORD n) {
+    if (buf && n) buf[0] = 0;
+    return 0;
+}
+static inline DWORD GetCurrentThreadId() { return 0; }
+static inline DWORD GetCurrentProcessId() { return 0; }
+#endif
 
 #endif // NATIVE_SHIM_WIN32TYPES_H

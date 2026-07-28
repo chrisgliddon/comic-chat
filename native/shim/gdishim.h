@@ -23,6 +23,7 @@
 #include "win32types.h"
 #include "mfcshim.h"
 #include <stdio.h>
+#include <vector>
 #include <time.h>
 #include <unistd.h>
 
@@ -713,7 +714,40 @@ protected:
     FILE* m_fp;
 };
 
-class CMemFile : public CFile {};
+class CMemFile : public CFile {
+public:
+    CMemFile(UINT = 1024) : m_pos(0) {}
+    virtual ~CMemFile() {}
+    virtual UINT Read(void* buf, UINT n) {
+        if (m_pos >= m_buf.size()) return 0;
+        UINT avail = (UINT)(m_buf.size() - m_pos);
+        if (n > avail) n = avail;
+        memcpy(buf, &m_buf[m_pos], n);
+        m_pos += n;
+        return n;
+    }
+    virtual void Write(const void* buf, UINT n) {
+        if (m_pos + n > m_buf.size()) m_buf.resize(m_pos + n);
+        memcpy(&m_buf[m_pos], buf, n);
+        m_pos += n;
+    }
+    virtual LONG Seek(LONG off, UINT from) {
+        size_t base = (from == begin) ? 0 : (from == end) ? m_buf.size() : m_pos;
+        long p = (long)base + off;
+        m_pos = (size_t)(p < 0 ? 0 : p);
+        return (LONG)m_pos;
+    }
+    void SeekToBegin() { m_pos = 0; }
+    LONG SeekToEnd() { m_pos = m_buf.size(); return (LONG)m_pos; }
+    virtual DWORD GetPosition() const { return (DWORD)m_pos; }
+    virtual DWORD GetLength() const { return (DWORD)m_buf.size(); }
+    virtual void Close() { m_pos = 0; }
+    // Exposed so a caller can read out what was serialised.
+    const unsigned char* Buffer() const { return m_buf.empty() ? 0 : &m_buf[0]; }
+private:
+    std::vector<unsigned char> m_buf;
+    size_t m_pos;
+};
 
 // ---------------------------------------------------------------------------
 // CArchive's string methods, defined here rather than inline in the class because
