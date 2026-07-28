@@ -15,6 +15,134 @@
     "tmCharSet": 0,
     "glyphAdvances": [
       {
+        "char": 0,
+        "advance": 120
+      },
+      {
+        "char": 1,
+        "advance": 120
+      },
+      {
+        "char": 2,
+        "advance": 120
+      },
+      {
+        "char": 3,
+        "advance": 120
+      },
+      {
+        "char": 4,
+        "advance": 120
+      },
+      {
+        "char": 5,
+        "advance": 120
+      },
+      {
+        "char": 6,
+        "advance": 120
+      },
+      {
+        "char": 7,
+        "advance": 120
+      },
+      {
+        "char": 8,
+        "advance": 120
+      },
+      {
+        "char": 9,
+        "advance": 120
+      },
+      {
+        "char": 10,
+        "advance": 120
+      },
+      {
+        "char": 11,
+        "advance": 120
+      },
+      {
+        "char": 12,
+        "advance": 120
+      },
+      {
+        "char": 13,
+        "advance": 120
+      },
+      {
+        "char": 14,
+        "advance": 120
+      },
+      {
+        "char": 15,
+        "advance": 120
+      },
+      {
+        "char": 16,
+        "advance": 120
+      },
+      {
+        "char": 17,
+        "advance": 120
+      },
+      {
+        "char": 18,
+        "advance": 120
+      },
+      {
+        "char": 19,
+        "advance": 120
+      },
+      {
+        "char": 20,
+        "advance": 120
+      },
+      {
+        "char": 21,
+        "advance": 120
+      },
+      {
+        "char": 22,
+        "advance": 120
+      },
+      {
+        "char": 23,
+        "advance": 120
+      },
+      {
+        "char": 24,
+        "advance": 120
+      },
+      {
+        "char": 25,
+        "advance": 120
+      },
+      {
+        "char": 26,
+        "advance": 120
+      },
+      {
+        "char": 27,
+        "advance": 120
+      },
+      {
+        "char": 28,
+        "advance": 120
+      },
+      {
+        "char": 29,
+        "advance": 120
+      },
+      {
+        "char": 30,
+        "advance": 120
+      },
+      {
+        "char": 31,
+        "advance": 120
+      },
+      {
         "char": 32,
         "advance": 75
       },
@@ -1040,6 +1168,134 @@
       "tmCharSet": 0,
       "glyphAdvances": [
         {
+          "char": 0,
+          "advance": 120
+        },
+        {
+          "char": 1,
+          "advance": 120
+        },
+        {
+          "char": 2,
+          "advance": 120
+        },
+        {
+          "char": 3,
+          "advance": 120
+        },
+        {
+          "char": 4,
+          "advance": 120
+        },
+        {
+          "char": 5,
+          "advance": 120
+        },
+        {
+          "char": 6,
+          "advance": 120
+        },
+        {
+          "char": 7,
+          "advance": 120
+        },
+        {
+          "char": 8,
+          "advance": 120
+        },
+        {
+          "char": 9,
+          "advance": 120
+        },
+        {
+          "char": 10,
+          "advance": 120
+        },
+        {
+          "char": 11,
+          "advance": 120
+        },
+        {
+          "char": 12,
+          "advance": 120
+        },
+        {
+          "char": 13,
+          "advance": 120
+        },
+        {
+          "char": 14,
+          "advance": 120
+        },
+        {
+          "char": 15,
+          "advance": 120
+        },
+        {
+          "char": 16,
+          "advance": 120
+        },
+        {
+          "char": 17,
+          "advance": 120
+        },
+        {
+          "char": 18,
+          "advance": 120
+        },
+        {
+          "char": 19,
+          "advance": 120
+        },
+        {
+          "char": 20,
+          "advance": 120
+        },
+        {
+          "char": 21,
+          "advance": 120
+        },
+        {
+          "char": 22,
+          "advance": 120
+        },
+        {
+          "char": 23,
+          "advance": 120
+        },
+        {
+          "char": 24,
+          "advance": 120
+        },
+        {
+          "char": 25,
+          "advance": 120
+        },
+        {
+          "char": 26,
+          "advance": 120
+        },
+        {
+          "char": 27,
+          "advance": 120
+        },
+        {
+          "char": 28,
+          "advance": 120
+        },
+        {
+          "char": 29,
+          "advance": 120
+        },
+        {
+          "char": 30,
+          "advance": 120
+        },
+        {
+          "char": 31,
+          "advance": 120
+        },
+        {
           "char": 32,
           "advance": 75
         },
@@ -2056,6 +2312,134 @@
       "tmOverhang": 0,
       "tmCharSet": 0,
       "glyphAdvances": [
+        {
+          "char": 0,
+          "advance": 120
+        },
+        {
+          "char": 1,
+          "advance": 120
+        },
+        {
+          "char": 2,
+          "advance": 120
+        },
+        {
+          "char": 3,
+          "advance": 120
+        },
+        {
+          "char": 4,
+          "advance": 120
+        },
+        {
+          "char": 5,
+          "advance": 120
+        },
+        {
+          "char": 6,
+          "advance": 120
+        },
+        {
+          "char": 7,
+          "advance": 120
+        },
+        {
+          "char": 8,
+          "advance": 120
+        },
+        {
+          "char": 9,
+          "advance": 120
+        },
+        {
+          "char": 10,
+          "advance": 120
+        },
+        {
+          "char": 11,
+          "advance": 120
+        },
+        {
+          "char": 12,
+          "advance": 120
+        },
+        {
+          "char": 13,
+          "advance": 120
+        },
+        {
+          "char": 14,
+          "advance": 120
+        },
+        {
+          "char": 15,
+          "advance": 120
+        },
+        {
+          "char": 16,
+          "advance": 120
+        },
+        {
+          "char": 17,
+          "advance": 120
+        },
+        {
+          "char": 18,
+          "advance": 120
+        },
+        {
+          "char": 19,
+          "advance": 120
+        },
+        {
+          "char": 20,
+          "advance": 120
+        },
+        {
+          "char": 21,
+          "advance": 120
+        },
+        {
+          "char": 22,
+          "advance": 120
+        },
+        {
+          "char": 23,
+          "advance": 120
+        },
+        {
+          "char": 24,
+          "advance": 120
+        },
+        {
+          "char": 25,
+          "advance": 120
+        },
+        {
+          "char": 26,
+          "advance": 120
+        },
+        {
+          "char": 27,
+          "advance": 120
+        },
+        {
+          "char": 28,
+          "advance": 120
+        },
+        {
+          "char": 29,
+          "advance": 120
+        },
+        {
+          "char": 30,
+          "advance": 120
+        },
+        {
+          "char": 31,
+          "advance": 120
+        },
         {
           "char": 32,
           "advance": 75
@@ -3074,6 +3458,134 @@
       "tmCharSet": 0,
       "glyphAdvances": [
         {
+          "char": 0,
+          "advance": 270
+        },
+        {
+          "char": 1,
+          "advance": 270
+        },
+        {
+          "char": 2,
+          "advance": 270
+        },
+        {
+          "char": 3,
+          "advance": 270
+        },
+        {
+          "char": 4,
+          "advance": 270
+        },
+        {
+          "char": 5,
+          "advance": 270
+        },
+        {
+          "char": 6,
+          "advance": 270
+        },
+        {
+          "char": 7,
+          "advance": 270
+        },
+        {
+          "char": 8,
+          "advance": 270
+        },
+        {
+          "char": 9,
+          "advance": 270
+        },
+        {
+          "char": 10,
+          "advance": 270
+        },
+        {
+          "char": 11,
+          "advance": 270
+        },
+        {
+          "char": 12,
+          "advance": 270
+        },
+        {
+          "char": 13,
+          "advance": 270
+        },
+        {
+          "char": 14,
+          "advance": 270
+        },
+        {
+          "char": 15,
+          "advance": 270
+        },
+        {
+          "char": 16,
+          "advance": 270
+        },
+        {
+          "char": 17,
+          "advance": 270
+        },
+        {
+          "char": 18,
+          "advance": 270
+        },
+        {
+          "char": 19,
+          "advance": 270
+        },
+        {
+          "char": 20,
+          "advance": 270
+        },
+        {
+          "char": 21,
+          "advance": 270
+        },
+        {
+          "char": 22,
+          "advance": 270
+        },
+        {
+          "char": 23,
+          "advance": 270
+        },
+        {
+          "char": 24,
+          "advance": 270
+        },
+        {
+          "char": 25,
+          "advance": 270
+        },
+        {
+          "char": 26,
+          "advance": 270
+        },
+        {
+          "char": 27,
+          "advance": 270
+        },
+        {
+          "char": 28,
+          "advance": 270
+        },
+        {
+          "char": 29,
+          "advance": 270
+        },
+        {
+          "char": 30,
+          "advance": 270
+        },
+        {
+          "char": 31,
+          "advance": 270
+        },
+        {
           "char": 32,
           "advance": 165
         },
@@ -4090,6 +4602,134 @@
       "tmOverhang": 0,
       "tmCharSet": 0,
       "glyphAdvances": [
+        {
+          "char": 0,
+          "advance": 120
+        },
+        {
+          "char": 1,
+          "advance": 120
+        },
+        {
+          "char": 2,
+          "advance": 120
+        },
+        {
+          "char": 3,
+          "advance": 120
+        },
+        {
+          "char": 4,
+          "advance": 120
+        },
+        {
+          "char": 5,
+          "advance": 120
+        },
+        {
+          "char": 6,
+          "advance": 120
+        },
+        {
+          "char": 7,
+          "advance": 120
+        },
+        {
+          "char": 8,
+          "advance": 120
+        },
+        {
+          "char": 9,
+          "advance": 120
+        },
+        {
+          "char": 10,
+          "advance": 120
+        },
+        {
+          "char": 11,
+          "advance": 120
+        },
+        {
+          "char": 12,
+          "advance": 120
+        },
+        {
+          "char": 13,
+          "advance": 120
+        },
+        {
+          "char": 14,
+          "advance": 120
+        },
+        {
+          "char": 15,
+          "advance": 120
+        },
+        {
+          "char": 16,
+          "advance": 120
+        },
+        {
+          "char": 17,
+          "advance": 120
+        },
+        {
+          "char": 18,
+          "advance": 120
+        },
+        {
+          "char": 19,
+          "advance": 120
+        },
+        {
+          "char": 20,
+          "advance": 120
+        },
+        {
+          "char": 21,
+          "advance": 120
+        },
+        {
+          "char": 22,
+          "advance": 120
+        },
+        {
+          "char": 23,
+          "advance": 120
+        },
+        {
+          "char": 24,
+          "advance": 120
+        },
+        {
+          "char": 25,
+          "advance": 120
+        },
+        {
+          "char": 26,
+          "advance": 120
+        },
+        {
+          "char": 27,
+          "advance": 120
+        },
+        {
+          "char": 28,
+          "advance": 120
+        },
+        {
+          "char": 29,
+          "advance": 120
+        },
+        {
+          "char": 30,
+          "advance": 120
+        },
+        {
+          "char": 31,
+          "advance": 120
+        },
         {
           "char": 32,
           "advance": 75
@@ -5108,6 +5748,134 @@
       "tmCharSet": 0,
       "glyphAdvances": [
         {
+          "char": 0,
+          "advance": 135
+        },
+        {
+          "char": 1,
+          "advance": 135
+        },
+        {
+          "char": 2,
+          "advance": 135
+        },
+        {
+          "char": 3,
+          "advance": 135
+        },
+        {
+          "char": 4,
+          "advance": 135
+        },
+        {
+          "char": 5,
+          "advance": 135
+        },
+        {
+          "char": 6,
+          "advance": 135
+        },
+        {
+          "char": 7,
+          "advance": 135
+        },
+        {
+          "char": 8,
+          "advance": 135
+        },
+        {
+          "char": 9,
+          "advance": 135
+        },
+        {
+          "char": 10,
+          "advance": 135
+        },
+        {
+          "char": 11,
+          "advance": 135
+        },
+        {
+          "char": 12,
+          "advance": 135
+        },
+        {
+          "char": 13,
+          "advance": 135
+        },
+        {
+          "char": 14,
+          "advance": 135
+        },
+        {
+          "char": 15,
+          "advance": 135
+        },
+        {
+          "char": 16,
+          "advance": 135
+        },
+        {
+          "char": 17,
+          "advance": 135
+        },
+        {
+          "char": 18,
+          "advance": 135
+        },
+        {
+          "char": 19,
+          "advance": 135
+        },
+        {
+          "char": 20,
+          "advance": 135
+        },
+        {
+          "char": 21,
+          "advance": 135
+        },
+        {
+          "char": 22,
+          "advance": 135
+        },
+        {
+          "char": 23,
+          "advance": 135
+        },
+        {
+          "char": 24,
+          "advance": 135
+        },
+        {
+          "char": 25,
+          "advance": 135
+        },
+        {
+          "char": 26,
+          "advance": 135
+        },
+        {
+          "char": 27,
+          "advance": 135
+        },
+        {
+          "char": 28,
+          "advance": 135
+        },
+        {
+          "char": 29,
+          "advance": 135
+        },
+        {
+          "char": 30,
+          "advance": 135
+        },
+        {
+          "char": 31,
+          "advance": 135
+        },
+        {
           "char": 32,
           "advance": 90
         },
@@ -6124,6 +6892,134 @@
       "tmOverhang": 0,
       "tmCharSet": 0,
       "glyphAdvances": [
+        {
+          "char": 0,
+          "advance": 120
+        },
+        {
+          "char": 1,
+          "advance": 120
+        },
+        {
+          "char": 2,
+          "advance": 120
+        },
+        {
+          "char": 3,
+          "advance": 120
+        },
+        {
+          "char": 4,
+          "advance": 120
+        },
+        {
+          "char": 5,
+          "advance": 120
+        },
+        {
+          "char": 6,
+          "advance": 120
+        },
+        {
+          "char": 7,
+          "advance": 120
+        },
+        {
+          "char": 8,
+          "advance": 120
+        },
+        {
+          "char": 9,
+          "advance": 120
+        },
+        {
+          "char": 10,
+          "advance": 120
+        },
+        {
+          "char": 11,
+          "advance": 120
+        },
+        {
+          "char": 12,
+          "advance": 120
+        },
+        {
+          "char": 13,
+          "advance": 120
+        },
+        {
+          "char": 14,
+          "advance": 120
+        },
+        {
+          "char": 15,
+          "advance": 120
+        },
+        {
+          "char": 16,
+          "advance": 120
+        },
+        {
+          "char": 17,
+          "advance": 120
+        },
+        {
+          "char": 18,
+          "advance": 120
+        },
+        {
+          "char": 19,
+          "advance": 120
+        },
+        {
+          "char": 20,
+          "advance": 120
+        },
+        {
+          "char": 21,
+          "advance": 120
+        },
+        {
+          "char": 22,
+          "advance": 120
+        },
+        {
+          "char": 23,
+          "advance": 120
+        },
+        {
+          "char": 24,
+          "advance": 120
+        },
+        {
+          "char": 25,
+          "advance": 120
+        },
+        {
+          "char": 26,
+          "advance": 120
+        },
+        {
+          "char": 27,
+          "advance": 120
+        },
+        {
+          "char": 28,
+          "advance": 120
+        },
+        {
+          "char": 29,
+          "advance": 120
+        },
+        {
+          "char": 30,
+          "advance": 120
+        },
+        {
+          "char": 31,
+          "advance": 120
+        },
         {
           "char": 32,
           "advance": 75

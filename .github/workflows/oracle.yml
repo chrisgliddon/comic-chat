@@ -105,8 +105,17 @@ jobs:
           Write-Host "Glyphs captured."
           if ($capture -ne $frozen) {
             & node ..\oracle\scripts\diff-dumps.mjs $frozen $capture
-            if ($LASTEXITCODE -ne 0) { Write-Host "GLYPH TABLE MISMATCH: frozen oracle/glyphs/glyphs.json no longer matches this runner's capture"; exit 1 }
-            Write-Host "Glyph table match."
+            # DEFERRED, not ignored: recorded and re-checked by the gate step at the end of
+            # the job. Failing here aborted the whole run before the corpus cases, so a
+            # deliberate glyph re-freeze cost one Windows run for the table and a second for
+            # everything downstream. Same lesson as moving the avb step last: a gate must not
+            # be able to skip the checks after it.
+            if ($LASTEXITCODE -ne 0) {
+              Write-Host "GLYPH TABLE MISMATCH (deferred to the gate step): frozen oracle/glyphs/glyphs.json no longer matches this runner's capture"
+              "glyph" | Out-File -FilePath ..\oracle-deferred-failures.txt -Append
+            } else {
+              Write-Host "Glyph table match."
+            }
           } else {
             Write-Host "No frozen glyph table yet - freeze by committing oracle/glyphs/glyphs.json"
           }
@@ -394,8 +403,34 @@ jobs:
             oracle/avb/*.json
             !oracle/avb/*.golden.json
             oracle/corpus/*/expected.json
+            # actual.json (below) carries the seedLedger, which is what identifies WHICH
+            # intermediate diverged rather than leaving it to be inferred from the final
+            # geometry. It was already uploaded; what stopped it reaching the artifact was the
+            # glyph gate aborting the job before the corpus step ran at all - now deferred.
             oracle/corpus/*/actual.json
             oracle/corpus/*/run_a.json
             oracle/corpus/*/run_b.json
           if-no-files-found: warn
           retention-days: 30
+      # Deferred gates, re-checked after everything above has run and its output has been
+      # uploaded. The glyph-table comparison used to `exit 1` where it happened, which
+      # aborted the job before the corpus cases and the avb manifests - so a deliberate
+      # glyph re-freeze produced a run that proved nothing about anything downstream, and
+      # a second Windows run was needed to learn what the first had already computed.
+      #
+      # Runs after the artifact upload on purpose: a gate whose failure destroys the
+      # evidence for diagnosing it is worse than no gate.
+      - name: Gate - deferred failures
+        if: always()
+        shell: pwsh
+        run: |
+          if (Test-Path oracle-deferred-failures.txt) {
+            $failed = (Get-Content oracle-deferred-failures.txt) -join ' '
+            Write-Host "DEFERRED FAILURES: $failed"
+            Write-Host ""
+            Write-Host "If the glyph table was re-frozen deliberately, download"
+            Write-Host "oracle/glyphs/glyphs.actual.json from this run's artifact and commit it as"
+            Write-Host "oracle/glyphs/glyphs.json."
+            exit 1
+          }
+          Write-Host "No deferred failures."
