@@ -44,14 +44,40 @@
 #define LCMAP_FULLWIDTH 0x00800000
 #define LCMAP_HIRAGANA  0x00100000
 #define LCMAP_KATAKANA  0x00200000
+static inline unsigned char Cp1252Upper(unsigned char c) {
+    if (c >= 0x61 && c <= 0x7A) return (unsigned char)(c - 0x20);
+    if (c >= 0xE0 && c <= 0xF6) return (unsigned char)(c - 0x20);
+    if (c >= 0xF8 && c <= 0xFE) return (unsigned char)(c - 0x20);
+    switch (c) {
+        case 0x9A: return 0x8A;   // š -> Š
+        case 0x9C: return 0x8C;   // œ -> Œ
+        case 0x9E: return 0x8E;   // ž -> Ž
+        case 0xFF: return 0x9F;   // ÿ -> Ÿ
+        default:   return c;      // includes ß (0xDF), µ (0xB5), ÷ (0xF7)
+    }
+}
+static inline unsigned char Cp1252Lower(unsigned char c) {
+    if (c >= 0x41 && c <= 0x5A) return (unsigned char)(c + 0x20);
+    if (c >= 0xC0 && c <= 0xD6) return (unsigned char)(c + 0x20);
+    if (c >= 0xD8 && c <= 0xDE) return (unsigned char)(c + 0x20);
+    switch (c) {
+        case 0x8A: return 0x9A;
+        case 0x8C: return 0x9C;
+        case 0x8E: return 0x9E;
+        case 0x9F: return 0xFF;
+        default:   return c;      // includes × (0xD7)
+    }
+}
+
 static inline int LCMapString(DWORD, DWORD flags, LPCSTR src, int srcLen, LPSTR dst, int dstLen) {
     if (!src || !dst || dstLen <= 0) return 0;
     int n = (srcLen < 0) ? (int)strlen(src) : srcLen;
     if (n > dstLen) n = dstLen;
     for (int i = 0; i < n; i++) {
         unsigned char c = (unsigned char)src[i];
-        dst[i] = (char)((flags & LCMAP_UPPERCASE) ? toupper(c)
-                      : (flags & LCMAP_LOWERCASE) ? tolower(c) : c);
+        // Same CP-1252 mapping as CharUpperBuff, not toupper() - see the note there.
+        dst[i] = (char)((flags & LCMAP_UPPERCASE) ? Cp1252Upper(c)
+                      : (flags & LCMAP_LOWERCASE) ? Cp1252Lower(c) : c);
     }
     return n;
 }
@@ -68,18 +94,28 @@ typedef struct _cpinfo { UINT MaxCharSize; BYTE DefaultChar[2]; BYTE LeadByte[12
 static inline BOOL IsDBCSLeadByteEx(UINT, BYTE) { return FALSE; }
 static inline BOOL GetCPInfo(UINT, CPINFO* i) { if (i) { memset(i, 0, sizeof(*i)); i->MaxCharSize = 1; } return TRUE; }
 static inline UINT GetACP() { return CP_ACP; }
-// CharUpperBuff uppercases in place and returns the count processed. balloon.cpp
-// uses it when normalising text for the shout/emphasis heuristics, so this is a real
-// implementation - a no-op would change which balloons get treated as shouting.
-// Single-byte only, consistent with IsDBCSLeadByteEx above.
+// CharUpperBuff uppercases in place and returns the count processed. balloon.cpp uses it
+// when normalising text for the shout/emphasis heuristics, so it is real - a no-op would
+// change which balloons get treated as shouting. Single-byte only, consistent with
+// IsDBCSLeadByteEx above.
+//
+// It maps through Cp1252Upper, NOT toupper()/tolower(). libc's are ASCII-only in the C locale, so
+// accented letters passed through unchanged - and that is measurable, not cosmetic:
+// corpus 005 shouts "café résumé naïve", and Windows uppercases it to CAFÉ RÉSUMÉ NAÏVE.
+// É is 150 twips wide against é's 120, and Ï is 135 against ï's 75, so leaving them
+// lowercase made two balloon lines 90 and 60 twips too narrow.
+//
+// The exceptions are the ones CP-1252 actually has: ÿ->Ÿ crosses into the 0x80-0x9F block,
+// š/œ/ž likewise, ß has no single-character uppercase, and ÷ (0xF7) and × (0xD7) sit inside
+// the letter ranges without being letters.
 static inline DWORD CharUpperBuff(LPSTR s, DWORD n) {
     if (!s) return 0;
-    for (DWORD i = 0; i < n; i++) s[i] = (char)toupper((unsigned char)s[i]);
+    for (DWORD i = 0; i < n; i++) s[i] = (char)Cp1252Upper((unsigned char)s[i]);
     return n;
 }
 static inline DWORD CharLowerBuff(LPSTR s, DWORD n) {
     if (!s) return 0;
-    for (DWORD i = 0; i < n; i++) s[i] = (char)tolower((unsigned char)s[i]);
+    for (DWORD i = 0; i < n; i++) s[i] = (char)Cp1252Lower((unsigned char)s[i]);
     return n;
 }
 // --- CP-1252 <-> UTF-16 ----------------------------------------------------------

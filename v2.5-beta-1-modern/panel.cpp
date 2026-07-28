@@ -943,30 +943,13 @@ void CUnitPanel::GetCloudEstimate(CBalloon *balloons[], int nb, int index, RECT&
 		goalWidth = area / (goalLines * lineHeight);
 	}
 
-#ifdef ORACLE_HARNESS
-	// Recorded into the dump's ledger, not printed. Everything downstream of this function
-	// - balloon width, line count, spline, trajectory - is derived from these five numbers,
-	// so when a corpus case disagrees this says WHICH input diverged instead of leaving the
-	// difference to be inferred from the final geometry. The native build reaches this with
-	// len/area/lineHeight/maxWidth matching the goldens but goalWidth differing, and these
-	// records are what will identify the responsible term on the next Windows capture.
-	OracleRecordSeed("GetCloudEstimate.len", (long)len);
-	OracleRecordSeed("GetCloudEstimate.area", (long)area);
-	OracleRecordSeed("GetCloudEstimate.lineHeight", (long)lineHeight);
-	OracleRecordSeed("GetCloudEstimate.maxWidth", (long)maxWidth);
-	OracleRecordSeed("GetCloudEstimate.widestWord", (long)balloon->WidestWord());
-	OracleRecordSeed("GetCloudEstimate.goalWidthRaw", (long)goalWidth);
-	// freeRect is the leading suspect. Working back from the golden, corpus 001's balloon
-	// bbox (203..3418) is exactly freeRect clamped by `startX = freeRect.right - goalWidth`,
-	// which only holds if the Windows freeRect is 203..3418 where the native one is
-	// 60..4800. GetBalloonRect derives it from m_unitWidth and m_borderWidth, so these four
-	// numbers say whether the panel geometry or the clamping is what differs.
-	OracleRecordSeed("GetCloudEstimate.freeRect.left", (long)freeRect.left);
-	OracleRecordSeed("GetCloudEstimate.freeRect.top", (long)freeRect.top);
-	OracleRecordSeed("GetCloudEstimate.freeRect.right", (long)freeRect.right);
-	OracleRecordSeed("GetCloudEstimate.freeRect.bottom", (long)freeRect.bottom);
-	OracleRecordSeed("GetCloudEstimate.arrowX", (long)balloon->m_speaker->m_arrowX);
-#endif
+// NOTE: this function's inputs (len, area, lineHeight, maxWidth, widestWord, goalWidth,
+	// freeRect, arrowX) were temporarily recorded into the oracle seedLedger to find why the
+	// native balloon geometry diverged. That comparison is what identified widestWord as the
+	// only disagreeing term, and through it CDC::SelectObject's wrong return value. Removed
+	// again because additive ledger entries make every dump differ from the frozen goldens,
+	// which costs a Windows run to re-freeze. Re-add the OracleRecordSeed calls here if
+	// balloon layout ever diverges again - it is the fastest way to localise it.
 	// randomly place brect in x, guaranteeing that it overlaps character
 	goalWidth = min(goalWidth+200, maxWidth); // the + N is a fudge factor.  FIX!!!
 	goalWidth = min(goalWidth, len+200);		// won't be wider than len (FIX FUDGE)

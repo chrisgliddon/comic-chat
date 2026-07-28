@@ -1,11 +1,14 @@
 #!/bin/sh
 # verify.sh - build the native dumps and diff them against the frozen Windows
-# goldens. Milestones 1 and 2 of the native port, and their regression test.
+# goldens. All three milestones of the native port, and their regression test.
 #
 # Milestone 1: the 33 Tier-2 asset manifests (avbfile + dib + avatar + backdrop).
 # Milestone 2: Tier-1 #3 avatario and #2 avatar-pose - pure arithmetic, so a clean
 #   diff there isolates float-to-double widening, the tree-dependent PI used by the
 #   angle metric, and the MSVC RNG from everything else.
+# Milestone 3: the 15 Tier-3 corpus cases - the whole engine RUNNING. Pages, panels,
+#   avatar placement, pose selection, balloon layout, line breaking, splines and
+#   trajectories, all compared byte-for-byte against dumps captured on Windows.
 #
 # What a clean run proves, all at once:
 #
@@ -87,6 +90,31 @@ for pair in "avatario:oracle/avatario/avatario.golden.json" "avatar:oracle/avata
     fi
 done
 
+# --- milestone 3: the 15 Tier-3 corpus cases ---
+# The full engine executing, not just decoding assets: pages, panels, avatar placement,
+# pose selection, balloon layout, line breaking, splines and trajectories.
+#
+# Run from v2.5-beta-1-modern because corpus inputs.json carries treeDir="." and the
+# Windows oracle runs the harness from there - ComicArt has to resolve the same way.
+sh ./native/build-harness.sh > /dev/null
+for c in oracle/corpus/*/; do
+    name=$(basename "$c")
+    [ -f "$c/inputs.json" ] || continue
+    out="$ROOT/$BUILD/corpus-$name.json"
+    if ! (cd v2.5-beta-1-modern && "$ROOT/$BUILD/harness" "../oracle/corpus/$name/inputs.json" "$out" \
+            > "$ROOT/$BUILD/corpus-$name.log" 2>&1); then
+        mismatch=$((mismatch + 1)); mislist="$mislist corpus/$name(crash)"; continue
+    fi
+    if [ ! -f "oracle/corpus/$name/expected.json" ]; then
+        continue                      # not frozen yet; nothing to compare against
+    fi
+    if cmp -s "oracle/corpus/$name/expected.json" "$out"; then
+        match=$((match + 1))
+    else
+        mismatch=$((mismatch + 1)); mislist="$mislist corpus/$name"
+    fi
+done
+
 echo ""
 echo "=== native vs frozen Windows goldens ==="
 echo "matched   : $match"
@@ -96,9 +124,23 @@ if [ "$mismatch" -ne 0 ]; then
     first=$(echo "$mislist" | awk '{print $1}')
     echo ""
     echo "first difference ($first):"
-    diff "oracle/avb/$first.golden.json" "$OUT/$first.json" | head -20 || true
+    # The first mismatch may be a corpus case now, so pick the right pair of files rather
+    # than always reaching into oracle/avb - a diff of the wrong files reads as corruption.
+    case "$first" in
+        corpus/*)
+            cname=${first#corpus/}
+            cname=${cname%%(*}
+            diff "oracle/corpus/$cname/expected.json" "$BUILD/corpus-$cname.json" | head -20 || true
+            ;;
+        avatario|avatar)
+            diff "oracle/$first/$first.golden.json" "$BUILD/$first.json" | head -20 || true
+            ;;
+        *)
+            diff "oracle/avb/$first.golden.json" "$OUT/$first.json" | head -20 || true
+            ;;
+    esac
     exit 1
 fi
 echo ""
 echo "Native macOS build reproduces all $match Windows goldens byte-for-byte"
-echo "(33 asset manifests + avatario + avatar-pose)."
+echo "(33 asset manifests + avatario + avatar-pose + 15 Tier-3 corpus cases)."
