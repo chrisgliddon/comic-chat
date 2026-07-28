@@ -967,6 +967,10 @@ inline void AfxOleUnlockApp() {}
 // base class in a header. Real networking will use BSD sockets directly.
 class CAsyncSocket : public CObject {
 public:
+    // MFC exposes the raw socket; protsupp.cpp reads it to poll connection state.
+    // INVALID_SOCKET, since nothing is connected.
+    int m_hSocket;   // SOCKET; spelled int because winsock.h comes after this header
+    CAsyncSocket() : m_hSocket(-1) {}   // INVALID_SOCKET
     virtual ~CAsyncSocket() {}
     virtual void OnReceive(int) {}
     virtual void OnSend(int) {}
@@ -1013,6 +1017,7 @@ class CImageList : public CObject {
 public:
     BOOL Create(int, int, UINT, int, int) { return FALSE; }
     int  Add(CBitmap*, COLORREF) { return -1; }
+    int  Add(CBitmap*, CBitmap*) { return -1; }   // image + mask overload
     HICON ExtractIcon(int) { return (HICON)0; }
 };
 
@@ -1068,5 +1073,44 @@ inline BOOL AfxSocketInit(void* = 0) { return TRUE; }
 // LoadEmotionStrings depends on the string table, so the native emotion-rule path
 // needs the strings supplied another way (the frozen textpose golden lists them).
 inline int LoadString(HINSTANCE, UINT, LPTSTR buf, int) { if (buf) buf[0] = '\0'; return 0; }
+
+// ---------------------------------------------------------------------------
+// Late additions, appended rather than slotted in - four ordering bugs this session
+// came from inserting a method whose return or parameter type is declared further
+// down, and each broke every translation unit rather than one line.
+// ---------------------------------------------------------------------------
+
+// CCSPropertySheet is the project's property-sheet base (chicdial.h:62), stubbed
+// alongside CCSDialog and CCSPropertyPage for the same reason: including the real
+// header drags a large Win32 surface into every translation unit.
+#define PSH_HASHELP         0x00000200
+#define PSH_PROPTITLE       0x00000001
+#define PSH_NOAPPLYNOW      0x00000080
+typedef struct tagPROPSHEETHEADER {
+    DWORD dwSize, dwFlags;
+    HWND  hwndParent;
+    HINSTANCE hInstance;
+    LPCSTR pszCaption;
+    UINT  nPages, nStartPage;
+} PROPSHEETHEADER;
+
+class CCSPropertySheet : public CPropertySheet {
+public:
+    // MFC exposes the raw PROPSHEETHEADER so callers can set flags; protsupp.cpp
+    // sets PSH_HASHELP on it.
+    PROPSHEETHEADER m_psh;
+    CCSPropertySheet() { memset(&m_psh, 0, sizeof(m_psh)); }
+    CCSPropertySheet(UINT, CWnd* = 0, UINT = 0) { memset(&m_psh, 0, sizeof(m_psh)); }
+    CCSPropertySheet(LPCTSTR, CWnd* = 0, UINT = 0) { memset(&m_psh, 0, sizeof(m_psh)); }
+};
+
+// LV_FINDINFO for CListCtrl::FindItem.
+typedef struct _LV_FINDINFO {
+    UINT   flags;
+    LPCSTR psz;
+    LPARAM lParam;
+    POINT  pt;
+    UINT   vkDirection;
+} LV_FINDINFO, LVFINDINFO;
 
 #endif // NATIVE_SHIM_MFCUI_H

@@ -17,40 +17,52 @@ That set is the whole `.avb`/DIB asset pipeline (`avbfile` + `dib` + `avatar` +
 geometry core (`vector2d`, `bbox`, `traj`, `arc`, `spline`, `splinutl`) and the
 line-breaking unit (`format`).
 
-Across the whole tree: **28 of 91** `.cpp` files compile, now including `chatdoc`
-(the document model) and `pageview`.
+Across the whole tree: **29 of 91** `.cpp` files compile, including `chatdoc` (the
+document model), `pageview`, `balloon`, `panel` and `protsupp`.
 
-Of the engine files needed for the corpus replay, only **`protsupp`** is left.
+**Every engine file the corpus replay needs now compiles** — `protsupp` was the last
+one. 29 of 91 across the tree.
 
-**Done** (in the engine source, verified by Windows CI): all 7 `bMatchAndApplyRules`
-sites now use named locals instead of `CString` temporaries; the stray trailing comma
-that passed **three arguments to the two-parameter `MAKELONG`** at `protsupp.cpp:1960`
-is gone (MSVC's legacy preprocessor tolerates extra macro arguments and dropped the
-empty third, so removing it is value-identical); and `iArg` is hoisted for
-`/Zc:forScope-`.
+The `protsupp` work is worth reading before touching similar files, because the two
+failed batch attempts taught more than the successful pass:
 
-**Remaining, in order of how well understood they are:**
+- **12 `CString` temporaries bound to non-const references** (7 × `bMatchAndApplyRules`,
+  5 × `bChatSendText`). Widening the parameters to `const CString&` would have been one
+  edit instead of twelve, but it cascades through `iGetFirstMatchingRule` into
+  `rules.cpp` — which does not compile natively, so the cascade could not be checked.
+- One of those sites was **the single statement of a brace-less `if` that has an
+  `else`**. Declaring a local before it re-pairs the `else` and silently changes
+  control flow, so braces had to be added. A scripted "wrap each `CString()`" pass
+  cannot see that.
+- Another was **inside a `switch`**, where a per-case declaration would cross the other
+  case's initialisation; the local was hoisted above the `switch` instead.
+- Two had a **concatenation** as the argument (`CString(szSender)+"!"+szFullName`), so
+  the local captures the whole expression.
+- `protsupp.cpp:1960` passed **three arguments to the two-parameter `MAKELONG`** (a
+  stray trailing comma). MSVC's legacy preprocessor tolerates extra macro arguments and
+  drops the empty third, so removing the comma is value-identical — a latent bug the
+  original compiler hid.
+- `iArg` was another `/Zc:forScope-` hoist, and one conditional was **ambiguous**
+  (`const char*` and `CString` convert both ways).
 
-1. **3 × `bChatSendText` temporaries** — same fix as the rules calls, mechanical.
-2. **1 ambiguous conditional** at ~4496: `const char*` and `CString` convert both ways,
-   so a `?:` between them has no unique type. Needs an explicit cast on one arm.
-3. **An unresolved puzzle at `protsupp.cpp:4061`** — do not guess at this one.
-   `CRoomInfo::DoChannelDialog` opens with `extern CString strCurrentChannelTopic;`,
-   but `chatprot.h:101` defines `strCurrentChannelTopic` as an object-like **macro**
-   `(currentRoom->m_strTopic)`. `protsupp.cpp` includes `chat.h`, which includes
-   `chatprot.h`, so the macro *is* in scope — the declaration expands to
-   `extern CString (currentRoom->m_strTopic);`, which clang rejects.
+### The dead `extern` at `DoChannelDialog`
 
-   Yet MSVC compiles this file (it is in `oracle.mak`'s link line and CI is green).
-   There is no `#undef`, the line is at preprocessor depth 0, and the guard cannot be
-   the explanation. So MSVC is doing something here that is not obvious, and the
-   honest next step is a Windows experiment — preprocess `protsupp.cpp` with `/P` and
-   look at what line 4061 actually becomes — rather than editing shared source on a
-   guess about why.
+`CRoomInfo::DoChannelDialog` opened with `extern CString strCurrentChannelTopic;`,
+while `chatprot.h:101` defines that name as an object-like **macro**
+`(currentRoom->m_strTopic)` — so it expanded to
+`extern CString (currentRoom->m_strTopic);`, which MSVC accepts and clang rejects.
 
-The batch attempt that was reverted earlier also failed on multi-line calls and a
-name collision (`currentRoom`); doing these a few at a time, compiling between, is
-what worked for the seven that are done.
+Rather than guess, this was settled by **preprocessing the file with `oracle.mak`'s own
+flags in CI**: the expansion is present in the `.i`, the two uses below expand to the
+same member access, and the identifier never survives unexpanded anywhere — so no
+global of that name exists and nothing referred to the declaration. It was dead, and
+removing it is behaviour-preserving.
+
+Two wrong turns on the way to that, both the same mistake — concluding from a probe
+that could not support the conclusion. The first probe invented its own compiler flags
+and died in `afxver_.h` (`_AFXDLL` without `/MD`), telling me about my flags rather than
+the code. The second reported "the macro never expands" from a grep truncated at
+`-First 5`, which could not have shown the expansion 630,000 lines later.
 
 ## Why staging, not include paths
 

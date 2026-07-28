@@ -797,15 +797,20 @@ void AutoGreet(const char* szNick)
 		szControlLess = SzControlLess(szControlFull, &rgdwFormatting);
 
 		// send the message
+		// Named local: bChatSendText takes CString& and MSVC binds a temporary to a
+		// non-const reference where clang does not. Hoisted above the switch rather
+		// than declared per case - a declaration inside a case label without its own
+		// braces would cross the other case's initialisation.
+		CString strGreeting(szControlLess);
 		switch (theApp.m_iGreetingType)
 		{
 		case AGT_SAY:
-			bChatSendText(CString(szControlLess), BM_SAY, TRUE, &rgdwFormatting);
+			bChatSendText(strGreeting, BM_SAY, TRUE, &rgdwFormatting);
 			break;
 		case AGT_WHISPER:
 			g_rgpuiWhisperees.RemoveAll();
 			g_rgpuiWhisperees.Add(pui);
-			bChatSendText(CString(szControlLess), BM_WHISPER, TRUE, &rgdwFormatting);
+			bChatSendText(strGreeting, BM_WHISPER, TRUE, &rgdwFormatting);
 			break;
 		}
 
@@ -2661,7 +2666,10 @@ BOOL CIrcProto::SlashMeOrThink(enumCmdId cmdid, IRCPARSE *pParse, char *szMesg, 
 			uModesTmp = BM_ACTION | (uModes & BM_WHISPER);
 		else
 			uModesTmp = BM_THINK;
-		bRet = bChatSendText(CString(szMesg+pParse->nOffsets[1]), uModesTmp, TRUE /*bEcho*/, prgdwFormattingTmp);
+		// Named local: bChatSendText takes CString&, and MSVC binds a temporary to a
+		// non-const reference where clang does not.
+		CString strSendBody(szMesg+pParse->nOffsets[1]);
+		bRet = bChatSendText(strSendBody, uModesTmp, TRUE /*bEcho*/, prgdwFormattingTmp);
 	}
 
 	if (prgdwFormattingTmp)
@@ -3885,8 +3893,15 @@ BOOL bSendPrivMsg(char *szReceiver, void *pvStrFmt, DWORD dwInvokedByWhisperBox)
 		// are we in this channel?
 		pDoc = LookupDoc(strReceiver);
 		if (pDoc && pDoc != (CChatDoc*) theApp.m_pExitingDoc && pDoc->GetConnectionStatus() == CX_INCHANNEL)
+		{
 			// internal channel case
-			bChatSendText(CString(szText), BM_SAY /*uModes*/, TRUE /*bEcho*/, prgdwFormatting, strReceiver /*szEncodedChannelName*/, FALSE /*bWhispereesFilled*/);
+			// Named local: bChatSendText takes CString&. BRACES ADDED deliberately -
+			// this was the single statement of a brace-less `if` that has an `else`,
+			// so declaring a local before it without braces would have re-paired the
+			// else to the declaration and silently changed the control flow.
+			CString strSendSay(szText);
+			bChatSendText(strSendSay, BM_SAY /*uModes*/, TRUE /*bEcho*/, prgdwFormatting, strReceiver /*szEncodedChannelName*/, FALSE /*bWhispereesFilled*/);
+		}
 		else
 		{
 			// external channel case
@@ -3931,7 +3946,9 @@ BOOL bSendPrivMsg(char *szReceiver, void *pvStrFmt, DWORD dwInvokedByWhisperBox)
 			ASSERT(pDoc->m_proto);
 			g_rgpuiWhisperees.RemoveAll();
 			g_rgpuiWhisperees.Add(pUI);
-			VERIFY(bChatSendText(CString(szText), BM_WHISPER, TRUE /*bEcho*/, prgdwFormatting, pDoc->m_proto->m_strChannel, TRUE /*bWhispereesFilled*/));
+			// Named local: bChatSendText takes CString&, as above.
+			CString strSendWhisper(szText);
+			VERIFY(bChatSendText(strSendWhisper, BM_WHISPER, TRUE /*bEcho*/, prgdwFormatting, pDoc->m_proto->m_strChannel, TRUE /*bWhispereesFilled*/));
 		}
 		else
 			if (pUI)
@@ -4058,7 +4075,16 @@ void AdjustFlags(DWORD oldMode, BOOL newVal, UINT field, DWORD *setMask, DWORD *
 void CRoomInfo::DoChannelDialog()
 {
 	CChannelProp	cprops;
-	extern CString	strCurrentChannelTopic;
+	// The `extern CString strCurrentChannelTopic;` that stood here was DEAD, and
+	// removing it is behaviour-preserving. chatprot.h:101 defines that name as an
+	// object-like macro (currentRoom->m_strTopic), so the declaration expanded to
+	// `extern CString (currentRoom->m_strTopic);` - which MSVC accepts and clang
+	// rejects outright.
+	//
+	// Established by preprocessing this file with oracle.mak's own flags rather than
+	// by reasoning: the expansion is present in the .i, the two uses below expand to
+	// the same member access, and the identifier never survives unexpanded anywhere -
+	// so no global of that name exists and nothing referred to this declaration.
 
 	cprops.m_bIsIRCX = GetDefaultProto () && GetDefaultProto ()->IsIRCX ();
 	cprops.m_rtfTopic.DefineDefaultCharFormat();
@@ -4493,7 +4519,11 @@ BOOL bSwitchToRoom(const char *szNewRoom, const char *szPassword, const char *sz
 	else
 		pEnterRoom = &g_enterInfo;
 
-	const char *szRoom = szNewRoom ? szNewRoom : g_enterInfo.m_strChannel;
+	// Explicit cast: `const char* ? const char* : CString` is ambiguous to clang,
+	// because CString converts to const char* AND const char* converts to CString, so
+	// the conditional has no unique common type. The declared type settles which
+	// direction is wanted; MSVC picks the same one silently.
+	const char *szRoom = szNewRoom ? szNewRoom : (LPCTSTR) g_enterInfo.m_strChannel;
 	if (bEncodeChan)
 		szRoom = EncodeChan(szRoom);
 
