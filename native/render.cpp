@@ -82,8 +82,8 @@ CTFontRef MakeFont(int lfHeight, bool italic) {
 // Advances come from the frozen table, not from Core Text: the glyphs are positioned one
 // at a time at the pinned offsets. Letting Core Text advance instead would drift from the
 // engine's own line widths and eventually push text outside its balloon.
-void DrawRun(CGContextRef c, CTFontRef font, const char* s, int len,
-             int x, int yTop, int tmAscent) {
+void DrawRunWithFont(CGContextRef c, CTFontRef font, const char* s, int len,
+                     int x, int yTop, int tmAscent) {
     if (!s || len <= 0) return;
 
     std::vector<CGGlyph>  glyphs;
@@ -174,36 +174,42 @@ void DrawLabelText(CGContextRef c, CLabel* lab, int baseX, int baseY) {
     if (fi && fi->m_nLines > 0) {
         int yTop = 0;                       // balloon-local; see the note above
         for (int i = 0; i < fi->m_nLines; i++) {
-            DrawRun(c, font, fi->m_rgszStarts[i], fi->m_rgiLengths[i],
-                    baseX + fi->m_rgiLeftX[i], baseY + yTop, gm->tmAscent);
+            DrawRunWithFont(c, font, fi->m_rgszStarts[i], fi->m_rgiLengths[i],
+                            baseX + fi->m_rgiLeftX[i], baseY + yTop, gm->tmAscent);
             yTop -= lab->m_fontI->m_lineHeight;
         }
     } else if (lab->m_str) {
-        DrawRun(c, font, lab->m_str, (int)strlen(lab->m_str),
-                baseX + lab->m_bbox.Left, baseY + lab->m_bbox.Top, gm->tmAscent);
+        DrawRunWithFont(c, font, lab->m_str, (int)strlen(lab->m_str),
+                        baseX + lab->m_bbox.Left, baseY + lab->m_bbox.Top, gm->tmAscent);
     }
     CFRelease(font);
 }
 
+// Balloons are drawn by the ENGINE now, not here.
+//
+// CBWoodringNormal::Draw (balloon.cpp:1789) selects its pen (solid, or the dashed nimbus pen
+// for a whisper), offsets the window origin to balloon-local space, builds the outline through
+// CTraj::Draw and paints it with StrokeAndFillPath, re-strokes dashes for whispers, then draws
+// the text. All of that now lands on a CGContext via native/shim/cgdraw.cpp.
+//
+// The reason this matters rather than being a tidy-up: the balloon TAIL is not part of
+// m_spline. traj.cpp:45 walks m_segs, which holds the body AND the tail as segments, so
+// building a path from the spline produced balloons that pointed at nobody. Thought-balloon
+// ovals and whisper dashes were missing for the same reason - they are separate calls into the
+// same API. The engine already knows how to make all of them.
 void DrawBalloon(CGContextRef c, CBalloon* b, int panelLeft, int panelTop) {
-    // Element bboxes are panel-relative and the spline is relative to the balloon, so both
-    // offsets apply.
-    int bx = panelLeft + b->m_bbox.Left;
-    int by = panelTop  + b->m_bbox.Top;
+    if (!b) return;
+    CDC dc;
+    dc.m_cgCtx = (void*)c;
+    dc.m_nDcMapMode = MM_TWIPS;
 
-    CGPathRef path = BuildSplinePath(b->m_spline, bx, by);
-    if (path) {
-        CGContextAddPath(c, path);
-        SetFill(c, RGB(255, 255, 255));
-        CGContextFillPath(c);
-
-        CGContextAddPath(c, path);
-        SetStroke(c, RGB(0, 0, 0));
-        CGContextSetLineWidth(c, 22.0);      // ~1.5px at 15 twips/px
-        CGContextStrokePath(c);
-        CFRelease(path);
-    }
-    DrawLabelText(c, b, bx, by);   // balloon-local origin
+    CGContextSaveGState(c);
+    // Element coordinates are panel-relative; the balloon offsets the window origin itself
+    // from there, so only the panel origin goes into the transform.
+    CGContextTranslateCTM(c, panelLeft, panelTop);
+    POINT ul; ul.x = 0; ul.y = 0;
+    b->Draw(&dc, &ul, NULL);
+    CGContextRestoreGState(c);
 }
 
 // --- avatar body ------------------------------------------------------------------
@@ -283,6 +289,21 @@ void DrawPanel(CGContextRef c, CPanel* panel, int px, int py) {
 }
 
 } // namespace
+
+// See render.h. Uses whatever font the glyph table currently has selected, which is what the
+// engine's own SelectObject set - so a title run measures and draws with title advances.
+void NativeDrawPinnedRun(CGContextRef ctx, const char* s, int len,
+                         int x, int yTop, unsigned long color) {
+    if (!ctx || !s || len <= 0) return;
+    const GlyphMetrics* gm = GlyphTableMetrics();
+    if (!gm) return;
+    CTFontRef font = MakeFont(gm->lfHeight, gm->lfItalic != 0);
+    CGContextSaveGState(ctx);
+    SetFill(ctx, (COLORREF)color);
+    DrawRunWithFont(ctx, font, s, len, x, yTop, gm->tmAscent);
+    CGContextRestoreGState(ctx);
+    CFRelease(font);
+}
 
 void NativeRenderPageSize(CPage* page, int* widthPx, int* heightPx) {
     RECT bb;

@@ -516,17 +516,27 @@ public:
 
 class CPen : public CGdiObject {
 public:
-    CPen() {}
-    CPen(int, int, COLORREF) {}
-    BOOL CreatePen(int, int, COLORREF) { return TRUE; }
+    // Style/width/colour are RECORDED, not discarded: balloon.cpp creates a thick solid pen
+    // for the outline and a separate dashed "nimbus" pen for whisper balloons, and picks
+    // between them per balloon. A pen that forgets its width strokes every balloon the same.
+    int      m_style;
+    int      m_width;
+    COLORREF m_color;
+    CPen() : m_style(0 /*PS_SOLID*/), m_width(0), m_color(0) {}
+    CPen(int style, int width, COLORREF c) : m_style(style), m_width(width), m_color(c) {}
+    BOOL CreatePen(int style, int width, COLORREF c) {
+        m_style = style; m_width = width; m_color = c; return TRUE;
+    }
 };
 
 class CBrush : public CGdiObject {
 public:
-    CBrush() {}
-    CBrush(COLORREF) {}
-    BOOL CreateSolidBrush(COLORREF) { return TRUE; }
-    BOOL CreateStockObject(int) { return TRUE; }
+    COLORREF m_color;
+    BOOL     m_null;          // a NULL_BRUSH fills nothing
+    CBrush() : m_color(0), m_null(FALSE) {}
+    CBrush(COLORREF c) : m_color(c), m_null(FALSE) {}
+    BOOL CreateSolidBrush(COLORREF c) { m_color = c; m_null = FALSE; return TRUE; }
+    BOOL CreateStockObject(int i) { m_null = (i == 5 /*NULL_BRUSH*/); return TRUE; }
 };
 
 class CBitmap : public CGdiObject {
@@ -580,7 +590,10 @@ public:
     // measurement, and a DC that is never given a font at all is only used for
     // painting. A wrong font is caught at SelectObject time instead.
     CDC() : m_nDcMapMode(MM_TEXT), m_hDC(0), m_bPrinting(FALSE), m_pinnedFont(TRUE),
-            m_pCurFont(0), m_nRop2(13 /*R2_COPYPEN*/), m_cgCtx(0),
+            m_pCurFont(0), m_nRop2(13 /*R2_COPYPEN*/),
+            m_winOrgX(0), m_winOrgY(0), m_pPen(0), m_pBrush(0),
+            m_cgPath(0), m_curX(0), m_curY(0), m_hasCur(0),
+            m_bkMode(2 /*TRANSPARENT*/), m_textColor(0), m_cgCtx(0),
             m_pendMaskBits(0), m_pendMaskInfo(0),
             m_pendMaskX(0), m_pendMaskY(0), m_pendMaskW(0), m_pendMaskH(0) {
         // GetSafeHdc() has to hand back something the global GDI entry points can turn
@@ -636,9 +649,9 @@ public:
     // identity. Returning a fixed value here would silently disable those conversions.
     int SetMapMode(int mode) { int prev = m_nDcMapMode; m_nDcMapMode = mode; return prev; }
     int GetMapMode() const { return m_nDcMapMode; }
-    int SetBkMode(int) { return TRANSPARENT; }
+    int SetBkMode(int m) { int o = m_bkMode; m_bkMode = m; return o; }
     COLORREF SetBkColor(COLORREF c) { return c; }
-    COLORREF SetTextColor(COLORREF c) { return c; }
+    COLORREF SetTextColor(COLORREF c) { COLORREF o = m_textColor; m_textColor = c; return o; }
     int SetPolyFillMode(int) { return ALTERNATE; }
     UINT SetTextAlign(UINT) { return 0; }
     UINT GetTextAlign() const { return 0; }
@@ -648,9 +661,16 @@ public:
     // consistent, since nothing native has moved it.
     CPoint SetViewportOrg(int, int) { return CPoint(0, 0); }
     CPoint SetViewportOrg(POINT) { return CPoint(0, 0); }
-    CPoint SetWindowOrg(int, int) { return CPoint(0, 0); }
-    CPoint SetWindowOrg(POINT) { return CPoint(0, 0); }
-    BOOL OffsetWindowOrg(int, int) { return TRUE; }
+    // The window origin is REAL. GDI maps device = logical - windowOrg, and balloon.cpp
+    // relies on it: CBWoodringNormal::Draw does OffsetWindowOrg(-m_bbox.Left, -m_bbox.Top) so
+    // its traj and text can be expressed in balloon-local coordinates. Ignoring it drew every
+    // balloon at the panel origin.
+    CPoint SetWindowOrg(int x, int y) {
+        CPoint o(m_winOrgX, m_winOrgY); m_winOrgX = x; m_winOrgY = y; return o;
+    }
+    CPoint SetWindowOrg(POINT p) { return SetWindowOrg((int)p.x, (int)p.y); }
+    BOOL OffsetWindowOrg(int dx, int dy) { m_winOrgX += dx; m_winOrgY += dy; return TRUE; }
+    int m_winOrgX, m_winOrgY;
     BOOL OffsetViewportOrg(int, int) { return TRUE; }
     BOOL SetWindowExt(int, int) { return TRUE; }
     BOOL SetViewportExt(int, int) { return TRUE; }
@@ -660,8 +680,10 @@ public:
 
     CGdiObject* SelectObject(CGdiObject* p) { return p; }
     CFont* SelectObject(CFont* p);   // records m_pinnedFont; see glyphtable_cdc.cpp
-    CPen* SelectObject(CPen* p) { return p; }
-    CBrush* SelectObject(CBrush* p) { return p; }
+    CPen*   SelectObject(CPen* p)   { CPen* o = m_pPen; if (p) m_pPen = p; return o; }
+    CBrush* SelectObject(CBrush* p) { CBrush* o = m_pBrush; if (p) m_pBrush = p; return o; }
+    CPen*   m_pPen;
+    CBrush* m_pBrush;
     CBitmap* SelectObject(CBitmap* p) { return p; }
     CPalette* SelectPalette(CPalette* p, BOOL) { return p; }
     UINT RealizePalette() { return 0; }
@@ -727,30 +749,44 @@ public:
     }
 
     // -- painting (no-ops) --
-    BOOL MoveTo(int, int) { return TRUE; }
-    BOOL LineTo(int, int) { return TRUE; }
+    // Path construction and painting, implemented in native/shim/cgdraw.cpp. Out-of-line
+    // because it needs Core Graphics, and this header reaches every translation unit.
+    //
+    // These exist so the ENGINE can draw its own balloons. CBWoodringNormal::Draw builds the
+    // outline AND ITS TAIL through CTraj::Draw (BeginPath / MoveTo / PolyBezier / CloseFigure /
+    // EndPath) and then StrokeAndFillPath, and draws whisper balloons a second time with a
+    // dashed pen. Reimplementing that in the renderer got the body but never the tail.
+    BOOL MoveTo(int x, int y);
+    BOOL LineTo(int x, int y);
     BOOL Polyline(const POINT*, int) { return TRUE; }
     BOOL Polygon(const POINT*, int) { return TRUE; }
-    BOOL PolyBezier(const POINT*, int) { return TRUE; }
-    BOOL PolyBezierTo(const POINT*, int) { return TRUE; }
+    BOOL PolyBezier(const POINT* pts, int n);
+    BOOL PolyBezierTo(const POINT* pts, int n);
     BOOL PolylineTo(const POINT*, int) { return TRUE; }
     BOOL ArcTo(int, int, int, int, int, int, int, int) { return TRUE; }
     BOOL LineTo(POINT p) { return LineTo((int)p.x, (int)p.y); }
     BOOL MoveTo(POINT p) { return MoveTo((int)p.x, (int)p.y); }
     BOOL Rectangle(int, int, int, int) { return TRUE; }
-    BOOL Ellipse(int, int, int, int) { return TRUE; }
-    BOOL Ellipse(const RECT*) { return TRUE; }
+    BOOL Ellipse(int l, int t, int r, int b);
+    BOOL Ellipse(const RECT* rc);
     BOOL Rectangle(const RECT*) { return TRUE; }
     BOOL RoundRect(const RECT*, POINT) { return TRUE; }
     BOOL Arc(int, int, int, int, int, int, int, int) { return TRUE; }
-    BOOL BeginPath() { return TRUE; }
-    BOOL EndPath() { return TRUE; }
-    BOOL StrokeAndFillPath() { return TRUE; }
-    BOOL StrokePath() { return TRUE; }
-    BOOL FillPath() { return TRUE; }
-    BOOL CloseFigure() { return TRUE; }
-    BOOL TextOut(int, int, LPCTSTR, int) { return TRUE; }
-    BOOL TextOut(int, int, const CString&) { return TRUE; }
+    BOOL BeginPath();
+    BOOL EndPath();
+    BOOL StrokeAndFillPath();
+    BOOL StrokePath();
+    BOOL FillPath();
+    BOOL CloseFigure();
+    BOOL TextOut(int x, int y, LPCTSTR s, int len);
+    BOOL TextOut(int x, int y, const CString& s);
+
+    // Path state. m_cgPath is non-NULL only between BeginPath and EndPath.
+    void* m_cgPath;          // CGMutablePathRef
+    int   m_curX, m_curY;    // current point, in logical coords
+    int   m_hasCur;
+    int   m_bkMode;
+    COLORREF m_textColor;
     BOOL ExtTextOut(int, int, UINT, const RECT*, LPCTSTR, UINT, const int*) { return TRUE; }
     int DrawText(LPCTSTR, int, RECT*, UINT) { return 0; }
     BOOL BitBlt(int, int, int, int, CDC*, int, int, DWORD) { return TRUE; }
@@ -760,8 +796,10 @@ public:
     BOOL DrawIcon(int, int, HICON) { return TRUE; }
     BOOL DrawIcon(POINT, HICON) { return TRUE; }
     void FillRect(const RECT*, CBrush*) {}
-    void FillSolidRect(const RECT*, COLORREF) {}
-    void FillSolidRect(int, int, int, int, COLORREF) {}
+    // Real: panel.cpp paints the panel background with it, and CLabel::EraseRect clears
+    // behind text.
+    void FillSolidRect(const RECT* rc, COLORREF c);
+    void FillSolidRect(int x, int y, int w, int h, COLORREF c);
     void Draw3dRect(const RECT*, COLORREF, COLORREF) {}
     void FrameRect(const RECT*, CBrush*) {}
     BOOL InvertRect(const RECT*) { return TRUE; }

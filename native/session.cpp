@@ -134,10 +134,21 @@ bool NativeSessionStart(const char* treeDir) {
     g_doc->SetComicsTitle("Comic Chat");
     g_doc->InitMyDocument();
 
-    // The protocol object. CommunicationInits() would normally do this, but it also runs
-    // NetMeeting init, AfxSocketInit and the identd listener; NewDefaultProto is the part that
-    // matters, and it is what GetIrcProto() reads out of cui.
-    if (!cui.m_pvIrcProto) cui.m_pvIrcProto = NewDefaultProto(g_doc);
+    // ONE protocol object, shared by the connection and the document.
+    //
+    // CChatDoc's constructor already does m_proto = NewDefaultProto(this) and g_docs.AddHead
+    // (chatdoc.cpp:184,193), so the document arrives with its own proto and is registered for
+    // lookup. Creating a second one for cui.m_pvIrcProto - which is what GetIrcProto() returns
+    // - meant the connection set the channel on one object while LookupDoc matched against the
+    // other, so an incoming PRIVMSG resolved to no document and was dropped.
+    //
+    // currentRoom is the same pointer, because protsupp.cpp treats it as the active room.
+    cui.m_pvIrcProto = g_doc->m_proto;
+    currentRoom = g_doc->m_proto;
+
+    // The engine looks up "who am I" through g_puiSelf when deciding whether a message is
+    // from the local user. CChatDoc::LoadDocData sets it from m_puiSelf on Windows.
+    g_doc->LoadDocData();
 
     g_started = true;
     return true;

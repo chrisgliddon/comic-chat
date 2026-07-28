@@ -37,6 +37,17 @@ class CPage;
 // advances and this scale have to agree or text would not sit inside its balloon.
 #define NATIVE_TWIPS_PER_PIXEL 15
 
+// Draws a run of CP-1252 bytes with its LEFT edge at x and its text-cell TOP at yTop,
+// matching GDI's default TA_TOP|TA_LEFT alignment. Advances come from the FROZEN glyph table,
+// glyph by glyph, using whichever font is currently selected there - never from Core Text, so
+// drawn text lands exactly where the engine's own measurement put it. Core Text supplies the
+// outlines only.
+//
+// Shared by native/render.cpp and the CDC text backend in native/shim/cgdraw.cpp, so there is
+// one text path rather than two that can disagree.
+void NativeDrawPinnedRun(CGContextRef ctx, const char* s, int len,
+                         int x, int yTop, unsigned long color);
+
 // Draws `page` into `ctx`, which must already be sized for the page (see
 // NativeRenderPageSize) and must NOT have a flip applied - this installs its own transform.
 void NativeRenderPage(CPage* page, CGContextRef ctx);
