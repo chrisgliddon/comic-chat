@@ -397,6 +397,626 @@
       {
         "char": 126,
         "advance": 150
+      },
+      {
+        "char": 127,
+        "advance": 120
+      },
+      {
+        "char": 128,
+        "advance": 150
+      },
+      {
+        "char": 129,
+        "advance": 0
+      },
+      {
+        "char": 130,
+        "advance": 75
+      },
+      {
+        "char": 131,
+        "advance": 105
+      },
+      {
+        "char": 132,
+        "advance": 105
+      },
+      {
+        "char": 133,
+        "advance": 180
+      },
+      {
+        "char": 134,
+        "advance": 150
+      },
+      {
+        "char": 135,
+        "advance": 150
+      },
+      {
+        "char": 136,
+        "advance": 120
+      },
+      {
+        "char": 137,
+        "advance": 300
+      },
+      {
+        "char": 138,
+        "advance": 165
+      },
+      {
+        "char": 139,
+        "advance": 105
+      },
+      {
+        "char": 140,
+        "advance": 285
+      },
+      {
+        "char": 141,
+        "advance": 0
+      },
+      {
+        "char": 142,
+        "advance": 180
+      },
+      {
+        "char": 143,
+        "advance": 0
+      },
+      {
+        "char": 144,
+        "advance": 0
+      },
+      {
+        "char": 145,
+        "advance": 45
+      },
+      {
+        "char": 146,
+        "advance": 45
+      },
+      {
+        "char": 147,
+        "advance": 90
+      },
+      {
+        "char": 148,
+        "advance": 90
+      },
+      {
+        "char": 149,
+        "advance": 90
+      },
+      {
+        "char": 150,
+        "advance": 120
+      },
+      {
+        "char": 151,
+        "advance": 225
+      },
+      {
+        "char": 152,
+        "advance": 135
+      },
+      {
+        "char": 153,
+        "advance": 225
+      },
+      {
+        "char": 154,
+        "advance": 105
+      },
+      {
+        "char": 155,
+        "advance": 105
+      },
+      {
+        "char": 156,
+        "advance": 225
+      },
+      {
+        "char": 157,
+        "advance": 0
+      },
+      {
+        "char": 158,
+        "advance": 135
+      },
+      {
+        "char": 159,
+        "advance": 165
+      },
+      {
+        "char": 160,
+        "advance": 75
+      },
+      {
+        "char": 161,
+        "advance": 60
+      },
+      {
+        "char": 162,
+        "advance": 150
+      },
+      {
+        "char": 163,
+        "advance": 195
+      },
+      {
+        "char": 164,
+        "advance": 150
+      },
+      {
+        "char": 165,
+        "advance": 150
+      },
+      {
+        "char": 166,
+        "advance": 90
+      },
+      {
+        "char": 167,
+        "advance": 150
+      },
+      {
+        "char": 168,
+        "advance": 135
+      },
+      {
+        "char": 169,
+        "advance": 195
+      },
+      {
+        "char": 170,
+        "advance": 120
+      },
+      {
+        "char": 171,
+        "advance": 135
+      },
+      {
+        "char": 172,
+        "advance": 135
+      },
+      {
+        "char": 173,
+        "advance": 105
+      },
+      {
+        "char": 174,
+        "advance": 195
+      },
+      {
+        "char": 175,
+        "advance": 150
+      },
+      {
+        "char": 176,
+        "advance": 105
+      },
+      {
+        "char": 177,
+        "advance": 120
+      },
+      {
+        "char": 178,
+        "advance": 150
+      },
+      {
+        "char": 179,
+        "advance": 150
+      },
+      {
+        "char": 180,
+        "advance": 120
+      },
+      {
+        "char": 181,
+        "advance": 120
+      },
+      {
+        "char": 182,
+        "advance": 165
+      },
+      {
+        "char": 183,
+        "advance": 60
+      },
+      {
+        "char": 184,
+        "advance": 135
+      },
+      {
+        "char": 185,
+        "advance": 150
+      },
+      {
+        "char": 186,
+        "advance": 120
+      },
+      {
+        "char": 187,
+        "advance": 135
+      },
+      {
+        "char": 188,
+        "advance": 150
+      },
+      {
+        "char": 189,
+        "advance": 150
+      },
+      {
+        "char": 190,
+        "advance": 150
+      },
+      {
+        "char": 191,
+        "advance": 135
+      },
+      {
+        "char": 192,
+        "advance": 180
+      },
+      {
+        "char": 193,
+        "advance": 180
+      },
+      {
+        "char": 194,
+        "advance": 180
+      },
+      {
+        "char": 195,
+        "advance": 180
+      },
+      {
+        "char": 196,
+        "advance": 180
+      },
+      {
+        "char": 197,
+        "advance": 180
+      },
+      {
+        "char": 198,
+        "advance": 285
+      },
+      {
+        "char": 199,
+        "advance": 150
+      },
+      {
+        "char": 200,
+        "advance": 150
+      },
+      {
+        "char": 201,
+        "advance": 150
+      },
+      {
+        "char": 202,
+        "advance": 150
+      },
+      {
+        "char": 203,
+        "advance": 150
+      },
+      {
+        "char": 204,
+        "advance": 135
+      },
+      {
+        "char": 205,
+        "advance": 135
+      },
+      {
+        "char": 206,
+        "advance": 135
+      },
+      {
+        "char": 207,
+        "advance": 135
+      },
+      {
+        "char": 208,
+        "advance": 180
+      },
+      {
+        "char": 209,
+        "advance": 195
+      },
+      {
+        "char": 210,
+        "advance": 195
+      },
+      {
+        "char": 211,
+        "advance": 195
+      },
+      {
+        "char": 212,
+        "advance": 195
+      },
+      {
+        "char": 213,
+        "advance": 195
+      },
+      {
+        "char": 214,
+        "advance": 195
+      },
+      {
+        "char": 215,
+        "advance": 120
+      },
+      {
+        "char": 216,
+        "advance": 195
+      },
+      {
+        "char": 217,
+        "advance": 180
+      },
+      {
+        "char": 218,
+        "advance": 180
+      },
+      {
+        "char": 219,
+        "advance": 180
+      },
+      {
+        "char": 220,
+        "advance": 180
+      },
+      {
+        "char": 221,
+        "advance": 165
+      },
+      {
+        "char": 222,
+        "advance": 120
+      },
+      {
+        "char": 223,
+        "advance": 120
+      },
+      {
+        "char": 224,
+        "advance": 120
+      },
+      {
+        "char": 225,
+        "advance": 120
+      },
+      {
+        "char": 226,
+        "advance": 120
+      },
+      {
+        "char": 227,
+        "advance": 120
+      },
+      {
+        "char": 228,
+        "advance": 120
+      },
+      {
+        "char": 229,
+        "advance": 120
+      },
+      {
+        "char": 230,
+        "advance": 225
+      },
+      {
+        "char": 231,
+        "advance": 120
+      },
+      {
+        "char": 232,
+        "advance": 120
+      },
+      {
+        "char": 233,
+        "advance": 120
+      },
+      {
+        "char": 234,
+        "advance": 120
+      },
+      {
+        "char": 235,
+        "advance": 120
+      },
+      {
+        "char": 236,
+        "advance": 75
+      },
+      {
+        "char": 237,
+        "advance": 75
+      },
+      {
+        "char": 238,
+        "advance": 75
+      },
+      {
+        "char": 239,
+        "advance": 75
+      },
+      {
+        "char": 240,
+        "advance": 120
+      },
+      {
+        "char": 241,
+        "advance": 120
+      },
+      {
+        "char": 242,
+        "advance": 120
+      },
+      {
+        "char": 243,
+        "advance": 120
+      },
+      {
+        "char": 244,
+        "advance": 120
+      },
+      {
+        "char": 245,
+        "advance": 120
+      },
+      {
+        "char": 246,
+        "advance": 120
+      },
+      {
+        "char": 247,
+        "advance": 135
+      },
+      {
+        "char": 248,
+        "advance": 120
+      },
+      {
+        "char": 249,
+        "advance": 120
+      },
+      {
+        "char": 250,
+        "advance": 120
+      },
+      {
+        "char": 251,
+        "advance": 120
+      },
+      {
+        "char": 252,
+        "advance": 120
+      },
+      {
+        "char": 253,
+        "advance": 135
+      },
+      {
+        "char": 254,
+        "advance": 135
+      },
+      {
+        "char": 255,
+        "advance": 135
+      }
+    ],
+    "extentProbes": [
+      {
+        "text": "AV",
+        "length": 2,
+        "width": 330,
+        "height": 345
+      },
+      {
+        "text": "To",
+        "length": 2,
+        "width": 285,
+        "height": 345
+      },
+      {
+        "text": "Yo",
+        "length": 2,
+        "width": 285,
+        "height": 345
+      },
+      {
+        "text": "WA",
+        "length": 2,
+        "width": 435,
+        "height": 345
+      },
+      {
+        "text": "f.",
+        "length": 2,
+        "width": 180,
+        "height": 345
+      },
+      {
+        "text": "il",
+        "length": 2,
+        "width": 150,
+        "height": 345
+      },
+      {
+        "text": "mm",
+        "length": 2,
+        "width": 330,
+        "height": 345
+      },
+      {
+        "text": "MMM",
+        "length": 3,
+        "width": 675,
+        "height": 345
+      },
+      {
+        "text": "   ",
+        "length": 3,
+        "width": 225,
+        "height": 345
+      },
+      {
+        "text": "the quick brown fox",
+        "length": 19,
+        "width": 2190,
+        "height": 345
+      },
+      {
+        "text": "Hello, world!",
+        "length": 13,
+        "width": 1380,
+        "height": 345
+      },
+      {
+        "text": "caf\u00e9",
+        "length": 4,
+        "width": 480,
+        "height": 345
+      },
+      {
+        "text": "na\u00efve",
+        "length": 5,
+        "width": 555,
+        "height": 345
+      },
+      {
+        "text": "\u00fcber",
+        "length": 4,
+        "width": 510,
+        "height": 345
+      },
+      {
+        "text": "...",
+        "length": 3,
+        "width": 180,
+        "height": 345
+      },
+      {
+        "text": "!!!",
+        "length": 3,
+        "width": 180,
+        "height": 345
+      },
+      {
+        "text": "1234567890",
+        "length": 10,
+        "width": 1455,
+        "height": 345
       }
     ]
   },
