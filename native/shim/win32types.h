@@ -29,6 +29,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 // --- integer scalars -------------------------------------------------------
 typedef int32_t             LONG;
@@ -51,6 +52,28 @@ typedef void*               LPVOID;
 typedef void*               PVOID;
 typedef BYTE*               PBYTE;
 typedef const void*         LPCVOID;
+typedef int*                PINT;
+typedef UINT*               PUINT;
+typedef LONG*               PLONG;
+typedef DWORD*              PDWORD;
+typedef WORD*               PWORD;
+typedef BOOL*               PBOOL;
+typedef SHORT*              PSHORT;
+typedef char*               PCHAR;
+typedef char*               PSTR;
+typedef int*                LPINT;
+typedef long*               LPLONG;
+typedef BOOL*               LPBOOL;
+// HINTERNET belongs to wininet.h, but webreq.h uses it while being reached from
+// chat.h without that include - same include-order shortfall as CCNotif. Declared
+// at the type floor so both spellings agree.
+typedef void*               HINTERNET;
+typedef const char*         PCSTR;
+typedef long                LONG_PTR;
+typedef unsigned long       ULONG_PTR;
+typedef ULONG_PTR           DWORD_PTR;
+typedef uintptr_t           UINT_PTR;
+typedef intptr_t            INT_PTR;
 
 // TCHAR is always narrow here: the engine is an MBCS build (it indexes bytes and
 // calls strchr/strlen throughout), so widening it would be wrong, not merely
@@ -60,6 +83,47 @@ typedef char*               LPSTR;
 typedef char*               LPTSTR;
 typedef const char*         LPCSTR;
 typedef const char*         LPCTSTR;
+typedef TCHAR               _TCHAR;
+
+// GUID is hoisted here because the OLE typedefs below reference it through
+// REFIID. Defined once; the COM floor further down no longer redeclares it
+// (a struct redefinition, unlike a repeated typedef, is an error).
+typedef struct _GUID { DWORD Data1; WORD Data2; WORD Data3; BYTE Data4[8]; } GUID, IID, CLSID;
+
+// WCHAR/BSTR/VARIANT appear in the OLE automation declarations. The native build
+// drops OLE entirely, but the types are referenced from headers the engine core
+// reaches, so they need to exist. wchar_t is 4 bytes on macOS vs 2 on Win32 -
+// irrelevant here because nothing native marshals these, but it would matter
+// immediately if any OLE path were revived.
+typedef uint16_t            WCHAR;
+typedef WCHAR*              LPWSTR;
+typedef const WCHAR*        LPCWSTR;
+typedef LPWSTR              BSTR;
+typedef WCHAR               OLECHAR;
+typedef LPWSTR              LPOLESTR;
+typedef const WCHAR*        LPCOLESTR;
+typedef LONG                SCODE;
+typedef short               VARIANT_BOOL;
+typedef double              DATE;
+typedef struct tagVARIANT { WORD vt; WORD r1, r2, r3; union { LONG lVal; double dblVal; BSTR bstrVal; void* byref; }; } VARIANT, VARIANTARG;
+typedef VARIANT*            LPVARIANT;
+typedef struct tagDISPPARAMS { VARIANTARG* rgvarg; LONG* rgdispidNamedArgs; UINT cArgs, cNamedArgs; } DISPPARAMS;
+typedef struct tagEXCEPINFO { WORD wCode, wReserved; BSTR bstrSource, bstrDescription, bstrHelpFile; DWORD dwHelpContext; void* pvReserved; void* pfnDeferredFillIn; SCODE scode; } EXCEPINFO;
+typedef LONG                DISPID;
+typedef const GUID&         REFIID;
+typedef const GUID&         REFCLSID;
+// IUnknown/IDispatch must be real (if empty) types, not void: icchat.h declares
+// its automation interfaces as deriving from them, and a base specifier needs a
+// class. No method bodies - nothing native implements COM.
+struct IUnknown {};
+struct IDispatch : public IUnknown {};
+typedef void*               LPUNKNOWN;
+typedef void*               LPDISPATCH;
+typedef void*               LPSTREAM;
+typedef void*               LPSTORAGE;
+typedef void*               LPMONIKER;
+typedef void*               LPBC;
+typedef void*               LPOLEOBJECT;
 
 #ifndef TRUE
 #define TRUE  1
@@ -103,6 +167,9 @@ typedef void* HANDLE;
 typedef struct tagPOINT { LONG x, y; } POINT, *LPPOINT;
 typedef struct tagSIZE  { LONG cx, cy; } SIZE, *LPSIZE;
 typedef struct tagRECT  { LONG left, top, right, bottom; } RECT, *LPRECT;
+typedef const RECT*         LPCRECT;
+typedef const POINT*        LPCPOINT;
+typedef const SIZE*         LPCSIZE;
 
 // Message-handler plumbing. afx_msg is purely a marker in MFC (it expands to
 // nothing) but it must exist as a macro or every handler declaration is a syntax
@@ -119,7 +186,6 @@ typedef struct tagNMHDR { HWND hwndFrom; UINT idFrom; UINT code; } NMHDR, *LPNMH
 typedef struct tagMSG { HWND hwnd; UINT message; WPARAM wParam; LPARAM lParam; DWORD time; POINT pt; } MSG;
 typedef struct _SYSTEMTIME { WORD wYear, wMonth, wDayOfWeek, wDay, wHour, wMinute, wSecond, wMilliseconds; } SYSTEMTIME;
 typedef struct _FILETIME { DWORD dwLowDateTime, dwHighDateTime; } FILETIME;
-typedef struct _GUID { DWORD Data1; WORD Data2; WORD Data3; BYTE Data4[8]; } GUID, IID, CLSID;
 typedef LONG HRESULT;
 #define S_OK        ((HRESULT)0)
 #define S_FALSE     ((HRESULT)1)
@@ -129,6 +195,31 @@ typedef LONG HRESULT;
 #define FAILED(hr)    ((HRESULT)(hr) < 0)
 #define MAKELONG(a, b) ((LONG)(((WORD)(a)) | (((DWORD)((WORD)(b))) << 16)))
 #define INVALID_HANDLE_VALUE ((HANDLE)(intptr_t)-1)
+
+// CRITICAL_SECTION over pthreads rather than no-ops. mcithrd.cpp and the socket
+// layer do run background threads in the original, so a no-op lock would be a
+// real race rather than dead scaffolding - cheap to do correctly, so it is.
+#include <pthread.h>
+typedef struct { pthread_mutex_t mtx; int initialised; } CRITICAL_SECTION, *LPCRITICAL_SECTION;
+inline void InitializeCriticalSection(LPCRITICAL_SECTION cs) {
+    pthread_mutexattr_t a;
+    pthread_mutexattr_init(&a);
+    // Win32 critical sections are recursive; a non-recursive mutex here would
+    // deadlock any code that re-enters, which MFC-era code does freely.
+    pthread_mutexattr_settype(&a, PTHREAD_MUTEX_RECURSIVE);
+    pthread_mutex_init(&cs->mtx, &a);
+    pthread_mutexattr_destroy(&a);
+    cs->initialised = 1;
+}
+inline void EnterCriticalSection(LPCRITICAL_SECTION cs) { if (cs->initialised) pthread_mutex_lock(&cs->mtx); }
+inline void LeaveCriticalSection(LPCRITICAL_SECTION cs) { if (cs->initialised) pthread_mutex_unlock(&cs->mtx); }
+inline void DeleteCriticalSection(LPCRITICAL_SECTION cs) { if (cs->initialised) { pthread_mutex_destroy(&cs->mtx); cs->initialised = 0; } }
+
+// VirtualProtect: dib.cpp pokes page permissions on its resource path, which is
+// unreachable natively. Reporting success keeps the caller's error handling quiet
+// on a path that never runs.
+#define PAGE_READWRITE 0x04
+inline BOOL VirtualProtect(void*, size_t, DWORD, PDWORD old) { if (old) *old = PAGE_READWRITE; return TRUE; }
 
 #define MAX_PATH        260
 #define _MAX_PATH       260
@@ -221,6 +312,69 @@ typedef struct tagBITMAPFILEHEADER {
 #define BI_BITFIELDS  3
 
 // --- misc Win32 spellings the engine uses ---------------------------------
+// lstr* are the Win32 string entry points; the engine mixes them with str*.
+#define lstrcpy     strcpy
+#define lstrcpyn    strncpy
+#define lstrcat     strcat
+#define lstrlen     strlen
+#define lstrcmp     strcmp
+#define lstrcmpi    strcasecmp
+// __T is the inner half of MSVC's _T macro; avbfile.cpp reaches it directly.
+#ifndef __T
+#define __T(x)      x
+#endif
+
+// File-attribute queries. The engine uses GetFileAttributes == -1 as its "does
+// this file exist" test (LoadAvatarInfo does exactly that), so this must answer
+// truthfully rather than stub - avatar loading depends on it.
+#include <sys/stat.h>
+#define INVALID_FILE_ATTRIBUTES  ((DWORD)-1)
+#define FILE_ATTRIBUTE_READONLY  0x00000001
+#define FILE_ATTRIBUTE_DIRECTORY 0x00000010
+#define FILE_ATTRIBUTE_NORMAL    0x00000080
+inline DWORD GetFileAttributes(const char* path) {
+    struct stat st;
+    if (!path || stat(path, &st) != 0) return INVALID_FILE_ATTRIBUTES;
+    DWORD a = FILE_ATTRIBUTE_NORMAL;
+    if (S_ISDIR(st.st_mode)) a |= FILE_ATTRIBUTE_DIRECTORY;
+    if (!(st.st_mode & S_IWUSR)) a |= FILE_ATTRIBUTE_READONLY;
+    return a;
+}
+inline BOOL DeleteFile(const char* path) { return path && unlink(path) == 0; }
+
+// _splitpath / _makepath - MSVC path helpers. Real implementations: avatar.cpp
+// uses _splitpath to derive an avatar name from a filename, so a stub would break
+// avatar enumeration.
+inline void _splitpath(const char* path, char* drive, char* dir, char* fname, char* ext) {
+    if (drive) drive[0] = 0;
+    if (dir) dir[0] = 0;
+    if (fname) fname[0] = 0;
+    if (ext) ext[0] = 0;
+    if (!path) return;
+    const char* slash = strrchr(path, '/');
+    const char* bslash = strrchr(path, '\\');
+    if (bslash > slash) slash = bslash;
+    const char* base = slash ? slash + 1 : path;
+    if (dir && slash) {
+        size_t n = (size_t)(base - path);
+        memcpy(dir, path, n); dir[n] = 0;
+    }
+    const char* dot = strrchr(base, '.');
+    size_t stem = dot ? (size_t)(dot - base) : strlen(base);
+    if (fname) { memcpy(fname, base, stem); fname[stem] = 0; }
+    if (ext && dot) strcpy(ext, dot);
+}
+
+inline void _makepath(char* path, const char* drive, const char* dir,
+                      const char* fname, const char* ext) {
+    if (!path) return;
+    path[0] = 0;
+    if (drive && *drive) strcat(path, drive);
+    if (dir && *dir) strcat(path, dir);
+    if (fname && *fname) strcat(path, fname);
+    if (ext && *ext) strcat(path, ext);
+}
+
 #define ZeroMemory(p, n)      memset((p), 0, (n))
 #define CopyMemory(d, s, n)   memcpy((d), (s), (n))
 #define FillMemory(p, n, b)   memset((p), (b), (n))

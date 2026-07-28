@@ -5,22 +5,58 @@ a rewrite and not a wrapper. `native/shim` supplies the Win32/MFC floor so the
 engine `.cpp` files compile under clang on arm64; the front end will be new AppKit
 code that calls the engine.
 
-## Status (2026-07-27)
+## Status (2026-07-28)
 
-**Early scaffolding.** 3 of 15 engine-core files compile. Run `native/build.sh`
-for the live table; `native/build.sh avbfile` for full errors on one file.
+**All 15 engine-core files compile natively** — `vector2d`, `bbox`, `traj`, `arc`,
+`spline`, `splinutl`, `dib`, `avbfile`, `backdrop`, `avatar`, `avatario`,
+`textpose`, `format`, `userinfo`, `doskey`. Run `native/build.sh` for the live
+table, `native/build.sh <file>` for one file's full errors.
+
+That set is the whole `.avb`/DIB asset pipeline (`avbfile` + `dib` + `avatar` +
+`backdrop`), the emotion/pose logic (`avatario`, `textpose`, `avatar`), the
+geometry core (`vector2d`, `bbox`, `traj`, `arc`, `spline`, `splinutl`) and the
+line-breaking unit (`format`).
+
+Across the whole tree: **19 of 91** `.cpp` files compile. The other 72 are
+predominantly the MFC dialogs and the OLE/ActiveX embedding that are not being
+ported at all. The engine files still blocked — `balloon`, `panel`, `pageview`,
+`chatdoc`, `histent`, `protsupp`, `ircsock`, `fonts` — all fail on the same kind of
+transitively-included UI types (`CPrintInfo`, `CCoolToolBar`, `OFN_*`), i.e. more
+of the same shim grind rather than anything structural.
 
 Working:
 
-- `vector2d`, `bbox`, `traj` compile from **unmodified** engine source.
+- Compilation is from **unmodified** engine source apart from five small
+  portability fixes listed below.
 - The MSVC CRT RNG is reproduced bit-exactly (`native/shim/msvcrand.cpp`);
   `srand(1)` → 41 and `srand(0)` → 38, the two values pinned in the port tests.
   This matters more than it looks: panel layout and avatar placement consume
   `rand()`, and every corpus golden depends on the sequence.
-- Only **two** source incompatibilities were found in ~92k lines, both
-  `sizeof MATRIX` without parentheses (spline.cpp) — an MSVC extension. Fixed in
-  place with the parenthesised form, which MSVC also accepts, so the Windows build
-  and its CI verification are unaffected.
+- Only **five** source incompatibilities in ~92k lines, all fixed with forms MSVC
+  also accepts, so the Windows build is unaffected (and CI verifies that):
+  1. `sizeof MATRIX` without parentheses, twice in `spline.cpp`.
+  2. `DashSeg(POINT&, DASHINFO&)` called with a temporary — MSVC binds temporaries
+     to non-const references. `DashSeg` only reads the point, so it became
+     `const POINT&` (definition in `traj.cpp`, local declarations in `arc.cpp` and
+     `spline.cpp`).
+  3. `avatar.cpp` reused a loop variable after its `for` scope ended. Both
+     makefiles pass `/Zc:forScope-`, MSVC's pre-standard scoping, which clang has
+     no equivalent for; the second loop now declares its own `i`.
+  4. `GetBodyFromEmotion(CEmotion(0.0, 0.0))` — same temporary-to-non-const-ref
+     extension, but the signature is virtual and overridden twice, so widening it
+     would ripple. A named local was the smaller change.
+
+- **`CString` is a single `char*` member, and that is load-bearing.** The engine
+  passes `CString` into printf-style varargs in ~580 places. MFC gets away with it
+  because a `CString` *is* one pointer to a NUL-terminated buffer. An earlier shim
+  held `std::string` members: it compiled, and every one of those 580 sites would
+  have pushed a `std::string` and read its internals as a `char*` — silently. The
+  build also passes `-Wno-error=non-pod-varargs`, which is sound *only* because of
+  that layout.
+
+- `-fms-compatibility` is deliberately **not** used: it redefines `va_list` against
+  macOS system headers and breaks every translation unit. `-fms-extensions` alone
+  is what the engine needs (for redundant member qualification).
 
 ## Why staging, not include paths
 

@@ -7,7 +7,7 @@ int dashArray[] = {100, 100};
 
 
 // To be fast(er), uses manhattan distance rather than euclidean distance.  Good 'nuff.
-void DashSeg(POINT &thisPoint, DASHINFO &d) {
+void DashSeg(const POINT &thisPoint, DASHINFO &d) {
 	int nextDist;
 	int distLimit = d.dashArray[d.arrayIndex];
 	while (TRUE) {

@@ -119,6 +119,112 @@ typedef struct tagPALETTEENTRY {
 // returns NULL and the resource-loading paths are expected to fail their own
 // checks rather than be reached at all.
 inline HINSTANCE AfxGetResourceHandle() { return (HINSTANCE)0; }
+
+// Win32 resource API. dib.cpp's CDIB::Load(WORD wResid) loads DIBs from the PE
+// resource section, which a Mach-O binary has no equivalent of - ComicArt assets
+// come from files instead. These return NULL so that path fails its own checks
+// (`if (!hrsrc) return FALSE`) rather than being reached and misbehaving.
+#define MAKEINTRESOURCE(i)  ((LPCTSTR)(uintptr_t)(i))
+// The global ::DeleteObject, distinct from CGdiObject::DeleteObject. bodycam.h
+// calls it on a raw HBITMAP. Painting-side, so a no-op success is safe; it does
+// mean the native build leaks any GDI handle that path allocates, which is moot
+// while nothing allocates one.
+inline BOOL DeleteObject(void*) { return TRUE; }
+
+// Font enumeration. format.cpp enumerates installed faces to validate the comic
+// font. Reporting zero fonts is honest for a stub - but note the port must NOT
+// derive text metrics from whatever it finds: RULEBOOK 5 requires the frozen glyph
+// table, so enumeration only ever answers "does this face exist".
+typedef struct tagNEWTEXTMETRIC {
+    TEXTMETRIC tm;
+    DWORD ntmFlags;
+    UINT  ntmSizeEM, ntmCellHeight, ntmAvgWidth;
+} NEWTEXTMETRIC, *LPNEWTEXTMETRIC;
+typedef struct tagFONTSIGNATURE { DWORD fsUsb[4], fsCsb[2]; } FONTSIGNATURE;
+typedef struct tagNEWTEXTMETRICEX { NEWTEXTMETRIC ntmTm; FONTSIGNATURE ntmFontSig; } NEWTEXTMETRICEX;
+typedef struct tagENUMLOGFONTEX {
+    LOGFONT elfLogFont;
+    char    elfFullName[64], elfStyle[32], elfScript[32];
+} ENUMLOGFONTEX;
+typedef int (*FONTENUMPROC)(const LOGFONT*, const TEXTMETRIC*, DWORD, LPARAM);
+
+#define FIXED_PITCH     1
+#define VARIABLE_PITCH  2
+#define MONO_FONT       8
+#define TRUETYPE_FONTTYPE 4
+#define DEVICE_FONTTYPE   2
+#define RASTER_FONTTYPE   1
+
+inline int EnumFontFamiliesEx(HDC, LOGFONT*, FONTENUMPROC, LPARAM, DWORD) { return 0; }
+inline int EnumFontFamilies(HDC, LPCTSTR, FONTENUMPROC, LPARAM) { return 0; }
+
+// Global ::GetDC / ::ReleaseDC take an HWND, unlike CWnd's members.
+inline HDC GetDC(HWND) { return (HDC)0; }
+inline int ReleaseDC(HWND, HDC) { return 0; }
+#define ERROR_SUCCESS               0L
+#define ERROR_INVALID_PARAMETER     87L
+#define ERROR_FILE_NOT_FOUND        2L
+#define ERROR_NOT_ENOUGH_MEMORY     8L
+
+// Raw HDC font entry points, used with ::-qualified calls in format.cpp alongside
+// the CDC members.
+inline HFONT   CreateFontIndirect(const LOGFONT*) { return (HFONT)0; }
+inline void*   SelectObject(HDC, void*) { return (void*)0; }
+inline int     GetTextFace(HDC, int n, LPTSTR buf) { if (buf && n > 0) buf[0] = 0; return 0; }
+inline UINT    GetTextCharset(HDC) { return ANSI_CHARSET; }
+inline BOOL    GetTextMetrics(HDC, LPTEXTMETRIC tm) { if (tm) memset(tm, 0, sizeof(*tm)); return FALSE; }
+inline BOOL    GetTextExtentPoint32(HDC, LPCTSTR, int, LPSIZE) { return FALSE; }
+
+inline void SetLastError(DWORD) {}
+inline DWORD GetLastError() { return 0; }
+
+#define CFM_STRIKEOUT   0x00000008
+#define CFE_STRIKEOUT   0x0008
+#define CFM_OFFSET      0x10000000
+inline HRSRC   FindResource(HINSTANCE, LPCTSTR, LPCTSTR) { return (HRSRC)0; }
+inline HGLOBAL LoadResource(HINSTANCE, HRSRC) { return (HGLOBAL)0; }
+inline void*   LockResource(HGLOBAL) { return (void*)0; }
+inline BOOL    FreeResource(HGLOBAL) { return TRUE; }
+inline DWORD   SizeofResource(HINSTANCE, HRSRC) { return 0; }
+
+// Raw GDI blit entry points used directly (not via CDC) by dib.cpp's Draw path.
+// Painting, so no-ops are safe until there is a window; see the class comment on
+// CDC for why measurement is treated differently.
+inline int SetDIBitsToDevice(HDC, int, int, DWORD, DWORD, int, int, UINT, UINT,
+                             const void*, const BITMAPINFO*, UINT) { return 0; }
+inline int StretchDIBits(HDC, int, int, int, int, int, int, int, int,
+                         const void*, const BITMAPINFO*, UINT, DWORD) { return 0; }
+inline int SetStretchBltMode(HDC, int) { return 0; }
+inline int GetDeviceCaps(HDC, int) { return 0; }
+#define COLORONCOLOR 3
+#define HALFTONE     4
+#define LOGPIXELSX   88
+#define LOGPIXELSY   90
+
+// CHARFORMAT - the rich-edit character-format struct. chat.h carries one for the
+// text-view font settings, so the type must exist even though no rich edit
+// control does.
+#define CFM_BOLD        0x00000001
+#define CFM_ITALIC      0x00000002
+#define CFM_UNDERLINE   0x00000004
+#define CFM_COLOR       0x40000000
+#define CFM_SIZE        0x80000000
+#define CFM_FACE        0x20000000
+#define CFM_CHARSET     0x08000000
+#define CFE_BOLD        0x0001
+#define CFE_ITALIC      0x0002
+#define CFE_UNDERLINE   0x0004
+typedef struct _charformat {
+    UINT    cbSize;
+    DWORD   dwMask;
+    DWORD   dwEffects;
+    LONG    yHeight;
+    LONG    yOffset;
+    COLORREF crTextColor;
+    BYTE    bCharSet;
+    BYTE    bPitchAndFamily;
+    char    szFaceName[LF_FACESIZE];
+} CHARFORMAT;
 inline HINSTANCE AfxGetInstanceHandle() { return (HINSTANCE)0; }
 
 // Reaching an unimplemented drawing stub is a programming error, not a runtime
@@ -131,6 +237,43 @@ inline HINSTANCE AfxGetInstanceHandle() { return (HINSTANCE)0; }
                 (what), __FILE__, __LINE__); \
         abort(); \
     } while (0)
+
+// Owner-draw and measure-item structures. These reach the engine core only as
+// parameters on handler declarations in headers (memblst.h, userlist.h); no
+// owner-draw code runs natively.
+typedef struct tagDRAWITEMSTRUCT {
+    UINT     CtlType, CtlID, itemID, itemAction, itemState;
+    HWND     hwndItem;
+    HDC      hDC;
+    RECT     rcItem;
+    ULONG_PTR itemData;
+} DRAWITEMSTRUCT, *LPDRAWITEMSTRUCT;
+
+typedef struct tagMEASUREITEMSTRUCT {
+    UINT     CtlType, CtlID, itemID, itemWidth, itemHeight;
+    ULONG_PTR itemData;
+} MEASUREITEMSTRUCT, *LPMEASUREITEMSTRUCT;
+
+typedef struct tagCREATESTRUCT {
+    LPVOID   lpCreateParams;
+    HINSTANCE hInstance;
+    HMENU    hMenu;
+    HWND     hwndParent;
+    int      cy, cx, y, x;
+    LONG     style;
+    LPCSTR   lpszName, lpszClass;
+    DWORD    dwExStyle;
+} CREATESTRUCT, *LPCREATESTRUCT;
+
+typedef struct tagWINDOWPOS {
+    HWND hwnd, hwndInsertAfter;
+    int  x, y, cx, cy;
+    UINT flags;
+} WINDOWPOS, *LPWINDOWPOS;
+
+typedef struct tagMINMAXINFO {
+    POINT ptReserved, ptMaxSize, ptMaxPosition, ptMinTrackSize, ptMaxTrackSize;
+} MINMAXINFO, *LPMINMAXINFO;
 
 class CGdiObject : public CObject {
 public:
@@ -199,6 +342,9 @@ class CDC {
 public:
     void* m_hDC;
     CDC() : m_hDC(0) {}
+    HDC GetSafeHdc() const { return (HDC)m_hDC; }
+    CFont* GetCurrentFont() const { return 0; }
+    CPalette* GetCurrentPalette() const { return 0; }
     virtual ~CDC() {}
 
     // -- mapping / state (safe no-ops) --
@@ -260,7 +406,12 @@ public:
     BOOL StretchBlt(int, int, int, int, CDC*, int, int, int, int, DWORD) { return TRUE; }
     int SetStretchBltMode(int) { return 0; }
     BOOL PatBlt(int, int, int, int, DWORD) { return TRUE; }
+    BOOL DrawIcon(int, int, HICON) { return TRUE; }
+    BOOL DrawIcon(POINT, HICON) { return TRUE; }
     void FillRect(const RECT*, CBrush*) {}
+    void FillSolidRect(const RECT*, COLORREF) {}
+    void FillSolidRect(int, int, int, int, COLORREF) {}
+    void Draw3dRect(const RECT*, COLORREF, COLORREF) {}
     void FrameRect(const RECT*, CBrush*) {}
     BOOL InvertRect(const RECT*) { return TRUE; }
     BOOL CreateCompatibleDC(CDC*) { return TRUE; }

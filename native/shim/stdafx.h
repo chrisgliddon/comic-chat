@@ -21,6 +21,10 @@
 #include "mfcshim.h"
 #include "gdishim.h"
 #include "mfcui.h"
+// The engine's stdafx.h includes afxsock.h, so socket types are in scope for every
+// translation unit; chatsrv.h and chatsock.h rely on that rather than including
+// winsock themselves.
+#include "winsock.h"
 
 // chat.h and several other engine headers guard with
 //   #ifndef __AFXWIN_H__
@@ -59,6 +63,14 @@ void msvc_srand(unsigned int seed);
 #define rand()      msvc_rand()
 #define srand(s)    msvc_srand(s)
 #define RAND_MAX_MSVC 0x7fff
+
+// Include-order artifact, not a missing type. rules.h uses CCNotif* at line 621
+// but only notif.h forward-declares it, and in the MFC build the declaration
+// arrives via an include chain that our replacement stdafx.h short-circuits.
+// Forward-declaring it here restores the same visibility without dragging notif.h
+// (and its dialog dependencies) into the platform floor. The class itself is only
+// ever used through pointers in the headers the engine core reaches.
+class CCNotif;
 
 
 #endif // NATIVE_SHIM_STDAFX_H

@@ -25,7 +25,12 @@ ROOT=$(cd "$(dirname "$0")/.." && pwd)
 cd "$ROOT"
 mkdir -p native/build
 
-CXXFLAGS="-std=c++14 -O1 -w -fms-extensions -I native/shim -I artifacts/inc"
+# -Wno-error=non-pod-varargs: clang makes this DefaultError, and the engine passes
+# CString into printf-style varargs in ~580 places. It is sound here ONLY because
+# the shim's CString is a single char* member, matching MFC's layout, so the vararg
+# push delivers exactly the pointer %s expects. See the CString comment in
+# native/shim/mfcshim.h - if that layout changes, this flag must go.
+CXXFLAGS="-std=c++14 -O1 -w -Wno-error=non-pod-varargs -fms-extensions -I native/shim -I artifacts/inc"
 
 # The engine-core set: zero MFC-UI coupling, and the subsystems the oracle
 # already has frozen goldens for. Deliberately does NOT include the dialog/OLE

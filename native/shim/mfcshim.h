@@ -88,7 +88,9 @@ class CNotSupportedException : public CException {};
 inline void AfxThrowMemoryException()       { throw new CMemoryException(); }
 inline void AfxThrowFileException(int c = 0){ throw new CFileException(c); }
 inline void AfxThrowArchiveException(int)   { throw new CArchiveException(); }
+class CUserException : public CException {};
 inline void AfxThrowNotSupportedException() { throw new CNotSupportedException(); }
+inline void AfxThrowUserException()         { throw new CUserException(); }
 
 #define TRY                 try {
 #define CATCH_ALL(e)        } catch (CException* e) { (void)e;
@@ -105,9 +107,33 @@ inline void AfxThrowNotSupportedException() { throw new CNotSupportedException()
 // this port touches is either not serialized at all or goes through the .ccc text
 // codec instead (Tier-1 #10), not CArchive.
 // ---------------------------------------------------------------------------
+class CArchive;
+class CFile;   // defined in gdishim.h, which includes this header
+
 class CObject {
 public:
     virtual ~CObject() {}
+    virtual void Serialize(CArchive&) {}
+};
+
+// CArchive - declared because Serialize overrides name it. Note the ORACLE uses
+// CArchive over CMemFile to capture byte-exact MFC serialization on Windows; the
+// native build does not serialize through it at all (the .ccc text codec is what
+// transcripts use), so this is a type, not an implementation. If a native path
+// ever needs real CArchive framing, it has to reproduce MFC's tag/schema bytes -
+// do not improvise it here.
+class CArchive {
+public:
+    enum Mode { store = 0, load = 1 };
+    CArchive(CFile* f = 0, UINT mode = load) : m_pFile(f), m_nMode(mode) {}
+    BOOL IsStoring() const { return m_nMode == store; }
+    BOOL IsLoading() const { return m_nMode != store; }
+    CFile* GetFile() const { return m_pFile; }
+    void Close() {}
+    void Flush() {}
+private:
+    CFile* m_pFile;
+    UINT m_nMode;
 };
 #define DECLARE_DYNAMIC(cls)
 #define IMPLEMENT_DYNAMIC(cls, base)
@@ -119,90 +145,138 @@ public:
 class CRuntimeClass;
 
 // ---------------------------------------------------------------------------
-// CString. std::string inside, MFC's interface outside.
+// CString - a SINGLE char* member, deliberately.
+//
+// The layout is the contract. The engine passes CString straight into printf-style
+// varargs in ~580 places (strQName.Format("%s (%s)", nick, m_fullName)), which is
+// formally undefined but works in MFC because a CString IS one pointer to a
+// NUL-terminated buffer: the vararg push puts that pointer where %s expects it.
+//
+// An earlier version of this shim held std::string members. That compiled, but
+// every one of those call sites would have pushed a std::string object and %s would
+// have read its internals as a char* - garbage or a crash, silently, in 580 places.
+// Casting at each site was the alternative; matching MFC layout fixes all of them at
+// once and keeps the engine source unedited.
+//
+// Consequences to respect:
+//   * m_pchData must remain the ONLY data member. Adding a second (a length cache,
+//     a GetBuffer scratch) breaks every vararg site at a stroke.
+//   * It is always heap-allocated and NUL-terminated, never null, so the vararg path
+//     can never hand printf a null pointer.
+//   * clang's -Wnon-pod-varargs is DefaultError, so the build passes
+//     -Wno-error=non-pod-varargs. That flag is only sound BECAUSE of this layout -
+//     do not keep it if the layout ever changes.
 // ---------------------------------------------------------------------------
 class CString {
 public:
-    CString() {}
-    CString(const char* s) : m_s(s ? s : "") {}
-    CString(const char* s, int n) : m_s(s ? std::string(s, (size_t)n) : std::string()) {}
-    CString(const CString& o) : m_s(o.m_s) {}
-    CString(char c, int n) : m_s((size_t)n, c) {}
-
-    CString& operator=(const CString& o) { m_s = o.m_s; return *this; }
-    CString& operator=(const char* s)    { m_s = s ? s : ""; return *this; }
-    CString& operator=(char c)           { m_s.assign(1, c); return *this; }
-
-    // MFC's implicit conversion to LPCTSTR is used pervasively - the engine
-    // passes a CString straight to printf("%s") and to strcmp.
-    operator const char*() const { return m_s.c_str(); }
-
-    int GetLength() const           { return (int)m_s.size(); }
-    BOOL IsEmpty() const            { return m_s.empty() ? TRUE : FALSE; }
-    void Empty()                    { m_s.clear(); }
-    // Reads the terminating NUL at GetLength() the way MFC does; the engine
-    // relies on that when scanning to end of string.
-    char GetAt(int i) const         { return (i >= 0 && (size_t)i < m_s.size()) ? m_s[(size_t)i] : '\0'; }
-    char operator[](int i) const    { return GetAt(i); }
-    void SetAt(int i, char c)       { if (i >= 0 && (size_t)i < m_s.size()) m_s[(size_t)i] = c; }
-
-    CString& operator+=(const char* s)   { if (s) m_s += s; return *this; }
-    CString& operator+=(const CString& o){ m_s += o.m_s; return *this; }
-    CString& operator+=(char c)          { m_s += c; return *this; }
-
-    int Compare(const char* s) const     { return strcmp(m_s.c_str(), s ? s : ""); }
-    int CompareNoCase(const char* s) const { return strcasecmp(m_s.c_str(), s ? s : ""); }
-
-    int Find(char c) const               { size_t p = m_s.find(c); return p == std::string::npos ? -1 : (int)p; }
-    int Find(const char* s) const        { size_t p = m_s.find(s ? s : ""); return p == std::string::npos ? -1 : (int)p; }
-    int ReverseFind(char c) const        { size_t p = m_s.rfind(c); return p == std::string::npos ? -1 : (int)p; }
-
-    CString Mid(int start) const         { return (start < 0 || (size_t)start > m_s.size()) ? CString() : CString(m_s.substr((size_t)start).c_str()); }
-    CString Mid(int start, int n) const {
-        if (start < 0 || (size_t)start > m_s.size() || n <= 0) return CString();
-        return CString(m_s.substr((size_t)start, (size_t)n).c_str());
+    CString() : m_pchData(0) { Assign("", 0); }
+    CString(const char* s) : m_pchData(0) { Assign(s, s ? strlen(s) : 0); }
+    CString(const char* s, int n) : m_pchData(0) { Assign(s, (size_t)(n > 0 ? n : 0)); }
+    CString(const CString& o) : m_pchData(0) { Assign(o.m_pchData, strlen(o.m_pchData)); }
+    CString(char c, int n) : m_pchData(0) {
+        size_t k = (size_t)(n > 0 ? n : 0);
+        char* q = (char*)malloc(k + 1);
+        memset(q, c, k); q[k] = 0;
+        m_pchData = q;
     }
-    CString Left(int n) const            { return Mid(0, n); }
-    CString Right(int n) const           { int L = GetLength(); return n >= L ? *this : Mid(L - n); }
+    ~CString() { free(m_pchData); }
 
-    void MakeUpper() { for (size_t i = 0; i < m_s.size(); i++) m_s[i] = (char)toupper((unsigned char)m_s[i]); }
-    void MakeLower() { for (size_t i = 0; i < m_s.size(); i++) m_s[i] = (char)tolower((unsigned char)m_s[i]); }
-    void TrimRight()  { while (!m_s.empty() && isspace((unsigned char)m_s[m_s.size()-1])) m_s.erase(m_s.size()-1); }
-    void TrimLeft()   { size_t i = 0; while (i < m_s.size() && isspace((unsigned char)m_s[i])) i++; m_s.erase(0, i); }
+    CString& operator=(const CString& o) {
+        if (this != &o) Assign(o.m_pchData, strlen(o.m_pchData));
+        return *this;
+    }
+    CString& operator=(const char* s) { Assign(s, s ? strlen(s) : 0); return *this; }
+    CString& operator=(char c)        { char b[2]; b[0] = c; b[1] = 0; Assign(b, 1); return *this; }
+
+    operator const char*() const { return m_pchData; }
+
+    int GetLength() const       { return (int)strlen(m_pchData); }
+    BOOL IsEmpty() const        { return m_pchData[0] == 0 ? TRUE : FALSE; }
+    void Empty()                { Assign("", 0); }
+    // Index GetLength() yields the NUL, as MFC does - the engine scans that way.
+    char GetAt(int i) const     { int L = GetLength(); return (i >= 0 && i <= L) ? m_pchData[i] : 0; }
+    char operator[](int i) const { return GetAt(i); }
+    void SetAt(int i, char c)   { if (i >= 0 && i < GetLength()) m_pchData[i] = c; }
+
+    CString& operator+=(const char* s) {
+        if (s && *s) {
+            size_t a = strlen(m_pchData), b = strlen(s);
+            char* q = (char*)malloc(a + b + 1);
+            memcpy(q, m_pchData, a); memcpy(q + a, s, b); q[a + b] = 0;
+            free(m_pchData); m_pchData = q;
+        }
+        return *this;
+    }
+    CString& operator+=(const CString& o) { return operator+=(o.m_pchData); }
+    CString& operator+=(char c) { char b[2]; b[0] = c; b[1] = 0; return operator+=(b); }
+
+    int Compare(const char* s) const       { return strcmp(m_pchData, s ? s : ""); }
+    int CompareNoCase(const char* s) const { return strcasecmp(m_pchData, s ? s : ""); }
+
+    int Find(char c) const        { const char* p = strchr(m_pchData, c); return p ? (int)(p - m_pchData) : -1; }
+    int Find(const char* s) const { const char* p = s ? strstr(m_pchData, s) : 0; return p ? (int)(p - m_pchData) : -1; }
+    int ReverseFind(char c) const { const char* p = strrchr(m_pchData, c); return p ? (int)(p - m_pchData) : -1; }
+
+    CString Mid(int start, int n) const {
+        int L = GetLength();
+        if (start < 0 || start > L || n <= 0) return CString();
+        if (start + n > L) n = L - start;
+        return CString(m_pchData + start, n);
+    }
+    CString Mid(int start) const { int L = GetLength(); return Mid(start, L - start); }
+    CString Left(int n) const    { return Mid(0, n); }
+    CString Right(int n) const   { int L = GetLength(); return n >= L ? *this : Mid(L - n, n); }
+
+    void MakeUpper() { for (char* p = m_pchData; *p; p++) *p = (char)toupper((unsigned char)*p); }
+    void MakeLower() { for (char* p = m_pchData; *p; p++) *p = (char)tolower((unsigned char)*p); }
+    void TrimRight() { int L = GetLength(); while (L > 0 && isspace((unsigned char)m_pchData[L-1])) m_pchData[--L] = 0; }
+    void TrimLeft()  { char* p = m_pchData; while (*p && isspace((unsigned char)*p)) p++; if (p != m_pchData) Assign(p, strlen(p)); }
 
     void Format(const char* fmt, ...) {
         va_list ap; va_start(ap, fmt);
         char buf[2048];
         int n = vsnprintf(buf, sizeof(buf), fmt, ap);
         va_end(ap);
-        if (n >= 0 && (size_t)n < sizeof(buf)) { m_s.assign(buf, (size_t)n); return; }
-        // Long results are rare here but must not truncate silently.
+        if (n >= 0 && (size_t)n < sizeof(buf)) { Assign(buf, (size_t)n); return; }
         va_list ap2; va_start(ap2, fmt);
-        std::vector<char> big((size_t)(n > 0 ? n + 1 : 8192));
-        vsnprintf(&big[0], big.size(), fmt, ap2);
+        size_t need = (size_t)(n > 0 ? n + 1 : 8192);
+        char* big = (char*)malloc(need);
+        vsnprintf(big, need, fmt, ap2);
         va_end(ap2);
-        m_s.assign(&big[0]);
+        Assign(big, strlen(big));
+        free(big);
     }
 
-    // GetBuffer/ReleaseBuffer: the engine writes through these. The buffer must
-    // stay valid and writable until ReleaseBuffer, so the string is grown first.
+    // Hands back the live buffer grown to minLen. No separate scratch member (see
+    // the layout note), so the pointer is valid until the next mutation.
     char* GetBuffer(int minLen) {
-        if (minLen > 0 && (size_t)minLen > m_s.size()) m_s.resize((size_t)minLen, '\0');
-        m_buf = m_s;
-        m_buf.resize(m_buf.size() + 1, '\0');
-        return &m_buf[0];
+        int L = GetLength();
+        if (minLen > L) {
+            char* q = (char*)malloc((size_t)minLen + 1);
+            memcpy(q, m_pchData, (size_t)L);
+            memset(q + L, 0, (size_t)(minLen - L) + 1);
+            free(m_pchData); m_pchData = q;
+        }
+        return m_pchData;
     }
-    void ReleaseBuffer(int newLen = -1) {
-        if (newLen < 0) m_s.assign(m_buf.c_str());
-        else m_s.assign(m_buf.c_str(), (size_t)newLen);
-        m_buf.clear();
-    }
+    void ReleaseBuffer(int newLen = -1) { if (newLen >= 0) m_pchData[newLen] = 0; }
 
-    const std::string& Str() const { return m_s; }
+    // LoadString reads the .rc string table, which a Mach-O binary has no
+    // equivalent of. Returns FALSE and empties so callers take their not-found
+    // branch. textpose.cpp's LoadEmotionStrings depends on the string table, so the
+    // native emotion rules need those strings from data - the frozen textpose golden
+    // lists them.
+    BOOL LoadString(UINT) { Empty(); return FALSE; }
 
 private:
-    std::string m_s;
-    std::string m_buf;
+    void Assign(const char* s, size_t n) {
+        char* q = (char*)malloc(n + 1);
+        if (s && n) memcpy(q, s, n);
+        q[n] = 0;
+        free(m_pchData);
+        m_pchData = q;
+    }
+    char* m_pchData;   // THE ONLY MEMBER - see the class comment.
 };
 
 inline CString operator+(const CString& a, const CString& b) { CString r(a); r += b; return r; }
@@ -324,6 +398,54 @@ private:
     std::map<void*, void*> m_m;
 };
 
+class CMapPtrToWord {
+public:
+    CMapPtrToWord(int = 10) {}
+    BOOL Lookup(void* key, WORD& val) const {
+        std::map<void*, WORD>::const_iterator it = m_m.find(key);
+        if (it == m_m.end()) return FALSE;
+        val = it->second; return TRUE;
+    }
+    void SetAt(void* key, WORD val) { m_m[key] = val; }
+    BOOL RemoveKey(void* key)  { return m_m.erase(key) ? TRUE : FALSE; }
+    void RemoveAll()           { m_m.clear(); }
+    int GetCount() const       { return (int)m_m.size(); }
+private:
+    std::map<void*, WORD> m_m;
+};
+
+class CMapStringToString {
+public:
+    CMapStringToString(int = 10) {}
+    BOOL Lookup(const char* key, CString& val) const {
+        std::map<std::string, std::string>::const_iterator it = m_m.find(key ? key : "");
+        if (it == m_m.end()) return FALSE;
+        val = it->second.c_str(); return TRUE;
+    }
+    void SetAt(const char* key, const char* val) { m_m[key ? key : ""] = val ? val : ""; }
+    BOOL RemoveKey(const char* key) { return m_m.erase(key ? key : "") ? TRUE : FALSE; }
+    void RemoveAll()                { m_m.clear(); }
+    int GetCount() const            { return (int)m_m.size(); }
+private:
+    std::map<std::string, std::string> m_m;
+};
+
+class CMapWordToOb {
+public:
+    CMapWordToOb(int = 10) {}
+    BOOL Lookup(WORD key, CObject*& val) const {
+        std::map<WORD, CObject*>::const_iterator it = m_m.find(key);
+        if (it == m_m.end()) return FALSE;
+        val = it->second; return TRUE;
+    }
+    void SetAt(WORD key, CObject* val) { m_m[key] = val; }
+    BOOL RemoveKey(WORD key)  { return m_m.erase(key) ? TRUE : FALSE; }
+    void RemoveAll()          { m_m.clear(); }
+    int GetCount() const      { return (int)m_m.size(); }
+private:
+    std::map<WORD, CObject*> m_m;
+};
+
 class CMapStringToPtr {
 public:
     CMapStringToPtr(int = 10) {}
@@ -348,6 +470,26 @@ public:
     }
 private:
     std::map<std::string, void*> m_m;
+};
+
+// CTypedPtrMap<BASE, KEY, VALUE> - MFC's typed map wrapper, same shape as
+// CTypedPtrArray: the base supplies storage, the wrapper supplies the casts.
+template <class BASE, class KEY, class VALUE>
+class CTypedPtrMap : public BASE {
+public:
+    BOOL Lookup(KEY key, VALUE& val) const {
+        void* p = 0;
+        if (!BASE::Lookup(key, p)) return FALSE;
+        val = (VALUE)p;
+        return TRUE;
+    }
+    void SetAt(KEY key, VALUE val) { BASE::SetAt(key, (void*)val); }
+    BOOL RemoveKey(KEY key) { return BASE::RemoveKey(key); }
+    void GetNextAssoc(void*& pos, KEY& key, VALUE& val) const {
+        void* p = 0;
+        BASE::GetNextAssoc(pos, key, p);
+        val = (VALUE)p;
+    }
 };
 
 // ---------------------------------------------------------------------------

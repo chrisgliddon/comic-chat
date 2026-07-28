@@ -278,7 +278,7 @@ CBody *CAvatarComplex::GetBodyFromEmotion(CEmotion &emotion) {
 
 
 	intensityOfNearest = 2.0;
-	for (i = 0; i < nTorsos; i++) {
+	for (int i = 0; i < nTorsos; i++) {
 		int index = (m_lastTorso + 1 + i) % nTorsos;  // start search from index after last body used
 		if (bRec[index].emotion > 7) continue;
 		double thisAngle = fabs(subtract_angles(bRec[index].emotion, emotion.m_emotion));
@@ -473,7 +473,8 @@ void CAvatarComplex::SetNeutral() {
 }
 
 void CAvatarSimple::SetNeutral() {
-	CBody *body = GetBodyFromEmotion(CEmotion(0.0, 0.0)); // creates the only body that's known...
+	CEmotion emNeutral(0.0, 0.0);   // named: GetBodyFromEmotion takes a non-const ref,
+	CBody *body = GetBodyFromEmotion(emNeutral); // and a temporary cannot bind to one
 //	body->m_requested = FALSE;
 	UpdateBody(body);
 }

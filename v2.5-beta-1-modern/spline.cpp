@@ -314,7 +314,7 @@ void CSpline::Dash(DASHINFO &d) {
 }
 
 int dash_sample(DPOINT *p, void *arg) {
-	void DashSeg(POINT &thisPoint, DASHINFO &d);
+	void DashSeg(const POINT &thisPoint, DASHINFO &d);
 
 	DashSeg(dpoint_to_point(*p), *((DASHINFO *)arg));
 	return FALSE;  // so doesn't terminate early

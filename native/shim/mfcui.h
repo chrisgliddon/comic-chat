@@ -23,6 +23,7 @@
 #include "win32types.h"
 #include "mfcshim.h"
 #include "gdishim.h"
+#include "richedit.h"
 
 // --- message maps: declarations vanish -------------------------------------
 #define DECLARE_MESSAGE_MAP()
@@ -94,11 +95,158 @@
 #define INTERFACE_PART(cls, iid, part)
 #define AFX_MANAGE_STATE(p)
 
+// --- window styles, messages and box flags ---------------------------------
+// Values are the real Win32 ones. They appear in style arguments and message
+// comparisons inside headers the engine core includes; correct values cost
+// nothing and a wrong one would be a silent behavioural difference if any of this
+// is ever reached.
+#define WS_OVERLAPPED       0x00000000L
+#define WS_POPUP            0x80000000L
+#define WS_CHILD            0x40000000L
+#define WS_MINIMIZE         0x20000000L
+#define WS_VISIBLE          0x10000000L
+#define WS_DISABLED         0x08000000L
+#define WS_CLIPSIBLINGS     0x04000000L
+#define WS_CLIPCHILDREN     0x02000000L
+#define WS_MAXIMIZE         0x01000000L
+#define WS_BORDER           0x00800000L
+#define WS_DLGFRAME         0x00400000L
+#define WS_VSCROLL          0x00200000L
+#define WS_HSCROLL          0x00100000L
+#define WS_SYSMENU          0x00080000L
+#define WS_THICKFRAME       0x00040000L
+#define WS_GROUP            0x00020000L
+#define WS_TABSTOP          0x00010000L
+#define WS_CAPTION          (WS_BORDER | WS_DLGFRAME)
+#define WS_OVERLAPPEDWINDOW (WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_THICKFRAME|WS_MINIMIZEBOX|WS_MAXIMIZEBOX)
+#define WS_MINIMIZEBOX      0x00020000L
+#define WS_MAXIMIZEBOX      0x00010000L
+#define WS_EX_CLIENTEDGE    0x00000200L
+#define WS_EX_TOOLWINDOW    0x00000080L
+#define WS_EX_TOPMOST       0x00000008L
+
+#define ES_LEFT             0x0000L
+#define ES_MULTILINE        0x0004L
+#define ES_AUTOVSCROLL      0x0040L
+#define ES_AUTOHSCROLL      0x0080L
+#define ES_READONLY         0x0800L
+#define ES_WANTRETURN       0x1000L
+
+#define SW_HIDE             0
+#define SW_SHOWNORMAL       1
+#define SW_SHOW             5
+#define SW_SHOWNA           8
+#define SW_RESTORE          9
+
+#define MB_OK               0x00000000L
+#define MB_OKCANCEL         0x00000001L
+#define MB_YESNO            0x00000004L
+#define MB_ICONERROR        0x00000010L
+#define MB_ICONQUESTION     0x00000020L
+#define MB_ICONWARNING      0x00000030L
+#define MB_ICONINFORMATION  0x00000040L
+#define IDOK                1
+#define IDCANCEL            2
+#define IDYES               6
+#define IDNO                7
+
+#define WM_USER             0x0400
+#define WM_COMMAND          0x0111
+#define WM_NOTIFY           0x004E
+#define WM_TIMER            0x0113
+#define WM_PAINT            0x000F
+#define WM_SIZE             0x0005
+#define WM_CLOSE            0x0010
+#define WM_DESTROY          0x0002
+#define WM_SETFOCUS         0x0007
+#define WM_KILLFOCUS        0x0008
+#define WM_CHAR             0x0102
+#define WM_KEYDOWN          0x0100
+#define WM_LBUTTONDOWN      0x0201
+#define WM_RBUTTONDOWN      0x0204
+#define WM_MOUSEMOVE        0x0200
+#define WM_SETREDRAW        0x000B
+#define WM_GETDLGCODE       0x0087
+#define WM_VSCROLL          0x0115
+#define WM_HSCROLL          0x0114
+
+#define SWP_NOSIZE          0x0001
+#define SWP_NOMOVE          0x0002
+#define SWP_NOZORDER        0x0004
+#define SWP_NOACTIVATE      0x0010
+#define SWP_SHOWWINDOW      0x0040
+
+#define VK_RETURN           0x0D
+#define VK_ESCAPE           0x1B
+#define VK_TAB              0x09
+#define VK_UP               0x26
+#define VK_DOWN             0x28
+#define VK_LEFT             0x25
+#define VK_RIGHT            0x27
+#define VK_PRIOR            0x21
+#define VK_NEXT             0x22
+#define VK_SHIFT            0x10
+#define VK_CONTROL          0x11
+
+#define TRUE_WIN32          1
+
+typedef struct _oracle_charrange { LONG cpMin, cpMax; } ORACLE_CHARRANGE;
+typedef struct _findtextex {
+    ORACLE_CHARRANGE chrg;
+    LPCSTR lpstrText;
+    ORACLE_CHARRANGE chrgText;
+} FINDTEXTEX;
+#define EM_FINDTEXTEX   (WM_USER + 79)
+#define FR_DOWN         0x00000001
+#define FR_WHOLEWORD    0x00000002
+#define FR_MATCHCASE    0x00000004
+
 // --- the class hierarchy ---------------------------------------------------
 class CCmdTarget : public CObject {
 public:
     virtual ~CCmdTarget() {}
     void EnableAutomation() {}
+};
+
+// CCmdUI is the object passed to ON_UPDATE_COMMAND_UI handlers. Those handlers
+// are declared in headers the engine core reaches; none runs natively.
+class CDocument;   // CCreateContext holds one; declared in full further down.
+
+// CCommandLineInfo / CCreateContext / CToolTipCtrl: the remaining MFC framework
+// types named in engine headers. As above, declarations only.
+class CCommandLineInfo : public CObject {
+public:
+    BOOL m_bShowSplash, m_bRunEmbedded, m_bRunAutomated;
+    CString m_strFileName;
+    CCommandLineInfo() : m_bShowSplash(TRUE), m_bRunEmbedded(FALSE), m_bRunAutomated(FALSE) {}
+    virtual void ParseParam(LPCTSTR, BOOL, BOOL) {}
+};
+
+class CCreateContext {
+public:
+    CRuntimeClass* m_pNewViewClass;
+    CDocument* m_pCurrentDoc;
+    CCreateContext() : m_pNewViewClass(0), m_pCurrentDoc(0) {}
+};
+
+typedef struct tagTOOLINFO {
+    UINT cbSize, uFlags;
+    HWND hwnd;
+    UINT_PTR uId;
+    RECT rect;
+    HINSTANCE hinst;
+    LPSTR lpszText;
+    LPARAM lParam;
+} TOOLINFO, *LPTOOLINFO;
+
+class CCmdUI {
+public:
+    UINT m_nID;
+    CCmdUI() : m_nID(0) {}
+    void Enable(BOOL = TRUE) {}
+    void SetCheck(int = 1) {}
+    void SetRadio(BOOL = TRUE) {}
+    void SetText(LPCTSTR) {}
 };
 
 class CWnd : public CCmdTarget {
@@ -117,6 +265,7 @@ public:
     BOOL ShowWindow(int) { return TRUE; }
     void SetWindowText(LPCTSTR) {}
     int GetWindowText(LPTSTR, int) const { return 0; }
+    void GetWindowText(CString& s) const { s.Empty(); }
     CWnd* GetParent() const { return 0; }
     CWnd* GetDlgItem(int) const { return 0; }
     void SetFocus() {}
@@ -192,16 +341,34 @@ class CScrollView : public CView {};
 
 class CDocument : public CCmdTarget {
 public:
+    // m_strPathName is protected in MFC and chatdoc.h touches it directly, so it
+    // has to be a real member rather than hidden behind GetPathName().
+    CString m_strPathName;
+    CString m_strTitle;
     virtual ~CDocument() {}
+    virtual BOOL SaveModified() { return TRUE; }
+    virtual void OnCloseDocument() {}
     void SetModifiedFlag(BOOL = TRUE) {}
     void UpdateAllViews(CView*, LONG = 0, CObject* = 0) {}
-    CString GetPathName() const { return CString(); }
-    void SetTitle(LPCTSTR) {}
+    CString GetPathName() const { return m_strPathName; }
+    CString GetTitle() const { return m_strTitle; }
+    void SetTitle(LPCTSTR t) { m_strTitle = t ? t : ""; }
+    void SetPathName(LPCTSTR p, BOOL = TRUE) { m_strPathName = p ? p : ""; }
 };
+class COleServerItem;   // returned by COleServerDoc::GetEmbeddedItem below
 class COleDocument : public CDocument {};
-class COleServerDoc : public COleDocument {};
-class CDocObjectServerDoc : public COleServerDoc {};
-class CDocObjectServerItem : public CCmdTarget {};
+class COleServerDoc : public COleDocument {
+public:
+    // NOT virtual - matching MFC. chatdoc.h declares `CChatItem* GetEmbeddedItem()`
+    // which HIDES this rather than overriding it; making it virtual here turned
+    // that into a covariant-return override and required CChatItem to be complete,
+    // which it is not at that point. Only OnGetEmbeddedItem is virtual in MFC.
+    COleServerItem* GetEmbeddedItem() { return 0; }
+    virtual COleServerItem* OnGetEmbeddedItem() { return 0; }
+    virtual void NotifyChanged() {}
+    virtual void NotifySaved() {}
+    virtual void NotifyClosed() {}
+};
 class COleServerItem : public CCmdTarget {};
 
 class CWinApp : public CCmdTarget {
@@ -254,8 +421,21 @@ public:
     int SetItemData(int, DWORD) { return 0; }
     DWORD GetItemData(int) const { return 0; }
 };
+#define LVNI_ALL        0x0000
+#define LVNI_SELECTED   0x0002
+#define LVNI_FOCUSED    0x0001
+#define LVIS_SELECTED   0x0002
+#define LVIS_FOCUSED    0x0001
+
 class CListCtrl : public CWnd {
 public:
+    int GetNextItem(int, int) const { return -1; }
+    UINT GetItemState(int, UINT) const { return 0; }
+    BOOL SetItemState(int, UINT, UINT) { return TRUE; }
+    BOOL DeleteItem(int) { return TRUE; }
+    BOOL EnsureVisible(int, BOOL) { return TRUE; }
+    CString GetItemText(int, int) const { return CString(); }
+    BOOL SetItemText(int, int, LPCTSTR) { return TRUE; }
     int GetItemCount() const { return 0; }
     BOOL DeleteAllItems() { return TRUE; }
     int InsertItem(const void*) { return 0; }
@@ -263,22 +443,62 @@ public:
     BOOL SetItemData(int, DWORD) { return TRUE; }
 };
 class CTreeCtrl : public CWnd {};
+typedef struct tagACCEL { BYTE fVirt; WORD key, cmd; } ACCEL, *LPACCEL;
+struct AFX_CMDHANDLERINFO { void* pTarget; void* pmf; };
+
+class CToolBarCtrl : public CWnd {};
+
+class CToolTipCtrl : public CWnd {
+public:
+    BOOL Create(CWnd*, DWORD = 0) { return FALSE; }
+    BOOL AddTool(CWnd*, LPCTSTR, LPCRECT = 0, UINT_PTR = 0) { return FALSE; }
+    void Activate(BOOL) {}
+    BOOL GetToolInfo(TOOLINFO&, CWnd*, UINT_PTR = 0) const { return FALSE; }
+    void UpdateTipText(LPCTSTR, CWnd*, UINT_PTR = 0) {}
+};
 class CTabCtrl : public CWnd {};
 class CProgressCtrl : public CWnd {};
 class CSliderCtrl : public CWnd {};
+// CRichEditCtrl - format.cpp drives one to convert between RTF and plain text via
+// the clipboard. That path is Win32-specific in a way no stub can fake, so these
+// exist to compile the translation unit; the native app will need its own RTF
+// handling (or none - the comic view does not use rich text, only the text view
+// does).
 class CRichEditCtrl : public CWnd {
 public:
+    BOOL Create(DWORD, const RECT&, CWnd*, UINT) { return FALSE; }
     void SetSel(long, long) {}
+    void SetSel(ORACLE_CHARRANGE) {}
+    void GetSel(ORACLE_CHARRANGE&) const {}
+    BOOL GetSelectionCharFormat(CHARFORMAT&) const { return FALSE; }
+    BOOL SetSelectionCharFormat(CHARFORMAT&) { return FALSE; }
+    BOOL SetDefaultCharFormat(CHARFORMAT&) { return FALSE; }
+    BOOL SetParaFormat(PARAFORMAT&) { return FALSE; }
+    CString GetSelText() const { return CString(); }
+    long StreamIn(int, void*) { return 0; }
+    long StreamOut(int, void*) { return 0; }
     void ReplaceSel(LPCTSTR) {}
     long GetTextLength() const { return 0; }
+    void Copy() {}
+    void Paste() {}
+    void Clear() {}
+    long FindText(DWORD, void*) const { return -1; }
 };
-class CFileDialog : public CDialog {
+
+// CCommonDialog is MFC's base for the system dialogs; utils.h derives
+// CBrowseFolderDialog from it.
+class CCommonDialog : public CDialog {
+public:
+    CCommonDialog(CWnd* p = 0) : CDialog((UINT)0, p) {}
+};
+
+class CFileDialog : public CCommonDialog {
 public:
     CFileDialog(BOOL, LPCTSTR = 0, LPCTSTR = 0, DWORD = 0, LPCTSTR = 0, CWnd* = 0) {}
     CString GetPathName() const { return CString(); }
     CString GetFileName() const { return CString(); }
 };
-class CFontDialog : public CDialog {
+class CFontDialog : public CCommonDialog {
 public:
     CFontDialog() {}
     CFontDialog(LOGFONT*, DWORD = 0, CDC* = 0, CWnd* = 0) {}
@@ -290,6 +510,43 @@ public:
     UINT CheckMenuItem(UINT, UINT) { return 0; }
     UINT EnableMenuItem(UINT, UINT) { return 0; }
 };
+
+// --- OLE / automation -------------------------------------------------------
+// The native app drops ActiveX embedding entirely (bind*, oleobjct, chatitem,
+// chatsrv are not being ported), but chat.h declares a COleTemplateServer member
+// and the bind* headers derive from these, so the names must resolve for any
+// translation unit that reaches chat.h. Nothing here is ever constructed.
+class COleTemplateServer : public CCmdTarget {
+public:
+    void ConnectTemplate(REFCLSID, void*, BOOL) {}
+    void UpdateRegistry(int = 0) {}
+};
+class COleObjectFactory : public CCmdTarget {};
+class CDocTemplate : public CCmdTarget {};
+class CSingleDocTemplate : public CDocTemplate {
+public:
+    CSingleDocTemplate(UINT, CRuntimeClass*, CRuntimeClass*, CRuntimeClass*) {}
+};
+class CMultiDocTemplate : public CDocTemplate {
+public:
+    CMultiDocTemplate(UINT, CRuntimeClass*, CRuntimeClass*, CRuntimeClass*) {}
+};
+class COleDispatchDriver {};
+class CAsyncMonikerFile : public CObject {};
+class COleControl : public CWnd {};
+class COleClientItem : public CCmdTarget {};
+class COleDocObjectItem : public COleClientItem {};
+// CDocObjectServerDoc / CDocObjectServerItem / CDocObjectServer are NOT stubbed
+// here: the engine ships its own implementations in binddoc.h, binditem.h and
+// bindipfw.h, and defining them here too is a redefinition error.
+class COleIPFrameWnd : public CFrameWnd {};
+class COleDocIPFrameWnd : public COleIPFrameWnd {};
+
+inline BOOL AfxOleRegisterServerClass(REFCLSID, LPCTSTR, LPCTSTR, LPCTSTR) { return TRUE; }
+inline void AfxOleSetUserCtrl(BOOL) {}
+inline BOOL AfxOleCanExitApp() { return TRUE; }
+inline void AfxOleLockApp() {}
+inline void AfxOleUnlockApp() {}
 
 // --- sockets ---------------------------------------------------------------
 // The engine's own chatsock replaces most of this; CAsyncSocket appears only as a
@@ -308,10 +565,67 @@ public:
     void Close() {}
 };
 
+// --- Win32 API surface reached from headers --------------------------------
+// All stubs. These appear in dialog/UI headers that the engine core includes
+// transitively; none is on a code path the native build runs. Grouped here rather
+// than in win32types.h because they are UI-adjacent, not part of the type floor.
+#define IMAGE_ICON              1
+#define IMAGE_BITMAP            0
+#define DI_NORMAL               0x0003
+#define LR_DEFAULTCOLOR         0x0000
+#define LR_LOADFROMFILE         0x0010
+#define BIF_RETURNONLYFSDIRS    0x0001
+#define CF_SCREENFONTS          0x00000001
+#define CF_EFFECTS              0x00000100
+#define CF_INITTOLOGFONTSTRUCT  0x00000040
+#define SM_CXSCREEN             0
+#define SM_CYSCREEN             1
+
+typedef void* HKEY;
+typedef void* LPITEMIDLIST;
+typedef struct tagHELPINFO { UINT cbSize; int iContextType, iCtrlId; HANDLE hItemHandle; DWORD_PTR dwContextId; POINT MousePos; } HELPINFO, *LPHELPINFO;
+typedef struct tagBROWSEINFO {
+    HWND   hwndOwner;
+    LPITEMIDLIST pidlRoot;
+    LPSTR  pszDisplayName;
+    LPCSTR lpszTitle;
+    UINT   ulFlags;
+    void*  lpfn;
+    LPARAM lParam;
+    int    iImage;
+} BROWSEINFO, *LPBROWSEINFO;
+
+class CImageList : public CObject {
+public:
+    BOOL Create(int, int, UINT, int, int) { return FALSE; }
+    int  Add(CBitmap*, COLORREF) { return -1; }
+    HICON ExtractIcon(int) { return (HICON)0; }
+};
+
+inline HICON LoadIcon(HINSTANCE, LPCTSTR) { return (HICON)0; }
+inline HANDLE LoadImage(HINSTANCE, LPCTSTR, UINT, int, int, UINT) { return (HANDLE)0; }
+inline BOOL DestroyIcon(HICON) { return TRUE; }
+inline BOOL DrawIcon(HDC, int, int, HICON) { return TRUE; }
+inline BOOL DrawIconEx(HDC, int, int, HICON, int, int, UINT, HBRUSH, UINT) { return TRUE; }
+inline int  GetSystemMetrics(int) { return 0; }
+inline DWORD GetTickCount() { return 0; }
+inline LPITEMIDLIST SHBrowseForFolder(LPBROWSEINFO) { return (LPITEMIDLIST)0; }
+inline BOOL SHGetPathFromIDList(LPITEMIDLIST, LPSTR) { return FALSE; }
+
 // --- free functions --------------------------------------------------------
 inline CWinApp* AfxGetApp() { return 0; }
 inline CWnd* AfxGetMainWnd() { return 0; }
 inline int AfxMessageBox(LPCTSTR, UINT = 0, UINT = 0) { return 0; }
+// Global ::SendMessage, distinct from CWnd::SendMessage. format.cpp posts rich-edit
+// messages through it.
+inline LRESULT SendMessage(HWND, UINT, WPARAM = 0, LPARAM = 0) { return 0; }
+// CharNext / IsDBCSLeadByte: the MBCS text-walking pair. Single-byte behaviour here,
+// matching the CP-1252 build the oracle covers; the CJK double-byte path is the
+// deferred Tier-1 #13 scope question, and getting it wrong silently would corrupt
+// multibyte text - so this advances one byte and reports no lead bytes rather than
+// pretending to handle DBCS.
+inline LPSTR CharNext(LPCSTR p) { return (LPSTR)(p && *p ? p + 1 : p); }
+inline BOOL IsDBCSLeadByte(BYTE) { return FALSE; }
 inline BOOL AfxOleInit() { return TRUE; }
 inline void AfxEnableControlContainer() {}
 inline BOOL AfxWinInit(HINSTANCE, HINSTANCE, LPTSTR, int) { return TRUE; }

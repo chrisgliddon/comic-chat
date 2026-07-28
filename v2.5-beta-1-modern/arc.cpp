@@ -122,7 +122,7 @@ void DrawArc2(CDC *dc, POINT& start, POINT& end, int altitude) {
 	ScanArc(dc, absCenter, start, end, (altitude > 0));
 }
 
-void DashSeg(POINT &thisPoint, DASHINFO &d);
+void DashSeg(const POINT &thisPoint, DASHINFO &d);
 #define SAMPLESTEP .02  // in radians, the maximum allowed linear step along the arc to be dashed
 
 // like DrawArc2, but creates arc-formed dashes
