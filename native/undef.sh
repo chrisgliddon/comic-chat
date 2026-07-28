@@ -9,5 +9,5 @@ ROOT=$(cd "$(dirname "$0")/.." && pwd)
 cd "$ROOT"
 . ./native/units.sh
 clang++ -o /dev/null $(native_objs) native/build/oracleharness.o \
-    native/shim/msvcrand.cpp -lz 2>&1 |
+    native/shim/msvcrand.cpp -lz $NATIVE_FRAMEWORKS 2>&1 |
   grep '^  "' | sed 's/^  "//;s/", referenced.*//' | sort -u

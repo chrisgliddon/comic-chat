@@ -57,6 +57,11 @@ bool GlyphSelectStock();
 // encode its advance. A table starting at 0x20 cannot reproduce that.
 int GlyphAdvance(unsigned char ch);
 
+// CP-1252 byte -> Unicode scalar, for DRAWING only. Measurement never needs it (the table
+// is indexed by byte), but Core Text does: the 0x80-0x9F block holds the smart quotes,
+// dashes and euro, and treating it as Latin-1 renders them as control characters.
+unsigned short GlyphCp1252ToUnicode(unsigned char ch);
+
 // Sums advances over len bytes in the active font. Aborts if any byte is unpinned,
 // rather than skipping it - a silently short string is a wrong line break.
 long GlyphTextWidth(const char* s, int len);

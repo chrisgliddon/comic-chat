@@ -18,13 +18,16 @@ NATIVE_UNITS="avbdump posedump ojson oracleseed
               dib avbfile avatar backdrop avatario textpose
               format fonts balloon panel pageview
               chatdoc histent protsupp userinfo doskey urlutil sjis2jis
-              ircproto ircsock query ccommon status"
+              ircproto ircsock query ccommon status
+              render"
 
 # Entry points, each linked against the set above.
 #   oracleharness -> native/build/harness   (corpus replay + every --dump mode)
 #   avbmain       -> native/build/avbdump
 #   posemain      -> native/build/posedump
 #   glyphmain     -> native/build/glyphcheck (standalone: needs no engine object)
+
+NATIVE_FRAMEWORKS="-framework ApplicationServices -framework CoreText -framework CoreFoundation"
 
 NATIVE_CXXFLAGS="-std=c++14 -O1 -w -Wno-error=non-pod-varargs -fms-extensions -DORACLE_HARNESS -I native/shim -I artifacts/inc"
 
@@ -34,6 +37,8 @@ native_stage() {
     for c in avbmain posemain glyphmain nativeglue nativeapp; do
         ln -sf "$PWD/native/$c.cpp" "native/stage/$c.cpp"
     done
+    ln -sf "$PWD/native/render.cpp" "native/stage/render.cpp"
+    ln -sf "$PWD/native/render.h"   "native/stage/render.h"
     for c in glyphtable glyphtable_cdc stringtable; do
         ln -sf "$PWD/native/shim/$c.cpp" "native/stage/$c.cpp"
     done

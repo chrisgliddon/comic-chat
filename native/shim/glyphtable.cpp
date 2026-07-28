@@ -309,6 +309,13 @@ bool GlyphSelectStock() {
     return false;
 }
 
+unsigned short GlyphCp1252ToUnicode(unsigned char ch) {
+    // Shares the table with winnls.h's MultiByteToWideChar so the two can never disagree
+    // about what a byte means - one converting text and the other drawing it.
+    return (ch >= 0x80 && ch <= 0x9F) ? (unsigned short)kCp1252High[ch - 0x80]
+                                      : (unsigned short)ch;
+}
+
 int GlyphAdvance(unsigned char ch) {
     if (!g_loaded || g_active < 0) return -1;
     return g_fonts[(size_t)g_active].advance[ch];

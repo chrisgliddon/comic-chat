@@ -25,7 +25,7 @@ cd "$ROOT"
 OBJS="$(native_objs) native/build/oracleharness.o"
 
 # 1. The authoritative list, demangled.
-clang++ -o /dev/null $OBJS native/shim/msvcrand.cpp -lz 2>&1 |
+clang++ -o /dev/null $OBJS native/shim/msvcrand.cpp -lz $NATIVE_FRAMEWORKS 2>&1 |
   grep '^  "' | sed 's/^  "//;s/", referenced.*//' | sort -u > /tmp/undef-demangled.txt
 
 # 2. Mangled undefined symbols from the same objects, to recover the spelling.

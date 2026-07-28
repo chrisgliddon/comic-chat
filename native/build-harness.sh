@@ -19,6 +19,6 @@ native_compile $NATIVE_UNITS oracleharness || exit 1
 clang++ -c -std=c++14 -O1 -w -o native/build/uistubs.o native/uistubs.cpp
 
 clang++ -o native/build/harness $(native_objs) native/build/oracleharness.o \
-    native/build/uistubs.o native/shim/msvcrand.cpp -lz
+    native/build/uistubs.o native/shim/msvcrand.cpp -lz $NATIVE_FRAMEWORKS
 
 echo "built native/build/harness"

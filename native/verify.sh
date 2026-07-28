@@ -46,13 +46,13 @@ native_compile $NATIVE_UNITS avbmain posemain glyphmain || exit 1
 clang++ -c -std=c++14 -O1 -w -o "$BUILD/uistubs.o" native/uistubs.cpp
 
 # One object set, several entry points.
-clang++ -o "$BUILD/avbdump"  $(native_objs) "$BUILD/avbmain.o"  "$BUILD/uistubs.o" native/shim/msvcrand.cpp -lz
-clang++ -o "$BUILD/posedump" $(native_objs) "$BUILD/posemain.o" "$BUILD/uistubs.o" native/shim/msvcrand.cpp -lz
+clang++ -o "$BUILD/avbdump"  $(native_objs) "$BUILD/avbmain.o"  "$BUILD/uistubs.o" native/shim/msvcrand.cpp -lz $NATIVE_FRAMEWORKS
+clang++ -o "$BUILD/posedump" $(native_objs) "$BUILD/posemain.o" "$BUILD/uistubs.o" native/shim/msvcrand.cpp -lz $NATIVE_FRAMEWORKS
 
 # glyphcheck stays standalone: it exercises the measurement layer through the CDC API and
 # needs no engine object, so a failure there cannot be blamed on the engine.
 clang++ -o "$BUILD/glyphcheck" "$BUILD/glyphmain.o" "$BUILD/glyphtable.o" \
-    "$BUILD/glyphtable_cdc.o" "$BUILD/ojson.o" native/shim/msvcrand.cpp
+    "$BUILD/glyphtable_cdc.o" "$BUILD/ojson.o" native/shim/msvcrand.cpp $NATIVE_FRAMEWORKS
 "$BUILD/glyphcheck" oracle/glyphs/glyphs.json
 
 rm -rf "$OUT"
