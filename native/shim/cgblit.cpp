@@ -217,7 +217,7 @@ int StretchDIBits(HDC hdc, int xDst, int yDst, int wDst, int hDst,
         //   overwrites those pixels with the drawing itself.
         //
         // So paint it, AND remember it as the pending mask for the SRCAND that may follow.
-        PaintWhereBlack(ctx, src, xDst, yDst, wDst, hDst, dc->m_nDcMapMode == MM_TEXT);
+        PaintWhereBlack(ctx, src, xDst, yDst, wDst, hDst, dc->m_yDown != FALSE);
 
         dc->m_pendMaskBits = bits;
         dc->m_pendMaskInfo = bmi;
@@ -241,6 +241,6 @@ int StretchDIBits(HDC hdc, int xDst, int yDst, int wDst, int hDst,
     // SRCCOPY replaces the destination, so nothing in the source is transparent. The mask pair
     // (MERGEPAINT then SRCAND) is the only path that carries transparency.
     Composite(ctx, src, maskPtr, xDst, yDst, wDst, hDst, rop == SRCCOPY,
-              dc->m_nDcMapMode == MM_TEXT);
+              dc->m_yDown != FALSE);
     return src.h;
 }

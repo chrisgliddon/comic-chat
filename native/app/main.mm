@@ -95,6 +95,86 @@
 @end
 
 // ---------------------------------------------------------------------------
+// EngineWindowView - hosts one of the ENGINE's own CWnd-derived windows.
+//
+// This is the whole point of the message map: the pane below is CBodyCam, and every pixel it
+// draws and every emotion it picks comes from bodycam.cpp. This view does not know what a
+// bulls-eye is. It supplies a surface, a size, and events, in the shapes Windows would have
+// delivered them - and that is all a host is for.
+//
+// The same class will carry the member list and the say bar once memblst.cpp and saywnd.cpp
+// compile, which is why it takes a bare CWnd* rather than anything bodycam-specific.
+// ---------------------------------------------------------------------------
+@interface EngineWindowView : NSView
+@property (assign) NativePane pane;
+@end
+
+@implementation EngineWindowView
+
+- (BOOL)isOpaque { return YES; }
+
+// NOT flipped, even though the engine's client coordinates run y-downward: the paint seam
+// installs that flip itself, over a bottom-up context. Asking AppKit for a flipped view as
+// well would apply it twice and mirror everything - the same trap that put the self-view's
+// head below its feet.
+- (BOOL)isFlipped { return NO; }
+
+// Client coordinates: origin top-left, y downward.
+- (NSPoint)clientPoint:(NSEvent*)e {
+    NSPoint p = [self convertPoint:[e locationInWindow] fromView:nil];
+    return NSMakePoint(p.x, self.bounds.size.height - p.y);
+}
+
+- (void)drawRect:(NSRect)dirty {
+    (void)dirty;
+    if (!self.pane) return;
+    CGContextRef ctx = (CGContextRef)[[NSGraphicsContext currentContext] CGContext];
+    NativePanePaint(self.pane, ctx,
+                    (int)self.bounds.size.width, (int)self.bounds.size.height);
+}
+
+- (void)setFrameSize:(NSSize)newSize {
+    [super setFrameSize:newSize];
+    if (!self.pane) return;
+    NativePaneResize(self.pane, (int)newSize.width, (int)newSize.height);
+    [self setNeedsDisplay:YES];
+}
+
+- (BOOL)acceptsFirstResponder { return YES; }
+
+- (BOOL)becomeFirstResponder {
+    NativePaneSetFocus(self.pane);
+    [self setNeedsDisplay:YES];
+    return YES;
+}
+
+- (void)mouseDown:(NSEvent*)e {
+    if (!self.pane) return;
+    [[self window] makeFirstResponder:self];
+    NSPoint p = [self clientPoint:e];
+    NativePaneMouseDown(self.pane, (int)p.x, (int)p.y, (int)[e clickCount]);
+    [self setNeedsDisplay:YES];
+}
+
+// Dragging is what actually drives the emotion wheel: the handler converts the position to an
+// emotion and re-poses the character live while the button is held.
+- (void)mouseDragged:(NSEvent*)e {
+    if (!self.pane) return;
+    NSPoint p = [self clientPoint:e];
+    NativePaneMouseDrag(self.pane, (int)p.x, (int)p.y);
+    [self setNeedsDisplay:YES];
+}
+
+- (void)mouseUp:(NSEvent*)e {
+    if (!self.pane) return;
+    NSPoint p = [self clientPoint:e];
+    NativePaneMouseUp(self.pane, (int)p.x, (int)p.y);
+    [self setNeedsDisplay:YES];
+}
+
+@end
+
+// ---------------------------------------------------------------------------
 // Window controller: comic view above, say line below.
 // ---------------------------------------------------------------------------
 @interface ChatWindowController : NSObject <NSTextFieldDelegate>
@@ -107,6 +187,7 @@
 @property (strong) NSTextField*  roomField;
 @property (strong) NSButton*     connectButton;
 @property (strong) NSTextField*  statusLabel;
+@property (strong) EngineWindowView* selfView;
 @property (assign) unsigned short selfAvatar;
 @property (strong) NSString* channel;
 @property (assign) int lastPageCount;
@@ -173,7 +254,11 @@
     self = [super init];
     if (!self) return nil;
 
-    NSRect frame = NSMakeRect(0, 0, 700, 640);
+    // Wider than the comic alone needs, because the original's layout is a comic pane with a
+    // column beside it: participants above, the self-view and emotion wheel below. See the
+    // 1996 screenshots in docs. The self-view is live; the participant list follows once
+    // memblst.cpp compiles.
+    NSRect frame = NSMakeRect(0, 0, 940, 640);
     self.window = [[NSWindow alloc]
         initWithContentRect:frame
                   styleMask:(NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
@@ -226,7 +311,7 @@
     label(@"Room:", 356, 40);
     self.roomField = field(envChan ? @(envChan) : @"#comicchat", 398, 130);
 
-    self.connectButton = [[NSButton alloc] initWithFrame:NSMakeRect(534, barY - 2, 92, 26)];
+    self.connectButton = [[NSButton alloc] initWithFrame:NSMakeRect(538, barY - 2, 92, 26)];
     [self.connectButton setTitle:@"Connect"];
     [self.connectButton setBezelStyle:NSBezelStyleRounded];
     [self.connectButton setTarget:self];
@@ -235,26 +320,47 @@
     [content addSubview:self.connectButton];
 
     self.statusLabel = [NSTextField labelWithString:@"offline"];
-    [self.statusLabel setFrame:NSMakeRect(630, barY + 4, 64, 18)];
+    [self.statusLabel setFrame:NSMakeRect(636, barY + 4, 120, 18)];
     [self.statusLabel setFont:[NSFont systemFontOfSize:11]];
     [self.statusLabel setTextColor:[NSColor secondaryLabelColor]];
     [self.statusLabel setAutoresizingMask:(NSViewMinYMargin | NSViewMinXMargin)];
     [content addSubview:self.statusLabel];
 
-    self.sayField = [[NSTextField alloc] initWithFrame:NSMakeRect(10, 10, 680, 26)];
+    const CGFloat kSideWidth = 230;          // the right column
+    const CGFloat kComicWidth = 940 - kSideWidth - 26;
+
+    self.sayField = [[NSTextField alloc] initWithFrame:NSMakeRect(10, 10, kComicWidth, 26)];
     [self.sayField setPlaceholderString:@"Say something…"];
     [self.sayField setDelegate:self];
     [self.sayField setAutoresizingMask:NSViewWidthSizable];
     [content addSubview:self.sayField];
 
-    self.scroll = [[NSScrollView alloc] initWithFrame:NSMakeRect(10, 46, 680, 548)];
+    self.scroll = [[NSScrollView alloc] initWithFrame:NSMakeRect(10, 46, kComicWidth, 548)];
     [self.scroll setHasVerticalScroller:YES];
     [self.scroll setAutoresizingMask:(NSViewWidthSizable | NSViewHeightSizable)];
     [self.scroll setBorderType:NSBezelBorder];
 
-    self.comic = [[ComicView alloc] initWithFrame:NSMakeRect(0, 0, 660, 560)];
+    self.comic = [[ComicView alloc] initWithFrame:NSMakeRect(0, 0, kComicWidth - 20, 560)];
     [self.scroll setDocumentView:self.comic];
     [content addSubview:self.scroll];
+
+    // The SELF-VIEW, which is the engine's CBodyCam. Attached rather than constructed here:
+    // the session owns it, because the engine reaches it through GetBodyCam() off the document
+    // and re-poses it whenever the local avatar's expression changes.
+    CGFloat sideX = 940 - kSideWidth - 10;
+    self.selfView = [[EngineWindowView alloc]
+                        initWithFrame:NSMakeRect(sideX, 46, kSideWidth, 548)];
+    [self.selfView setAutoresizingMask:(NSViewMinXMargin | NSViewHeightSizable)];
+    NativePane cam = NativePaneSelfView();
+    if (cam) {
+        // The hostView is what the invalidation hook is called back with, so the engine can
+        // ask for a repaint from inside its own code - RefreshBody does exactly that.
+        NativePaneAttach(cam, (__bridge void*)self.selfView, (int)kSideWidth, 548);
+        [self.selfView setPane:cam];
+        // Resize before the first paint: the wheel's geometry is cached from the client width.
+        NativePaneResize(cam, (int)kSideWidth, 548);
+    }
+    [content addSubview:self.selfView];
 
     [self.window makeFirstResponder:self.sayField];
     if (envSrv && envNick && envChan)
@@ -328,6 +434,39 @@ static const char* FindTreeDir(void) {
     return ".";
 }
 
+// Routes a CWnd's InvalidateRect to the NSView it was attached with. The engine calls it from
+// inside its own code - CBodyCam::RefreshBody asks for a redraw after an expression changes -
+// so without this the self-view would only update when something else happened to repaint it.
+static void InvalidateHostView(void* hostView) {
+    if (!hostView) return;
+    // __bridge, not a transfer: the view is owned by its superview, and the engine only ever
+    // holds this pointer to call back through. Taking ownership here would over-release it.
+    NSView* v = (__bridge NSView*)hostView;
+    [v setNeedsDisplay:YES];
+}
+
+// Writes the window's contents to a PNG and quits, when COMIC_CHAT_SNAPSHOT names a file.
+//
+// This exists so the app's LAYOUT can be checked without a screen capture: it renders the
+// window's own view hierarchy offscreen, so it does not depend on the app being frontmost,
+// does not photograph anything else that happens to be on the display, and works headlessly.
+// The alternative - capturing the screen and hoping the right window is in front - produced
+// two screenshots of an unrelated browser before this existed.
+- (void)snapshotTo:(NSString*)path {
+    NSView* v = [self.controller.window contentView];
+    NSRect r = [v bounds];
+    NSBitmapImageRep* rep = [v bitmapImageRepForCachingDisplayInRect:r];
+    if (!rep) { [NSApp terminate:nil]; return; }
+    [v cacheDisplayInRect:r toBitmapImageRep:rep];
+    NSData* png = [rep representationUsingType:NSBitmapImageFileTypePNG properties:@{}];
+    if ([png writeToFile:path atomically:YES])
+        fprintf(stderr, "snapshot: wrote %s (%.0fx%.0f)\n",
+                [path UTF8String], r.size.width, r.size.height);
+    else
+        fprintf(stderr, "snapshot: could not write %s\n", [path UTF8String]);
+    [NSApp terminate:nil];
+}
+
 - (void)applicationDidFinishLaunching:(NSNotification*)note {
     const char* tree = FindTreeDir();
 
@@ -342,6 +481,10 @@ static const char* FindTreeDir(void) {
         return;
     }
 
+    // Before the window: the controller attaches the self-view during init, and the engine can
+    // ask for a repaint as soon as the local avatar is set.
+    NativeSetInvalidateHook(InvalidateHostView);
+
     self.controller = [[ChatWindowController alloc] init];
 
     // Two speakers so the panel logic has someone to talk to; the real participant list
@@ -354,6 +497,22 @@ static const char* FindTreeDir(void) {
     [self.controller.window makeKeyAndOrderFront:nil];
     [NSApp activateIgnoringOtherApps:YES];
 
+    const char* snap = getenv("COMIC_CHAT_SNAPSHOT");
+    if (snap) {
+        // Two lines of local dialogue, so the snapshot shows the comic pane doing its job. An
+        // empty pane would confirm only that the window opened. These go through the same
+        // ProcessLine path as a real message, so the panels, poses and balloons are the real
+        // thing - just without a server.
+        NativeSessionSay(me, "Hello there! How are you?");
+        NativeSessionSay(NativeSessionAddSpeaker("anna", "anna"),
+                         "I'm doing great, thanks for asking!");
+        [self.controller refreshComic];
+        // A short delay so the first layout and paint have happened, and so an auto-connect
+        // has a chance to report its status in the bar.
+        [self performSelector:@selector(snapshotTo:)
+                   withObject:[NSString stringWithUTF8String:snap]
+                   afterDelay:1.5];
+    }
 }
 
 - (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication*)app { return YES; }

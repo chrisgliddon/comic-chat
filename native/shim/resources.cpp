@@ -131,7 +131,7 @@ bool ResourceLoadManifest() {
     return true;
 }
 
-int ResourceCount() { return (int)g_entries.size(); }
+int ResourceManifestCount() { return (int)g_entries.size(); }
 
 // --- the Win32 API ---------------------------------------------------------
 // HRSRC is the Entry*, and HGLOBAL is the same pointer: there is no separate "loaded"

@@ -267,13 +267,12 @@ BOOL CDC::TextOut(int x, int y, LPCTSTR s, int len) {
     // drawn text lands exactly where the engine's own measurement said it would. Core Text
     // supplies outlines only. See native/render.cpp for the same reasoning.
     //
-    // MM_TEXT means this DC belongs to a WINDOW: client pixels with y positive downward and a
-    // flipped CTM (NativeWndPaint). MM_TWIPS means engine page space, y negative downward and
-    // no flip. Only the text path can tell the difference - see NativeDrawPinnedRun - because
-    // the baseline sits below the cell top in whichever direction "below" happens to be.
+    // m_yDown says which way "below" runs in this DC's context, which the text path is the
+    // only one that has to care about: the baseline sits tmAscent below the cell top, and that
+    // is a subtraction in page space and an addition in a window. See NativeDrawPinnedRun.
     NativeDrawPinnedRun((CGContextRef)m_cgCtx, s, len,
                         (int)LX(this, x), (int)LY(this, y), m_textColor,
-                        m_nDcMapMode == MM_TEXT);
+                        m_yDown != FALSE);
     return TRUE;
 }
 

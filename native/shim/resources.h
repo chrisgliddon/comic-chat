@@ -32,6 +32,10 @@ void ResourceSetRoot(const char* dir);
 bool ResourceLoadManifest();
 
 // How many resources the manifest holds. For diagnostics.
-int ResourceCount();
+//
+// NOT ResourceCount: that name is a typedef in Carbon's CarbonCore/Resources.h, which arrives
+// through ApplicationServices in any translation unit that also draws. The collision only
+// appears in those units, so it is worth avoiding by name rather than by include order.
+int ResourceManifestCount();
 
 #endif // NATIVE_SHIM_RESOURCES_H

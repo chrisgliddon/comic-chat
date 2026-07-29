@@ -186,6 +186,9 @@ CBitmap* CDC::SelectObject(CBitmap* p) {
     }
     m_pBitmap = p;
     m_cgCtx = (void*)s->ctx;
+    // Surfaces are created with the flip already installed (NewSurface), because the engine
+    // addresses them in client coordinates.
+    m_yDown = TRUE;
     return prev;
 }
 
@@ -253,7 +256,7 @@ BOOL CDC::BitBlt(int x, int y, int w, int h, CDC* pSrc, int xSrc, int ySrc, DWOR
         fprintf(stderr, "cgsurface: BitBlt with rop 0x%08lX treated as SRCCOPY\n",
                 (unsigned long)rop);
 
-    NativeDrawImage((CGContextRef)m_cgCtx, use, x, y, w, h, m_nDcMapMode == MM_TEXT);
+    NativeDrawImage((CGContextRef)m_cgCtx, use, x, y, w, h, m_yDown != FALSE);
     CFRelease(use);
     return TRUE;
 }
@@ -276,7 +279,7 @@ BOOL CDC::StretchBlt(int x, int y, int w, int h, CDC* pSrc,
         fprintf(stderr, "cgsurface: StretchBlt with rop 0x%08lX treated as SRCCOPY\n",
                 (unsigned long)rop);
 
-    NativeDrawImage((CGContextRef)m_cgCtx, use, x, y, w, h, m_nDcMapMode == MM_TEXT);
+    NativeDrawImage((CGContextRef)m_cgCtx, use, x, y, w, h, m_yDown != FALSE);
     CFRelease(use);
     return TRUE;
 }

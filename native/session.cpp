@@ -30,6 +30,7 @@ class CPageView;
 #include "ircsock.h"
 #include "defines.h"
 
+#include "render.h"        // NativeWndPaint, NativeSetFocusWnd - the pane seam below
 #include <CoreFoundation/CoreFoundation.h>
 
 #include <stdio.h>
@@ -361,9 +362,71 @@ void NativeSessionSendToChannel(const char* text) {
     GetIrcProto()->bChatSendToChannel(NULL, text, NULL, 1 /*BM_SAY*/);
 }
 
-CWnd* NativeSessionBodyCamWnd() {
+// --- panes -----------------------------------------------------------------
+// The Win32 side of the opaque handle in session.h. Everything below is a translation of a
+// host event into the message Windows would have sent.
+
+NativePane NativePaneSelfView(void) {
     // GetBodyCam() reads it off the document, which is where session start put it.
-    return g_doc ? (CWnd*)g_doc->m_bodyCam : NULL;
+    return g_doc ? (NativePane)(CWnd*)g_doc->m_bodyCam : NULL;
+}
+
+namespace {
+CWnd* PaneWnd(NativePane p) { return (CWnd*)p; }
+
+// Win32 packs a point into an LPARAM as two signed 16-bit halves.
+LPARAM PackPoint(int x, int y) {
+    return (LPARAM)(((DWORD)(WORD)(SHORT)y << 16) | (WORD)(SHORT)x);
+}
+LPARAM PackSize(int w, int h) {
+    return (LPARAM)(((DWORD)(WORD)h << 16) | (WORD)w);
+}
+}  // namespace
+
+void NativePaneAttach(NativePane pane, void* hostView, int w, int h) {
+    CWnd* p = PaneWnd(pane);
+    if (p) p->NativeAttach(hostView, w, h);
+}
+
+void NativePaneResize(NativePane pane, int w, int h) {
+    CWnd* p = PaneWnd(pane);
+    if (!p) return;
+    p->NativeSetClientSize(w, h);
+    p->SendMessage(WM_SIZE, 0, PackSize(w, h));
+}
+
+void NativePanePaint(NativePane pane, void* cgContext, int w, int h) {
+    CWnd* p = PaneWnd(pane);
+    if (p && cgContext) NativeWndPaint(p, (CGContextRef)cgContext, w, h);
+}
+
+void NativePaneMouseDown(NativePane pane, int x, int y, int clickCount) {
+    CWnd* p = PaneWnd(pane);
+    if (!p) return;
+    p->SendMessage(clickCount >= 2 ? WM_LBUTTONDBLCLK : WM_LBUTTONDOWN, 0, PackPoint(x, y));
+}
+
+void NativePaneMouseDrag(NativePane pane, int x, int y) {
+    CWnd* p = PaneWnd(pane);
+    // MK_LBUTTON, so the handler knows the button is still down - which is how the wheel
+    // tells a drag from a hover.
+    if (p) p->SendMessage(WM_MOUSEMOVE, 0x0001, PackPoint(x, y));
+}
+
+void NativePaneMouseUp(NativePane pane, int x, int y) {
+    CWnd* p = PaneWnd(pane);
+    if (p) p->SendMessage(WM_LBUTTONUP, 0, PackPoint(x, y));
+}
+
+void NativePaneMouseMove(NativePane pane, int x, int y) {
+    CWnd* p = PaneWnd(pane);
+    if (p) p->SendMessage(WM_MOUSEMOVE, 0, PackPoint(x, y));
+}
+
+void NativePaneSetFocus(NativePane pane) { NativeSetFocusWnd(PaneWnd(pane)); }
+
+bool NativePanePaintToPNG(NativePane pane, int w, int h, const char* path) {
+    return NativeWndPaintToPNG(PaneWnd(pane), w, h, path);
 }
 
 void NativeSessionRunLoopOnce(double seconds) {

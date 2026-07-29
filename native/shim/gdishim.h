@@ -598,7 +598,7 @@ public:
             m_winOrgX(0), m_winOrgY(0), m_pPen(0), m_pBrush(0),
             m_cgPath(0), m_curX(0), m_curY(0), m_hasCur(0),
             m_bkMode(2 /*TRANSPARENT*/), m_textColor(0), m_cgCtx(0),
-            m_pBitmap(0), m_isMemDC(FALSE),
+            m_pBitmap(0), m_isMemDC(FALSE), m_yDown(FALSE),
             m_pendMaskBits(0), m_pendMaskInfo(0),
             m_pendMaskX(0), m_pendMaskY(0), m_pendMaskW(0), m_pendMaskH(0) {
         // GetSafeHdc() has to hand back something the global GDI entry points can turn
@@ -654,6 +654,20 @@ public:
     // that is the handle MFC's callers restore.
     class CBitmap* m_pBitmap;
     BOOL m_isMemDC;
+
+    // Which way "down" runs in the CONTEXT this DC is bound to, and therefore whether a
+    // y-flip is already installed in its CTM:
+    //
+    //   FALSE  engine page space. y is NEGATIVE downward, no flip. This is what the renderer
+    //          binds for a comic page.
+    //   TRUE   a window or an offscreen surface: y POSITIVE downward, flip installed.
+    //
+    // It is a property of the BOUND CONTEXT, not of the map mode - which is the mistake that
+    // inverted every avatar in the comic panels. Map mode looked like a usable proxy because
+    // windows are MM_TEXT and pages are MM_TWIPS, but the renderer's body DC never sets a map
+    // mode at all, so it defaulted to MM_TEXT and claimed to be a window. Whoever binds
+    // m_cgCtx knows the answer; nothing else can infer it.
+    BOOL m_yDown;
 
     // Records the mode, because LPtoDP/DPtoLP now branch on it rather than being
     // identity. Returning a fixed value here would silently disable those conversions.

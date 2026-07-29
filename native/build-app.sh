@@ -54,12 +54,19 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
 </plist>
 PLIST
 
-# The engine's art and the two frozen data files. ComicArt is ~9 MB of .avb/.bgb assets;
-# copying rather than symlinking is the point - an installed app must not reach back into a
-# checkout that may move or disappear.
+# The engine's art and the frozen data files. ComicArt is ~9 MB of .avb/.bgb assets; copying
+# rather than symlinking is the point - an installed app must not reach back into a checkout
+# that may move or disappear.
 cp -R v2.5-beta-1-modern/ComicArt "$APP/Contents/Resources/ComicArt"
 cp oracle/glyphs/glyphs.json      "$APP/Contents/Resources/glyphs.json"
 cp native/resources/strings.json  "$APP/Contents/Resources/strings.json"
+
+# The BINARY resources: chat.rc's BITMAP/DIB/ICON declarations, plus the res/ directory they
+# name. Not decoration - the emotion wheel's eight face icons are DIB resources, and
+# CBodyCamIcons::GetIcon has no fallback for a missing one. bitmaps.json holds paths relative
+# to this directory, so res/ has to sit beside it.
+cp native/resources/bitmaps.json  "$APP/Contents/Resources/bitmaps.json"
+cp -R v2.5-beta-1-modern/res      "$APP/Contents/Resources/res"
 
 echo "built $APP"
 du -sh "$APP" | sed 's/^/  size: /'

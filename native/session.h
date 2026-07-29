@@ -76,14 +76,51 @@ void NativeSessionSendToChannel(const char* text);
 void NativeSessionRunLoopOnce(double seconds);
 
 // --- the original UI's own windows ------------------------------------------
-// The self-view and emotion-wheel pane, as CBodyCam - the engine's own CWnd. The host gives
-// it a size and sends it messages (NativeWndPaint, and the mouse); everything it draws and
-// every emotion it picks is bodycam.cpp's code, unchanged. Returns NULL before
-// NativeSessionStart.
 //
-// Deliberately typed as CWnd*: the host has no business knowing this is a CBodyCam, only that
-// it is a window that paints itself and handles clicks.
-class CWnd;
-CWnd* NativeSessionBodyCamWnd();
+// A PANE is one of the engine's own CWnd-derived windows, presented to the host as an opaque
+// handle. The host gives it a surface, a size and events; everything it draws and every
+// decision it makes is the original code's. The self-view pane is CBodyCam, so its character
+// rendering and its whole emotion wheel - hit-testing, the live re-pose while dragging, the
+// expression icons - are bodycam.cpp, unchanged.
+//
+// Opaque on purpose, and it is the same reason this header exists at all: the front end must
+// not need Win32 or MFC types. Handing out a CWnd* would drag the message map, CPoint, LPARAM
+// and the WM_ constants into Objective-C++, where <sys/param.h>'s MAX/MIN macros and AppKit's
+// own names start colliding with the engine's.
+typedef void* NativePane;
+
+// The self-view and emotion-wheel pane. NULL before NativeSessionStart.
+NativePane NativePaneSelfView(void);
+
+// hostView is passed back to the invalidation hook (see NativeSetInvalidateHook in render.h)
+// when the engine asks for a repaint from inside its own code, which CBodyCam::RefreshBody
+// does after an expression changes.
+void NativePaneAttach(NativePane pane, void* hostView, int w, int h);
+
+// A resize. Not bookkeeping: CBodyCam::OnSize recomputes the emotion wheel's radius and icon
+// positions from the client width and rebuilds its offscreen bitmap, so a paint without a
+// preceding resize uses the constructor's defaults.
+void NativePaneResize(NativePane pane, int w, int h);
+
+// Paints the pane into a Core Graphics context by sending it WM_PAINT. The context must be
+// bottom-up with no flip applied; the y-downward transform a window's client coordinates
+// assume is installed here.
+void NativePanePaint(NativePane pane, void* cgContext, int w, int h);
+
+// Mouse input, in CLIENT coordinates: origin top-left, y downward. clickCount 2 or more
+// becomes WM_LBUTTONDBLCLK, which is a distinct message in Win32 rather than a modifier on a
+// click. Dragging is what drives the emotion wheel.
+void NativePaneMouseDown(NativePane pane, int x, int y, int clickCount);
+void NativePaneMouseDrag(NativePane pane, int x, int y);
+void NativePaneMouseUp(NativePane pane, int x, int y);
+void NativePaneMouseMove(NativePane pane, int x, int y);
+
+// Paints a pane to a PNG at the given size. For exercising a pane headlessly, which is how
+// the self-view and the emotion wheel were verified before the app had a place to put them.
+bool NativePanePaintToPNG(NativePane pane, int w, int h, const char* path);
+
+// Keyboard focus. The engine tests ::GetFocus() == m_hWnd - CBodyCam::OnPaint draws its focus
+// rect on exactly that - so the host has to say which pane holds it.
+void NativePaneSetFocus(NativePane pane);
 
 #endif // NATIVE_SESSION_H

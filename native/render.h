@@ -101,6 +101,17 @@ static inline void NativeDrawImage(CGContextRef ctx, CGImageRef img,
 class CWnd;
 void NativeWndPaint(CWnd* wnd, CGContextRef ctx, int widthPx, int heightPx);
 
+// The host installs this so a CWnd's InvalidateRect can reach -[NSView setNeedsDisplay:].
+// A function pointer rather than a direct AppKit call, so the shim stays out of Objective-C
+// and the headless drivers link without AppKit. The argument is the hostView a CWnd was
+// attached with.
+void NativeSetInvalidateHook(void (*fn)(void* hostView));
+
+// Focus, as the engine sees it. CBodyCam::OnPaint draws a focus rect on `::GetFocus() ==
+// m_hWnd`, and its key handling only makes sense for the focused pane, so the host has to say
+// which window has it. Sends WM_KILLFOCUS and WM_SETFOCUS the way Windows would.
+void NativeSetFocusWnd(CWnd* wnd);
+
 // Convenience: paint a window to a PNG at a given size. Used to exercise a pane headlessly,
 // which is how the self-view was verified before the app shell had a place to put it.
 bool NativeWndPaintToPNG(CWnd* wnd, int widthPx, int heightPx, const char* path);

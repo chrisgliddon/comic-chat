@@ -109,21 +109,39 @@ int main(int argc, char** argv) {
     // the emotion wheel (see the screenshots in docs). CBodyCam caches the wheel's geometry
     // from the window width, so the size genuinely changes what it draws.
     if (outDir) {
-        CWnd* cam = NativeSessionBodyCamWnd();
+        NativePane cam = NativePaneSelfView();
         if (!cam) {
             printf("bodycam: none\n");
         } else {
-            cam->NativeAttach(0, 256, 400);
-            // WM_SIZE first: CacheBullSide computes the wheel's radius and icon positions from
+            NativePaneAttach(cam, 0, 256, 400);
+            // Resize first: CacheBullSide computes the wheel's radius and icon positions from
             // the client width, and OnPaint uses those. Painting without it draws the wheel at
             // whatever the constructor's defaults were.
-            cam->SendMessage(WM_SIZE, 0, (400 << 16) | 256);
+            NativePaneResize(cam, 256, 400);
             char path[1024];
             snprintf(path, sizeof(path), "%s/bodycam.png", outDir);
-            if (NativeWndPaintToPNG(cam, 256, 400, path))
+            if (NativePanePaintToPNG(cam, 256, 400, path))
                 printf("bodycam: wrote %s\n", path);
             else
                 printf("bodycam: paint failed\n");
+
+            // Now DRIVE the wheel, which is the only way to know the mouse half of the
+            // message map works end to end. A press inside the wheel makes CBodyCam
+            // hit-test the point, turn it into a CEmotion, and re-pose the character - so a
+            // second paint that differs from the first is the whole chain reporting success:
+            // dispatch, hit-test, emotion, pose selection, avatar reload, compositing.
+            //
+            // The wheel occupies the bottom m_bullSide pixels; its centre is at
+            // (width/2, height - m_bullSide/2). m_bullSide is min(width, 159), so for a
+            // 256-wide pane it is 159 and the centre is at (128, 320). Pushing well left of
+            // centre picks a different emotion from the neutral middle.
+            const int cx = 256 / 2, cy = 400 - 159 / 2;
+            NativePaneMouseDown(cam, cx - 55, cy, 1);
+            NativePaneMouseUp(cam, cx - 55, cy);
+
+            snprintf(path, sizeof(path), "%s/bodycam-clicked.png", outDir);
+            if (NativePanePaintToPNG(cam, 256, 400, path))
+                printf("bodycam: wrote %s (after a click left of centre)\n", path);
         }
     }
 

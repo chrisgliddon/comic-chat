@@ -39,30 +39,32 @@ void NativeWndPaint(CWnd* wnd, CGContextRef ctx, int widthPx, int heightPx) {
 // The DCs an OnPaint constructs. They pick the context up from the window, which is what
 // makes an unmodified `CPaintDC dc(this)` reach the screen.
 //
-// A NULL context is REPORTED rather than tolerated. Every CDC entry point checks m_cgCtx and
-// returns quietly, so a window that paints into a DC with no context produces a blank pane
-// and no error at all - which is a genuinely hard thing to diagnose from the outside.
-// Reported once per DC kind to keep a repainting window from flooding the log.
-static void WarnNoCtx(const char* which, CWnd* pWnd) {
-    // Separate flags per kind. Deriving the index from a character of the name was a bug:
-    // "CPaintDC"[1] and "CClientDC"[1] are both 'C', so the two collapsed into one slot and
-    // whichever fired first silenced the other - which is exactly the sort of thing this
-    // warning exists to catch.
-    static bool warnedPaint = false, warnedClient = false;
-    bool& warned = (which[1] == 'P') ? warnedPaint : warnedClient;
-    if (warned) return;
-    warned = true;
-    fprintf(stderr, "native: %s(%p) has no paint context - everything drawn through it will "
-                    "be discarded.\n", which, (void*)pWnd);
-}
-
+// A CPaintDC with no context is a BUG: it means a WM_PAINT was dispatched without the host
+// binding a surface, and since every CDC entry point checks m_cgCtx and returns quietly, the
+// result is a blank pane with every drawing call apparently succeeding. Reported once.
 CPaintDC::CPaintDC(CWnd* pWnd) {
     if (pWnd) m_cgCtx = pWnd->m_paintCtx;
-    if (!m_cgCtx) WarnNoCtx("CPaintDC", pWnd);
+    m_yDown = TRUE;             // a window's client coordinates; NativeWndPaint flipped the CTM
+    if (!m_cgCtx) {
+        static bool warned = false;
+        if (!warned) {
+            warned = true;
+            fprintf(stderr, "native: CPaintDC(%p) has no paint context - everything drawn "
+                            "through it will be discarded.\n", (void*)pWnd);
+        }
+    }
 }
+
+// A CClientDC OUTSIDE a paint is not a bug - it is GDI's way of drawing right now, without
+// waiting for WM_PAINT. CBodyCam::RefreshBody uses it to update the character after an
+// emotion changes. There is no equivalent on a retained-backing-store system, so the honest
+// translation is to INVALIDATE and let the next WM_PAINT redraw: the same pixels arrive, one
+// frame later. Silent, because it is the expected path rather than a fault.
 CClientDC::CClientDC(CWnd* pWnd) {
-    if (pWnd) m_cgCtx = pWnd->m_paintCtx;
-    if (!m_cgCtx) WarnNoCtx("CClientDC", pWnd);
+    m_yDown = TRUE;
+    if (!pWnd) return;
+    m_cgCtx = pWnd->m_paintCtx;
+    if (!m_cgCtx) pWnd->InvalidateRect();
 }
 
 // --- the root of every map chain -------------------------------------------
