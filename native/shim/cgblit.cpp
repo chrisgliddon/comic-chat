@@ -104,8 +104,11 @@ bool SamplePixel(const Bmp& b, int x, int y, unsigned char* r, unsigned char* g,
 
 // Draws `src` into ctx at the given engine-space rect, with alpha taken from `mask` when
 // one is supplied (silhouette = mask BLACK) and from palette index 0 otherwise.
+// `opaque` forces every pixel solid, which is what SRCCOPY means. Without it a backdrop drawn
+// with SRCCOPY would lose every pixel whose palette index happens to be 0 - and for a
+// full-frame background that is usually a real colour, not a transparency key.
 void Composite(CGContextRef ctx, const Bmp& src, const Bmp* mask,
-               int x, int y, int w, int h) {
+               int x, int y, int w, int h, bool opaque) {
     std::vector<unsigned char> rgba((size_t)src.w * src.h * 4, 0);
 
     for (int py = 0; py < src.h; py++) {
@@ -115,20 +118,22 @@ void Composite(CGContextRef ctx, const Bmp& src, const Bmp* mask,
             int idx = -1;
             if (!SamplePixel(src, px, py, &r, &g, &b, &idx)) continue;
 
-            bool opaque;
-            if (mask) {
+            bool solid;
+            if (opaque) {
+                solid = true;
+            } else if (mask) {
                 // Mask sampled at the same normalised position: a mask can be a different
                 // pixel size from its drawing, and the engine stretches both to one rect.
                 int mx = mask->w == src.w ? px : (int)((long)px * mask->w / src.w);
                 int my = mask->h == src.h ? py : (int)((long)py * mask->h / src.h);
                 unsigned char mr = 255, mg = 255, mb = 255;
                 int mi = -1;
-                if (!SamplePixel(*mask, mx, my, &mr, &mg, &mb, &mi)) opaque = false;
-                else opaque = (mr + mg + mb) < 384;      // black-ish = inside the silhouette
+                if (!SamplePixel(*mask, mx, my, &mr, &mg, &mb, &mi)) solid = false;
+                else solid = (mr + mg + mb) < 384;       // black-ish = inside the silhouette
             } else {
-                opaque = (idx != 0);                     // index 0 is the transparent key
+                solid = (idx != 0);                      // index 0 is the transparent key
             }
-            if (!opaque) continue;
+            if (!solid) continue;
             dst[px * 4 + 0] = r;
             dst[px * 4 + 1] = g;
             dst[px * 4 + 2] = b;
@@ -144,6 +149,38 @@ void Composite(CGContextRef ctx, const Bmp& src, const Bmp* mask,
     if (img) {
         // The engine passes a top-down destination rect in engine space (y negative
         // downward), so the rect's origin is its BOTTOM edge once expressed for CG.
+        CGContextSaveGState(ctx);
+        CGContextSetInterpolationQuality(ctx, kCGInterpolationNone);
+        CGContextDrawImage(ctx, CGRectMake(x, y + h, w, -h), img);
+        CGContextRestoreGState(ctx);
+        CFRelease(img);
+    }
+    if (bmp) CFRelease(bmp);
+    CFRelease(cs);
+}
+
+// Paints WHITE wherever the source is black, leaving the rest untouched - MERGEPAINT's actual
+// effect. Used for the halo and the mask pass; see the call site.
+void PaintWhereBlack(CGContextRef ctx, const Bmp& src, int x, int y, int w, int h) {
+    std::vector<unsigned char> rgba((size_t)src.w * src.h * 4, 0);
+    for (int py = 0; py < src.h; py++) {
+        unsigned char* dst = &rgba[(size_t)py * src.w * 4];
+        for (int px = 0; px < src.w; px++) {
+            unsigned char r = 0, g = 0, b = 0;
+            int idx = -1;
+            if (!SamplePixel(src, px, py, &r, &g, &b, &idx)) continue;
+            if ((r + g + b) >= 384) continue;          // not black-ish: leave the destination
+            dst[px * 4 + 0] = 255;
+            dst[px * 4 + 1] = 255;
+            dst[px * 4 + 2] = 255;
+            dst[px * 4 + 3] = 255;
+        }
+    }
+    CGColorSpaceRef cs = CGColorSpaceCreateDeviceRGB();
+    CGContextRef bmp = CGBitmapContextCreate(&rgba[0], src.w, src.h, 8, (size_t)src.w * 4, cs,
+                                             kCGImageAlphaPremultipliedLast);
+    CGImageRef img = bmp ? CGBitmapContextCreateImage(bmp) : NULL;
+    if (img) {
         CGContextSaveGState(ctx);
         CGContextSetInterpolationQuality(ctx, kCGInterpolationNone);
         CGContextDrawImage(ctx, CGRectMake(x, y + h, w, -h), img);
@@ -173,9 +210,22 @@ int StretchDIBits(HDC hdc, int xDst, int yDst, int wDst, int hDst,
     if (!Describe(bits, bmi, src)) return 0;
 
     if (rop == MERGEPAINT) {
-        // The mask half of the pair. Held, not drawn - drawing it would paint the
-        // silhouette white, which is exactly the intermediate state GDI needs and Core
-        // Graphics does not.
+        // MERGEPAINT is `dst = ~src | dst`, so where the source is BLACK the destination goes
+        // WHITE and elsewhere it is untouched. Doing that literally is both halves of the job:
+        //
+        //   the HALO. bodycam.cpp:534-541 blits each pose's aura with MERGEPAINT before the
+        //   body, and the aura is black over a dilated silhouette. Whitening there is the
+        //   "halo" of SIGGRAPH 96 section 4.4 - the margin that makes a character readable
+        //   against a busy background. Skipping it left the avatars tangled in the backdrop
+        //   hatching, which is exactly what the paper says halos exist to prevent.
+        //
+        //   the MASK. The same op is used for a pose's mask immediately before its drawing.
+        //   Whitening the silhouette there is harmless, because the SRCAND that follows
+        //   overwrites those pixels with the drawing itself.
+        //
+        // So paint it, AND remember it as the pending mask for the SRCAND that may follow.
+        PaintWhereBlack(ctx, src, xDst, yDst, wDst, hDst);
+
         dc->m_pendMaskBits = bits;
         dc->m_pendMaskInfo = bmi;
         dc->m_pendMaskX = xDst; dc->m_pendMaskY = yDst;
@@ -195,6 +245,8 @@ int StretchDIBits(HDC hdc, int xDst, int yDst, int wDst, int hDst,
     dc->m_pendMaskBits = 0;
     dc->m_pendMaskInfo = 0;
 
-    Composite(ctx, src, maskPtr, xDst, yDst, wDst, hDst);
+    // SRCCOPY replaces the destination, so nothing in the source is transparent. The mask pair
+    // (MERGEPAINT then SRCAND) is the only path that carries transparency.
+    Composite(ctx, src, maskPtr, xDst, yDst, wDst, hDst, rop == SRCCOPY);
     return src.h;
 }

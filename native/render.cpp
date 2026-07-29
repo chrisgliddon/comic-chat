@@ -262,8 +262,8 @@ void DrawPanel(CGContextRef c, CPanel* panel, int px, int py) {
     int w = CUnitPanelPage::m_unitWidth;
     int h = CUnitPanelPage::m_unitHeight;
 
-    // Panel background. Backdrop art is a separate step (see the body note above); white
-    // keeps the page readable until it is wired up.
+    // White under the backdrop, so a panel whose art is missing or smaller than the frame is
+    // still readable rather than showing whatever was drawn beneath it.
     SetFill(c, RGB(255, 255, 255));
     CGContextFillRect(c, CGRectMake(px, py - h, w, h));
 
@@ -280,7 +280,27 @@ void DrawPanel(CGContextRef c, CPanel* panel, int px, int py) {
     CGContextSaveGState(c);
     CGContextClipToRect(c, CGRectMake(px, py - h, w, h));
 
-    // Bodies first, then balloons and labels over them - the engine's own z-order.
+    // The ROOM ART, drawn first and by the engine. CBackDrop::Draw (backdrop.cpp:330) resolves
+    // the backdrop id to its loaded DIB and blits it stretched to the panel with SRCCOPY, doing
+    // its own source-rect arithmetic so a zoomed panel shows the right part of the scene. That
+    // arithmetic is exactly the thing not to reimplement.
+    //
+    // Coordinates: the engine expects a panel rect in panel-local space, so the panel origin
+    // goes into the transform and the rect passed in starts at (0,0). Engine rects run
+    // y-negative-downward, hence bottom = -h.
+    {
+        CDC dc;
+        dc.m_cgCtx = (void*)c;
+        dc.m_nDcMapMode = MM_TWIPS;
+        CGContextSaveGState(c);
+        CGContextTranslateCTM(c, px, py);
+        RECT panelRect;
+        panelRect.left = 0; panelRect.top = 0; panelRect.right = w; panelRect.bottom = -h;
+        panel->m_backDrop.Draw(&dc, &panelRect, NULL);
+        CGContextRestoreGState(c);
+    }
+
+    // Bodies next, then balloons and labels over them - the engine's own z-order.
     POSITION bp = panel->m_bodies.GetHeadPosition();
     while (bp) DrawBody(c, (CBody*)panel->m_bodies.GetNext(bp), px, py);
 

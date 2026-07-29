@@ -24,6 +24,7 @@ class CPageView;
 #include "glyphtable.h"
 #include "stringtable.h"
 #include "bodycam.h"
+#include "resource.h"      // IDS_DEFAULT_BACKDROP
 #include "ircproto.h"
 #include "ircsock.h"
 #include "defines.h"
@@ -44,6 +45,7 @@ void LoadEmotionStrings();
 CAvatarX* LoadAvatar(const char* avName);
 int PointsToTwips(int pts);
 BOOL ArtDirsOK();
+int GetCurrentBackDropID();
 
 namespace {
 
@@ -136,6 +138,22 @@ bool NativeSessionStart(const char* treeDir) {
                 treeDir);
 
     InitializeBackDrops();
+
+    // The DEFAULT ROOM ART. chat.cpp:505 does m_lastBackDrop.LoadString(IDS_DEFAULT_BACKDROP)
+    // in InitInstance, which the native path does not run - so m_lastBackDrop stayed empty,
+    // GetCurrentBackDropID() (backdrop.cpp:179) returned 0 for "no backdrop", and every panel
+    // drew on blank white.
+    //
+    // Read from the string table rather than hardcoded, so it stays whatever chat.rc says (it
+    // is "FIELD", and ComicArt/field.bgb is the art). Must be set BEFORE the document is
+    // constructed: CChatDoc's constructor captures m_myBackDropID = GetCurrentBackDropID().
+    theApp.m_lastBackDrop.LoadString(IDS_DEFAULT_BACKDROP);
+    if (theApp.m_lastBackDrop.IsEmpty())
+        fprintf(stderr, "session: no default backdrop in the string table - panels will be blank\n");
+    else
+        fprintf(stderr, "session: default backdrop '%s' -> id %d\n",
+                (LPCSTR)theApp.m_lastBackDrop, GetCurrentBackDropID());
+
     LoadEmotionStrings();
     InitializeEmotionRules();
     InitializeAvatars();
@@ -183,6 +201,15 @@ bool NativeSessionStart(const char* treeDir) {
     // The engine looks up "who am I" through g_puiSelf when deciding whether a message is
     // from the local user. CChatDoc::LoadDocData sets it from m_puiSelf on Windows.
     g_doc->LoadDocData();
+
+    // The initial history: the title entry and the CHANGE-BACKDROP entry. On Windows this runs
+    // from bProcessAddChannel when a room is entered (protsupp.cpp:4341), which means a session
+    // that never joins a channel has no backdrop applied to its panels - the backdrop reaches
+    // them through ChangeBackDropEntry::Execute, not from the document directly.
+    //
+    // Doing it here gives the local composer the same room art as a joined one, and the join
+    // path harmlessly re-runs it (InitHistory calls DestroyHistory first).
+    g_doc->InitHistory();
 
     g_started = true;
     return true;

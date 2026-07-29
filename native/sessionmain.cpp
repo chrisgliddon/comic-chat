@@ -53,8 +53,9 @@ static void DumpPage(CPage* page, int index) {
             CPanelElement* e = (CPanelElement*)panel->m_elements.GetNext(ep);
             if (e->GetType() & PE_BALLOON) nBalloons++; else nLabels++;
         }
-        printf("  panel %d: border=%d elements=%d (balloons=%d labels=%d) bodies=%d\n",
+        printf("  panel %d: border=%d backdropID=%d mode=%d elements=%d (balloons=%d labels=%d) bodies=%d\n",
                pn++, panel->m_hasBorder ? 1 : 0,
+               (int)panel->m_backDrop.m_backID, (int)panel->m_backDrop.m_mode,
                (int)panel->m_elements.GetCount(), nBalloons, nLabels,
                (int)panel->m_bodies.GetCount());
 
