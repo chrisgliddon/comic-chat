@@ -117,16 +117,19 @@ void DrawRunWithFont(CGContextRef c, CTFontRef font, const char* s, int len,
         pen += adv;
     }
     if (!glyphs.empty()) {
-        // A flipped CTM would draw every outline upside down. The text matrix flips back,
-        // leaving the POSITIONS in the caller's coordinates and only the glyphs uninverted.
-        if (yDown) {
-            CGContextSaveGState(c);
-            CGContextSetTextMatrix(c, CGAffineTransformMakeScale(1.0, -1.0));
-            CTFontDrawGlyphs(font, &glyphs[0], &pos[0], glyphs.size(), c);
-            CGContextRestoreGState(c);
-        } else {
-            CTFontDrawGlyphs(font, &glyphs[0], &pos[0], glyphs.size(), c);
-        }
+        CGContextSaveGState(c);
+        // The text matrix is set EXPLICITLY, never inherited. CTFontDrawGlyphs applies it to
+        // every glyph, and the context we are handed is not always one we set up: AppKit
+        // leaves its own text matrix on a view's context, which is why balloon text was
+        // missing in the app while the same page rendered correctly to a bitmap context.
+        //
+        // Identity in engine page space; a y-flip in a y-down context, where the CTM's own
+        // flip would otherwise draw the outlines upside down. Positions stay in the caller's
+        // coordinates either way - only the glyphs are affected.
+        CGContextSetTextMatrix(c, yDown ? CGAffineTransformMakeScale(1.0, -1.0)
+                                       : CGAffineTransformIdentity);
+        CTFontDrawGlyphs(font, &glyphs[0], &pos[0], glyphs.size(), c);
+        CGContextRestoreGState(c);
     }
 }
 

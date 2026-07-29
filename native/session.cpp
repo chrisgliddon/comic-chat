@@ -76,16 +76,15 @@ bool NativeSessionStart(const char* treeDir) {
         fprintf(stderr, "session: no glyph table - text cannot be measured.\n");
         return false;
     }
+    // The string table and the binary resources are COMPILED IN (native/shim/rcdata.cpp,
+    // generated from chat.rc), so there is nothing to load and nothing to fail. Checked
+    // anyway: an empty table would mean the generator produced nothing, and the symptom
+    // downstream would be every pose decision differing from the goldens.
     if (!StringTableLoad(0)) {
-        fprintf(stderr, "session: no string table - there would be no emotion rules.\n");
+        fprintf(stderr, "session: the compiled-in string table is empty - regenerate it with "
+                        "native/gen-rcdata.py.\n");
         return false;
     }
-    // The BINARY resources - the emotion wheel's eight face icons, the toolbar strips - are
-    // served from res/ under the tree, so the resource layer needs the same root the art
-    // does. Not fatal if absent: FindResource then returns NULL, which is what it did before
-    // there was a resource layer at all, and the engine's own callers check for it.
-    ResourceSetRoot(treeDir);
-    ResourceLoadManifest();
 
     AfxWinInit(GetModuleHandle(NULL), NULL, ::GetCommandLine(), SW_HIDE);
 

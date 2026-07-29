@@ -778,3 +778,146 @@ some exotic corner.
 `xdim = ydim = 315`, world `(0, 0, 4860, -4860)`, `normHeight = 100`. Nothing in
 the `.bgb` carries it. Port the constants; the `.bgb` manifest deliberately does
 not include them because they are not a property of the asset.
+
+---
+
+## 16. Native macOS shell: resources, and Core Graphics orientation
+
+*Added while making the ORIGINAL MFC UI classes run natively rather than writing
+replacements for them. None of this is reachable from a golden — no golden replays a
+window message or draws to a screen — so the entries here are pinned by what the app
+does, not by the oracle. They are recorded because each one cost real time to find and
+each has a wrong answer that looks right.*
+
+### 16.1 The original has NO data files. Resources are compiled in.
+
+`rc.exe` compiles `chat.rc` and the linker puts the result in the `.exe`'s resource
+section; the engine reads it back through `FindResource`/`LockResource` (`CDIB::Load(WORD)`,
+dib.cpp:164) and `LoadString`. A Mach-O binary has no resource section, but that is a
+CONTAINER problem and not a licence to invent a format.
+
+**Rule: put the same bytes in the binary, and leave the engine's resource calls alone.**
+`native/gen-rcdata.py` emits `native/shim/rcdata.cpp` — static arrays for the STRINGTABLE
+and for every `BITMAP`/`DIB`/`ICON` — and `native/shim/resources.cpp` serves the Win32 API
+from them. `FindResource` returns a pointer into static storage, which is what
+`LockResource` did, so dib.cpp's own comment ("not required to unlock or free the resource
+in Win32") stays true.
+
+An RC custom-type resource embeds its file **verbatim, `BITMAPFILEHEADER` included**, which
+is exactly what dib.cpp reads off the pointer. So the embedded bytes are the bytes Windows
+returned, not a re-encoding.
+
+An earlier version of this used JSON manifests read at runtime. That was wrong on the
+merits: it added a format the original never had, a parser, and two files that could go
+missing from a bundle. The string extraction was identical either way (602 entries both
+ways, and the frozen `textpose` golden passes either way) — the objection is to the shape,
+not the data.
+
+**The one legitimate data file is `oracle/glyphs/glyphs.json`.** It is not a resource and
+never existed in 1996: it is the frozen measurement oracle RULEBOOK 5 requires, captured
+from Windows GDI. Verification data, not program content.
+
+### 16.2 A negative height does NOT flip a `CGImage`
+
+The GDI-era idiom for "engine rects run y-negative-downward" is to hand Core Graphics
+`CGRectMake(x, y + h, w, -h)`. For **fills** the sign is simply irrelevant —
+`CGContextFillRect` standardises the rect. The trap is assuming the same negative height
+also *flips* an image: **it does not.** `CGContextDrawImage` standardises the rect first, so
+`(y + h, -h)` and `(y, h)` render identically.
+
+What actually mirrors an image is a **flipped CTM**. Verified with a 2-row probe image
+rather than reasoned about, after two rounds of plausible-but-wrong reasoning:
+
+| context | rect form | result |
+|---|---|---|
+| not flipped | positive or negative height | upright |
+| flipped (`translate(0,h)`, `scale(1,-1)`) | positive or negative height | **mirrored** |
+
+**Rule: a y-down context needs an explicit counter-flip around the draw**, which is
+`NativeDrawImage` in `native/render.h`. Symptoms of getting it wrong: the self-view's head
+below its feet, and the emotion wheel's face icons mirrored — the latter nearly passing for
+correct at 20×26.
+
+### 16.3 Orientation is a property of the BOUND CONTEXT, not of the map mode
+
+`MM_TEXT` for windows and `MM_TWIPS` for pages looks like a usable proxy for "which way does
+y run". It is not: the renderer's body DC never sets a map mode at all, so it defaults to
+`MM_TEXT` and claims to be a window. Using the map mode inverted every avatar in every
+comic panel.
+
+**Rule: `CDC::m_yDown` is set by whoever binds `m_cgCtx`** — window DCs and offscreen
+surfaces set it, the renderer's page DCs leave it false. Nothing else can infer it.
+
+### 16.4 Always SET the text matrix; never inherit it
+
+`CTFontDrawGlyphs` applies the context's current text matrix, and the context is not always
+one we set up. **AppKit leaves its own text matrix on a view's context**, which made balloon
+text vanish in the app while the identical page rendered correctly to a bitmap context.
+
+**Rule: `CGContextSetTextMatrix` explicitly on every run** — identity in page space, a
+y-flip in a y-down context. Positions stay in the caller's coordinates either way; only the
+glyph outlines are affected.
+
+### 16.5 A GDI pen width of 0 is ONE DEVICE PIXEL, so it depends on the map mode
+
+15 in `MM_TWIPS` (1440/96), 1 in an `MM_TEXT` window. Hardcoding the twips answer drew the
+emotion wheel's outline as a black annulus. `CDC::OnePixel()` is the accessor; dash lengths
+scale the same way.
+
+### 16.6 `GetDeviceCaps(BITSPIXEL)` must answer 24, not 32
+
+Both are defensible for a macOS display — 8 bits per colour component either way — but
+`CreateRetainedBitmap` (bodycam.cpp:993) branches on it:
+
+* **24 or 1** → build a DIB section in that depth directly. Clean.
+* **anything else** → `GetOptimalDibSectionInfo`, which PROBES the display's channel layout
+  with `::GetDIBits` against a real `HBITMAP`. There is none here, the probe returns 0
+  scanlines, and the header is left with `biBitCount` 0 — an unusable section.
+
+`RASTERCAPS` must also report **no** `RC_PALETTE`, which sends `CBodyCam` down its
+non-palettised branch. That is correct: there is no palette to realise, and claiming one
+would have it index into `gpLogPal` for an 8-bit DIB that does not exist.
+
+### 16.7 What a DIB section needs to be, and what it does not
+
+A Windows DIB section is a GDI drawing surface *and* a block of memory the caller may read
+directly. Only the first is needed, and that is **checked rather than assumed**: `m_retDib`
+is allocated by `CreateRetainedBitmap` and freed by `FreeRetainedPanel` and never read in
+between (bodycam.cpp mentions it at lines 108, 1093, 1105 only).
+
+So `native/shim/cgsurface.cpp` allocates the bits to the real Windows layout and hands them
+back, while drawing goes to a companion 32-bit CG context. If a path ever *does* read a
+section's bits after drawing into them, it needs a flush from the context back into the
+bytes — named here so it is a known edge rather than a mystery.
+
+### 16.8 MFC's message map has to be real, and its shape is not negotiable
+
+Every `BEGIN_MESSAGE_MAP` body compiling to nothing means no window class can ever receive
+a message — and then the only way to put anything on screen is to write replacement UI,
+which is the wrong direction for a port. `native/shim/msgmap.h` implements MFC's structure
+because the macros in the engine sources are MFC's and cannot be changed:
+
+* handlers are **not virtual**, so a derived `OnPaint` hides the base's rather than
+  overriding it. Only the table knows which to call, hence the stored pointer-to-member.
+* the table lives inside **`GetThisMessageMap()`'s body**. That is what makes
+  `&ThisClass::OnPaint` legal for the PROTECTED handlers nearly all of them are, and where
+  the `ThisClass` typedef comes from.
+* maps **chain to the base's**, so an unhandled message walks up.
+* recovering a handler's real signature by casting the stored pointer-to-member back is
+  MFC's own liberty, and is sound only because every class dispatched is
+  single-inheritance with no virtual bases. **A class with multiple inheritance must not be
+  added to a map without revisiting `AFX_PMSG_CAST`.**
+
+Consequence worth knowing: making `DECLARE_MESSAGE_MAP` real adds a virtual, so every class
+that declares a map AND is instantiated now needs its map DEFINED. `native/shim/uimaps.cpp`
+is the holding pen for the three whose own `.cpp` files do not compile yet, and each entry
+names what its file needs.
+
+### 16.9 `native_compile` has no header dependency tracking
+
+Editing anything in `native/shim/*.h` requires clearing `native/build/*.o`, not recompiling
+the unit being worked on. Changing `CPaintDC`'s constructor from an inline no-op to a real
+out-of-line definition left `bodycam.o` holding the old inlined empty body, and the
+self-view then painted into a DC with no context — a blank pane with every drawing call
+apparently succeeding. `build-harness.sh` and `verify.sh` compile the whole set and are
+unaffected.

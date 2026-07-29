@@ -4,7 +4,7 @@
 #     ./native/build-app.sh              -> native/build/Comic Chat.app
 #     ./native/build-app.sh --install    -> also copies it to /Applications
 #
-# The bundle is self-contained: ComicArt, glyphs.json and strings.json all go into
+# The bundle is self-contained: ComicArt and glyphs.json go into
 # Resources, so the installed app has no dependency on this source tree.
 #
 # Run under sh, not zsh - see the note in units.sh about word splitting.
@@ -59,14 +59,11 @@ PLIST
 # that may move or disappear.
 cp -R v2.5-beta-1-modern/ComicArt "$APP/Contents/Resources/ComicArt"
 cp oracle/glyphs/glyphs.json      "$APP/Contents/Resources/glyphs.json"
-cp native/resources/strings.json  "$APP/Contents/Resources/strings.json"
 
-# The BINARY resources: chat.rc's BITMAP/DIB/ICON declarations, plus the res/ directory they
-# name. Not decoration - the emotion wheel's eight face icons are DIB resources, and
-# CBodyCamIcons::GetIcon has no fallback for a missing one. bitmaps.json holds paths relative
-# to this directory, so res/ has to sit beside it.
-cp native/resources/bitmaps.json  "$APP/Contents/Resources/bitmaps.json"
-cp -R v2.5-beta-1-modern/res      "$APP/Contents/Resources/res"
+# chat.rc's resources need no copying: the string table and every BITMAP/DIB/ICON are compiled
+# into the binary by native/gen-rcdata.py, which is what rc.exe and the linker did for the
+# original. glyphs.json is the one genuine data file, because it is not a resource - it is the
+# frozen measurement oracle RULEBOOK 5 requires, and it never existed in the 1996 build.
 
 echo "built $APP"
 du -sh "$APP" | sed 's/^/  size: /'

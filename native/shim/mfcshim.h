@@ -281,7 +281,7 @@ public:
     // (strLine.Format(IDS_NOWKNOWNAS, GetMyScreenName())), and without it those calls
     // bind the int to the const char* parameter and fail to compile.
     //
-    // Real, because the shipped text comes through here: native/resources/strings.json
+    // Real, because the shipped text comes through here: chat.rc's string table, compiled in (rcdata.h)
     // holds the 602 strings extracted from chat.rc. An unknown id formats to empty
     // rather than crashing, which is what MFC does when LoadString fails.
     //

@@ -1,7 +1,8 @@
-// respath.h - locate a bundled data file (glyphs.json, strings.json).
+// respath.h - locate the bundled glyph table.
 //
-// The native build reads two generated data files at startup. Where they live depends on
-// how the binary was invoked, and there are three real cases, not one:
+// The native build reads ONE data file at startup: the frozen glyph table. (chat.rc's string
+// table and bitmaps used to be files too; they are compiled in now - see rcdata.h.) Where it
+// lives depends on how the binary was invoked, and there are three real cases, not one:
 //
 //   * from the repo root            oracle/glyphs/glyphs.json
 //   * from v2.5-beta-1-modern/      ../oracle/glyphs/glyphs.json
@@ -14,8 +15,8 @@
 // An explicit environment variable always wins, so a caller can point at a specific
 // capture without arguing with the search order.
 //
-// Header-only on purpose: both callers are already-compiled units, and adding a shared
-// .cpp would mean another entry in NATIVE_UNITS for two dozen lines.
+// Header-only on purpose: the caller is an already-compiled unit, and adding a shared .cpp
+// would mean another entry in NATIVE_UNITS for two dozen lines.
 
 #ifndef NATIVE_SHIM_RESPATH_H
 #define NATIVE_SHIM_RESPATH_H
