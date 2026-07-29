@@ -108,7 +108,7 @@ bool SamplePixel(const Bmp& b, int x, int y, unsigned char* r, unsigned char* g,
 // with SRCCOPY would lose every pixel whose palette index happens to be 0 - and for a
 // full-frame background that is usually a real colour, not a transparency key.
 void Composite(CGContextRef ctx, const Bmp& src, const Bmp* mask,
-               int x, int y, int w, int h, bool opaque) {
+               int x, int y, int w, int h, bool opaque, bool yDown) {
     std::vector<unsigned char> rgba((size_t)src.w * src.h * 4, 0);
 
     for (int py = 0; py < src.h; py++) {
@@ -147,12 +147,7 @@ void Composite(CGContextRef ctx, const Bmp& src, const Bmp* mask,
                                              kCGImageAlphaPremultipliedLast);
     CGImageRef img = bmp ? CGBitmapContextCreateImage(bmp) : NULL;
     if (img) {
-        // The engine passes a top-down destination rect in engine space (y negative
-        // downward), so the rect's origin is its BOTTOM edge once expressed for CG.
-        CGContextSaveGState(ctx);
-        CGContextSetInterpolationQuality(ctx, kCGInterpolationNone);
-        CGContextDrawImage(ctx, CGRectMake(x, y + h, w, -h), img);
-        CGContextRestoreGState(ctx);
+        NativeDrawImage(ctx, img, x, y, w, h, yDown);
         CFRelease(img);
     }
     if (bmp) CFRelease(bmp);
@@ -161,7 +156,8 @@ void Composite(CGContextRef ctx, const Bmp& src, const Bmp* mask,
 
 // Paints WHITE wherever the source is black, leaving the rest untouched - MERGEPAINT's actual
 // effect. Used for the halo and the mask pass; see the call site.
-void PaintWhereBlack(CGContextRef ctx, const Bmp& src, int x, int y, int w, int h) {
+void PaintWhereBlack(CGContextRef ctx, const Bmp& src, int x, int y, int w, int h,
+                     bool yDown) {
     std::vector<unsigned char> rgba((size_t)src.w * src.h * 4, 0);
     for (int py = 0; py < src.h; py++) {
         unsigned char* dst = &rgba[(size_t)py * src.w * 4];
@@ -181,10 +177,7 @@ void PaintWhereBlack(CGContextRef ctx, const Bmp& src, int x, int y, int w, int 
                                              kCGImageAlphaPremultipliedLast);
     CGImageRef img = bmp ? CGBitmapContextCreateImage(bmp) : NULL;
     if (img) {
-        CGContextSaveGState(ctx);
-        CGContextSetInterpolationQuality(ctx, kCGInterpolationNone);
-        CGContextDrawImage(ctx, CGRectMake(x, y + h, w, -h), img);
-        CGContextRestoreGState(ctx);
+        NativeDrawImage(ctx, img, x, y, w, h, yDown);
         CFRelease(img);
     }
     if (bmp) CFRelease(bmp);
@@ -224,7 +217,7 @@ int StretchDIBits(HDC hdc, int xDst, int yDst, int wDst, int hDst,
         //   overwrites those pixels with the drawing itself.
         //
         // So paint it, AND remember it as the pending mask for the SRCAND that may follow.
-        PaintWhereBlack(ctx, src, xDst, yDst, wDst, hDst);
+        PaintWhereBlack(ctx, src, xDst, yDst, wDst, hDst, dc->m_nDcMapMode == MM_TEXT);
 
         dc->m_pendMaskBits = bits;
         dc->m_pendMaskInfo = bmi;
@@ -247,6 +240,7 @@ int StretchDIBits(HDC hdc, int xDst, int yDst, int wDst, int hDst,
 
     // SRCCOPY replaces the destination, so nothing in the source is transparent. The mask pair
     // (MERGEPAINT then SRCAND) is the only path that carries transparency.
-    Composite(ctx, src, maskPtr, xDst, yDst, wDst, hDst, rop == SRCCOPY);
+    Composite(ctx, src, maskPtr, xDst, yDst, wDst, hDst, rop == SRCCOPY,
+              dc->m_nDcMapMode == MM_TEXT);
     return src.h;
 }

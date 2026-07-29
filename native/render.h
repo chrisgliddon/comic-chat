@@ -52,6 +52,45 @@ class CPage;
 void NativeDrawPinnedRun(CGContextRef ctx, const char* s, int len,
                          int x, int yTop, unsigned long color, bool yDown = false);
 
+// --- drawing an image ---------------------------------------------------------
+// Puts `img` in the rect the engine asked for, in whichever vertical convention the target
+// context uses. One shared definition, because getting it wrong is close to invisible:
+//
+//   yDown == false  engine page space. y is NEGATIVE downward and no CTM flip is installed,
+//                   so y is the rect's TOP edge and h is negative. Core Graphics normalises
+//                   the rect and draws the image upright, which is what page space wants.
+//
+//   yDown == true   a window or offscreen surface: y POSITIVE downward with a FLIPPED CTM.
+//                   The flip mirrors every image drawn through it, so it has to be undone
+//                   around the draw.
+//
+// The trap worth recording: a NEGATIVE HEIGHT in the destination rect does NOT flip a
+// CGImage. Core Graphics standardises the rect first, so (y + h, -h) and (y, h) render
+// identically - unlike CGContextFillRect, where the sign is simply irrelevant. Assuming the
+// negative height flipped the image is what left the self-view's head below its feet and
+// mirrored the emotion wheel's face icons, which at 20x26 nearly passed for correct.
+//
+// Solid fills and paths need none of this: a rectangle has no up. Only images do.
+static inline void NativeDrawImage(CGContextRef ctx, CGImageRef img,
+                                  int x, int y, int w, int h, bool yDown) {
+    if (!ctx || !img) return;
+    CGContextSaveGState(ctx);
+    // Nearest-neighbour: these are 1996 pixel-art bitmaps, and smoothing them reads as a
+    // rendering fault rather than as anti-aliasing.
+    CGContextSetInterpolationQuality(ctx, kCGInterpolationNone);
+    if (yDown) {
+        // Move the origin to the rect's LOWER edge and undo the flip, so the image's own
+        // top lands on the upper edge - at y, where the engine put it.
+        CGContextTranslateCTM(ctx, (CGFloat)x, (CGFloat)(y + h));
+        CGContextScaleCTM(ctx, 1.0, -1.0);
+        CGContextDrawImage(ctx, CGRectMake(0, 0, (CGFloat)w, (CGFloat)h), img);
+    } else {
+        CGContextDrawImage(ctx, CGRectMake((CGFloat)x, (CGFloat)(y + h),
+                                           (CGFloat)w, (CGFloat)(-h)), img);
+    }
+    CGContextRestoreGState(ctx);
+}
+
 // --- painting a real CWnd ---------------------------------------------------
 // Sends `wnd` a WM_PAINT with `ctx` bound, so the window's OWN OnPaint draws it. This is how
 // CBodyCam puts the self-view and the emotion wheel on screen: nothing here knows what a

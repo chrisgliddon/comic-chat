@@ -19,7 +19,7 @@ NATIVE_UNITS="avbdump posedump ojson oracleseed
               format fonts balloon panel pageview
               chatdoc histent protsupp userinfo doskey urlutil sjis2jis
               ircproto ircsock query ccommon status bodycam
-              render cgblit cgdraw session asyncsocket msgmap uimaps resources"
+              render cgblit cgdraw session asyncsocket msgmap uimaps resources cgsurface"
 
 # Entry points, each linked against the set above.
 #   oracleharness -> native/build/harness   (corpus replay + every --dump mode)
@@ -43,7 +43,7 @@ native_stage() {
     ln -sf "$PWD/native/session.cpp" "native/stage/session.cpp"
     ln -sf "$PWD/native/session.h"   "native/stage/session.h"
     ln -sf "$PWD/native/render.h"   "native/stage/render.h"
-    for c in glyphtable glyphtable_cdc stringtable cgblit cgdraw asyncsocket msgmap uimaps resources; do
+    for c in glyphtable glyphtable_cdc stringtable cgblit cgdraw asyncsocket msgmap uimaps resources cgsurface; do
         ln -sf "$PWD/native/shim/$c.cpp" "native/stage/$c.cpp"
     done
 }

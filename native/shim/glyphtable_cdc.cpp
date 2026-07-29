@@ -138,7 +138,20 @@ int CDC::GetDeviceCaps(int index) const {
         // correct, because there is no palette to realise here. Claiming otherwise would
         // have it build an 8-bit DIB against gpLogPal and index into a palette that does
         // not exist.
-        case BITSPIXEL: return 32;
+        // 24, not 32, and the difference is load-bearing rather than cosmetic. macOS displays
+        // are 8 bits per colour component either way, so both answers are defensible as a
+        // colour depth - but CreateRetainedBitmap (bodycam.cpp:993) branches on this value:
+        //
+        //   24 or 1  -> build a DIB section in that depth directly. Clean.
+        //   anything else -> GetOptimalDibSectionInfo, which PROBES the display's channel
+        //                    layout with ::GetDIBits against a real HBITMAP. There is no
+        //                    such bitmap here, that probe returns 0 scanlines, and the
+        //                    header is left with biBitCount 0 - an unusable DIB section.
+        //
+        // So 24 is the answer that is both true about the colour depth and lands on the path
+        // that can actually be served. It is also the depth cgblit's 24-bit BGR case already
+        // reads, which is what the offscreen surface hands back.
+        case BITSPIXEL: return 24;
         case PLANES:    return 1;
         case RASTERCAPS: return 0;      // specifically NOT RC_PALETTE
         case NUMCOLORS: return -1;      // GDI's answer for a non-palettised device

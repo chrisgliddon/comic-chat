@@ -9,7 +9,7 @@ That is why this is generated data rather than a stub returning FALSE.
 
 There is a natural check on this extractor: with the strings loaded, the native
 --textpose dump must reproduce oracle/textpose/textpose.golden.json, which was captured
-on Windows from the real resource table. If the parse mangles an escape, the rules差
+on Windows from the real resource table. If the parse mangles an escape, the rules
 differ and that diff fails.
 
 RC string syntax handled:

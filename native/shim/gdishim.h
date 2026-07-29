@@ -403,13 +403,11 @@ int StretchDIBits(HDC hdc, int xDst, int yDst, int wDst, int hDst,
                   int xSrc, int ySrc, int wSrc, int hSrc,
                   const void* bits, const BITMAPINFO* bmi, UINT usage, DWORD rop);
 inline int SetStretchBltMode(HDC, int) { return 0; }
-// CreateDIBSection allocates a bitmap whose bits the caller writes directly. bodycam.cpp
-// uses it for the body-cam window's offscreen buffer. Reports failure: no window exists, and
-// handing back a buffer with no way to present it would be a lie the caller cannot detect.
-inline void* CreateDIBSection(HDC, const BITMAPINFO*, UINT, void** ppvBits, HANDLE, DWORD) {
-    if (ppvBits) *ppvBits = 0;
-    return 0;
-}
+// CreateDIBSection allocates an offscreen bitmap whose bits the caller may write directly.
+// bodycam.cpp uses it for the self-view's retained buffer. REAL now - see cgsurface.cpp,
+// which backs it with a Core Graphics bitmap context; returning failure here is what left the
+// character missing from the self-view pane.
+void* CreateDIBSection(HDC, const BITMAPINFO*, UINT, void** ppvBits, HANDLE, DWORD);
 inline int GetDeviceCaps(HDC, int) { return 0; }
 #define BLACKONWHITE     1
 #define WHITEONBLACK     2
@@ -543,15 +541,19 @@ public:
 
 class CBitmap : public CGdiObject {
 public:
-    BOOL CreateCompatibleBitmap(CDC*, int, int) { return TRUE; }
-    BOOL CreateBitmap(int, int, UINT, UINT, const void*) { return TRUE; }
+    // The offscreen surface this names. See cgsurface.cpp: the handle is a key into the
+    // surface table, not a pointer to dereference.
+    HBITMAP m_hBitmap;
+    CBitmap() : m_hBitmap(0) {}
+    BOOL CreateCompatibleBitmap(CDC*, int w, int h);
+    BOOL CreateBitmap(int w, int h, UINT, UINT, const void*);
     // panel.cpp calls this through an instance (temp.FromHandle(h)), which is legal
     // for a static member and is how MFC's own samples use it.
-    static CBitmap* FromHandle(HBITMAP) { return 0; }
+    static CBitmap* FromHandle(HBITMAP);
     // bodycam.cpp writes (HBITMAP)bm on a CBitmap value. MFC's CGdiObject provides this
     // through operator HGDIOBJ; spelling it out here keeps the cast working without
     // giving every CGdiObject an implicit conversion to void*.
-    operator HBITMAP() const { return (HBITMAP)0; }
+    operator HBITMAP() const { return m_hBitmap; }
 };
 
 class CPalette : public CGdiObject {
@@ -596,6 +598,7 @@ public:
             m_winOrgX(0), m_winOrgY(0), m_pPen(0), m_pBrush(0),
             m_cgPath(0), m_curX(0), m_curY(0), m_hasCur(0),
             m_bkMode(2 /*TRANSPARENT*/), m_textColor(0), m_cgCtx(0),
+            m_pBitmap(0), m_isMemDC(FALSE),
             m_pendMaskBits(0), m_pendMaskInfo(0),
             m_pendMaskX(0), m_pendMaskY(0), m_pendMaskW(0), m_pendMaskH(0) {
         // GetSafeHdc() has to hand back something the global GDI entry points can turn
@@ -646,6 +649,11 @@ public:
     // on CScrollView that pageview.cpp reads directly. Conflating them put the member on
     // the wrong class once already.
     int m_nDcMapMode;
+    // The offscreen surface selected into this DC, and whether it is a memory DC at all.
+    // Both are cgsurface.cpp's; SelectObject(CBitmap*) returns the previous one because
+    // that is the handle MFC's callers restore.
+    class CBitmap* m_pBitmap;
+    BOOL m_isMemDC;
 
     // Records the mode, because LPtoDP/DPtoLP now branch on it rather than being
     // identity. Returning a fixed value here would silently disable those conversions.
@@ -690,7 +698,9 @@ public:
     CBrush* SelectObject(CBrush* p) { CBrush* o = m_pBrush; if (p) m_pBrush = p; return o; }
     CPen*   m_pPen;
     CBrush* m_pBrush;
-    CBitmap* SelectObject(CBitmap* p) { return p; }
+    // Binds an offscreen surface to this DC and returns the PREVIOUS one, which is the
+    // handle MFC's callers restore. See cgsurface.cpp.
+    CBitmap* SelectObject(CBitmap* p);
     CPalette* SelectPalette(CPalette* p, BOOL) { return p; }
     UINT RealizePalette() { return 0; }
     CGdiObject* SelectStockObject(int) { return 0; }
@@ -795,8 +805,12 @@ public:
     COLORREF m_textColor;
     BOOL ExtTextOut(int, int, UINT, const RECT*, LPCTSTR, UINT, const int*) { return TRUE; }
     int DrawText(LPCTSTR, int, RECT*, UINT) { return 0; }
-    BOOL BitBlt(int, int, int, int, CDC*, int, int, DWORD) { return TRUE; }
-    BOOL StretchBlt(int, int, int, int, CDC*, int, int, int, int, DWORD) { return TRUE; }
+    // Offscreen composition, backed by cgsurface.cpp. Returning TRUE without copying
+    // anything is what made CBodyCam::DrawBody's VERIFY'd BitBlt succeed while the
+    // character never reached the screen.
+    BOOL BitBlt(int x, int y, int w, int h, CDC* pSrc, int xSrc, int ySrc, DWORD rop);
+    BOOL StretchBlt(int x, int y, int w, int h, CDC* pSrc,
+                    int xSrc, int ySrc, int wSrc, int hSrc, DWORD rop);
     int SetStretchBltMode(int) { return 0; }
     BOOL PatBlt(int, int, int, int, DWORD) { return TRUE; }
     BOOL DrawIcon(int, int, HICON) { return TRUE; }
@@ -810,7 +824,7 @@ public:
     void FrameRect(const RECT*, CBrush*) {}
     BOOL InvertRect(const RECT*) { return TRUE; }
     BOOL DrawFocusRect(const RECT*) { return TRUE; }
-    BOOL CreateCompatibleDC(CDC*) { return TRUE; }
+    BOOL CreateCompatibleDC(CDC* pSrc);
     BOOL DeleteDC() { return TRUE; }
     BOOL SelectClipRgn(CRgn*) { return TRUE; }
     BOOL SelectClipRgn(CRgn*, int) { return TRUE; }
@@ -1012,7 +1026,7 @@ static inline int MulDiv(int a, int b, int c) {
 // inert until there is a backend.
 static inline HDC CreateCompatibleDC(HDC) { return (HDC)0; }
 static inline BOOL DeleteDC(HDC) { return TRUE; }
-static inline HBITMAP CreateCompatibleBitmap(HDC, int, int) { return (HBITMAP)0; }
+HBITMAP CreateCompatibleBitmap(HDC, int w, int h);   // cgsurface.cpp
 static inline BOOL StretchBlt(HDC, int, int, int, int, HDC, int, int, int, int, DWORD) { return TRUE; }
 static inline BOOL BitBlt(HDC, int, int, int, int, HDC, int, int, DWORD) { return TRUE; }
 static inline void* SelectObject_HDC(HDC, void*) { return (void*)0; }
