@@ -75,4 +75,15 @@ void NativeSessionSendToChannel(const char* text);
 // Provided so a non-AppKit caller can drive a connection for testing.
 void NativeSessionRunLoopOnce(double seconds);
 
+// --- the original UI's own windows ------------------------------------------
+// The self-view and emotion-wheel pane, as CBodyCam - the engine's own CWnd. The host gives
+// it a size and sends it messages (NativeWndPaint, and the mouse); everything it draws and
+// every emotion it picks is bodycam.cpp's code, unchanged. Returns NULL before
+// NativeSessionStart.
+//
+// Deliberately typed as CWnd*: the host has no business knowing this is a CBodyCam, only that
+// it is a window that paints itself and handles clicks.
+class CWnd;
+CWnd* NativeSessionBodyCamWnd();
+
 #endif // NATIVE_SESSION_H

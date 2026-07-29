@@ -317,16 +317,11 @@ typedef struct tagLOGPALETTE {
     PALETTEENTRY palPalEntry[1];
 } LOGPALETTE;
 
-// AfxGetResourceHandle: the engine loads DIBs from Win32 resources. The native
-// app has no PE resource section - ComicArt assets come from files - so this
-// returns NULL and the resource-loading paths are expected to fail their own
-// checks rather than be reached at all.
-inline HINSTANCE AfxGetResourceHandle() { return (HINSTANCE)0; }
+// AfxGetResourceHandle: the module whose resources to search. There is only one module
+// here, and the resource layer ignores the handle entirely (see resources.cpp), so the
+// value only has to be non-NULL - dib.cpp passes it straight to FindResource.
+inline HINSTANCE AfxGetResourceHandle() { return (HINSTANCE)1; }
 
-// Win32 resource API. dib.cpp's CDIB::Load(WORD wResid) loads DIBs from the PE
-// resource section, which a Mach-O binary has no equivalent of - ComicArt assets
-// come from files instead. These return NULL so that path fails its own checks
-// (`if (!hrsrc) return FALSE`) rather than being reached and misbehaving.
 #define MAKEINTRESOURCE(i)  ((LPCTSTR)(uintptr_t)(i))
 // The global ::DeleteObject, distinct from CGdiObject::DeleteObject. bodycam.h
 // calls it on a raw HBITMAP. Painting-side, so a no-op success is safe; it does
@@ -383,11 +378,18 @@ inline BOOL    GetTextExtentPoint32(HDC, LPCTSTR, int, LPSIZE) { return FALSE; }
 #define CFM_STRIKEOUT   0x00000008
 #define CFE_STRIKEOUT   0x0008
 #define CFM_OFFSET      0x10000000
-inline HRSRC   FindResource(HINSTANCE, LPCTSTR, LPCTSTR) { return (HRSRC)0; }
-inline HGLOBAL LoadResource(HINSTANCE, HRSRC) { return (HGLOBAL)0; }
-inline void*   LockResource(HGLOBAL) { return (void*)0; }
+// The Win32 resource API, REAL now: served from the res/ files chat.rc names, via
+// native/resources/bitmaps.json. See native/shim/resources.h - this is what makes the
+// emotion wheel's face icons load. Declarations only; the lookup needs a JSON parser and
+// file I/O, which this header must stay clear of.
+HRSRC   FindResource(HINSTANCE, LPCTSTR name, LPCTSTR type);
+HGLOBAL LoadResource(HINSTANCE, HRSRC);
+void*   LockResource(HGLOBAL);
+DWORD   SizeofResource(HINSTANCE, HRSRC);
+// Nothing to free: the bytes are cached for the process's lifetime, which is what a locked
+// Win32 resource amounts to. dib.cpp says as much - "not required to unlock or free the
+// resource in Win32".
 inline BOOL    FreeResource(HGLOBAL) { return TRUE; }
-inline DWORD   SizeofResource(HINSTANCE, HRSRC) { return 0; }
 
 // Raw GDI blit entry points used directly (not via CDC) by dib.cpp's Draw path.
 // Painting, so no-ops are safe until there is a window; see the class comment on
@@ -649,6 +651,10 @@ public:
     // identity. Returning a fixed value here would silently disable those conversions.
     int SetMapMode(int mode) { int prev = m_nDcMapMode; m_nDcMapMode = mode; return prev; }
     int GetMapMode() const { return m_nDcMapMode; }
+    // Logical units per DEVICE PIXEL, which is what a GDI pen width of 0 means. 1440/96 in
+    // MM_TWIPS page space; 1 in an MM_TEXT window, where logical units already are pixels.
+    // Used by the stroke setup in cgdraw.cpp - see ApplyStroke.
+    int OnePixel() const { return m_nDcMapMode == MM_TWIPS ? 15 : 1; }
     int SetBkMode(int m) { int o = m_bkMode; m_bkMode = m; return o; }
     COLORREF SetBkColor(COLORREF c) { return c; }
     COLORREF SetTextColor(COLORREF c) { COLORREF o = m_textColor; m_textColor = c; return o; }
@@ -841,13 +847,19 @@ public:
     BOOL m_pinnedFont;
 };
 
+// Both bind to the window's current paint context, so `CPaintDC dc(this)` at the top of an
+// untouched OnPaint draws to the screen. Defined out of line in msgmap.cpp because CWnd is
+// declared in mfcui.h, which includes THIS header - the members are not visible yet here.
+//
+// The map mode is left at the CDC default of MM_TEXT: a window's client coordinates are
+// device pixels with y positive downward, which is what NativeWndPaint sets up the CTM for.
 class CClientDC : public CDC {
 public:
-    CClientDC(CWnd*) {}
+    CClientDC(CWnd* pWnd);
 };
 class CPaintDC : public CDC {
 public:
-    CPaintDC(CWnd*) {}
+    CPaintDC(CWnd* pWnd);
 };
 
 // ---------------------------------------------------------------------------

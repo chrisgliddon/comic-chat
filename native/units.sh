@@ -19,7 +19,7 @@ NATIVE_UNITS="avbdump posedump ojson oracleseed
               format fonts balloon panel pageview
               chatdoc histent protsupp userinfo doskey urlutil sjis2jis
               ircproto ircsock query ccommon status bodycam
-              render cgblit cgdraw session asyncsocket"
+              render cgblit cgdraw session asyncsocket msgmap uimaps resources"
 
 # Entry points, each linked against the set above.
 #   oracleharness -> native/build/harness   (corpus replay + every --dump mode)
@@ -43,10 +43,18 @@ native_stage() {
     ln -sf "$PWD/native/session.cpp" "native/stage/session.cpp"
     ln -sf "$PWD/native/session.h"   "native/stage/session.h"
     ln -sf "$PWD/native/render.h"   "native/stage/render.h"
-    for c in glyphtable glyphtable_cdc stringtable cgblit cgdraw asyncsocket; do
+    for c in glyphtable glyphtable_cdc stringtable cgblit cgdraw asyncsocket msgmap uimaps resources; do
         ln -sf "$PWD/native/shim/$c.cpp" "native/stage/$c.cpp"
     done
 }
+
+# NO HEADER DEPENDENCY TRACKING. native_compile rebuilds exactly the units named, so after
+# editing anything in native/shim/*.h you must clear native/build/*.o rather than recompile
+# the unit you were working on. This is not theoretical: changing CPaintDC's constructor from
+# an inline no-op to a real out-of-line definition left bodycam.o holding the old inlined
+# empty body, and the self-view then painted into a DC with no context - a blank pane with
+# every drawing call apparently succeeding. build-harness.sh and verify.sh compile the whole
+# set, so they are unaffected.
 
 # Compiles a list of units, reporting the first failure with its errors.
 native_compile() {

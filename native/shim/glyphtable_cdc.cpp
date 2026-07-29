@@ -123,13 +123,25 @@ BOOL CDC::GetCharWidth(UINT first, UINT last, int* buf) const {
 }
 
 int CDC::GetDeviceCaps(int index) const {
-    // Only the two the engine actually asks for. The glyph table was captured at
-    // 96 dpi (glyphs.json records it), so reporting anything else here would put
-    // the advances and the device resolution out of step.
     switch (index) {
+        // The glyph table was captured at 96 dpi (glyphs.json records it), so reporting
+        // anything else here would put the advances and the device resolution out of step.
         case LOGPIXELSX:
         case LOGPIXELSY:
             return 96;
+
+        // The display's colour format, which bodycam.cpp:969 reads when choosing the DIB
+        // section format for its retained self-view bitmap. These are FACTS about a macOS
+        // display rather than pins, which is why they can be answered rather than refused:
+        // 32 bits per pixel, one plane, and no hardware palette. RC_PALETTE clear is the
+        // load-bearing part - it sends CBodyCam down its non-palettised branch, which is
+        // correct, because there is no palette to realise here. Claiming otherwise would
+        // have it build an 8-bit DIB against gpLogPal and index into a palette that does
+        // not exist.
+        case BITSPIXEL: return 32;
+        case PLANES:    return 1;
+        case RASTERCAPS: return 0;      // specifically NOT RC_PALETTE
+        case NUMCOLORS: return -1;      // GDI's answer for a non-palettised device
         default:
             fprintf(stderr, "native: CDC::GetDeviceCaps(%d) is not pinned - the "
                             "glyph table fixes dpi at 96 and nothing else is "

@@ -30,67 +30,10 @@
 // declared later in the chain breaks every TU at once.
 #include "winsock.h"
 
-// --- message maps: declarations vanish -------------------------------------
-#define DECLARE_MESSAGE_MAP()
-#define BEGIN_MESSAGE_MAP(cls, base)    /* the map body is dead code here; */
-#define END_MESSAGE_MAP()               /* the macros below swallow it.    */
-#define ON_COMMAND(id, fn)
-#define ON_COMMAND_RANGE(a, b, fn)
-#define ON_UPDATE_COMMAND_UI(id, fn)
-#define ON_UPDATE_COMMAND_UI_RANGE(a, b, fn)
-#define ON_NOTIFY(c, id, fn)
-#define ON_NOTIFY_RANGE(c, a, b, fn)
-#define ON_MESSAGE(msg, fn)
-#define ON_REGISTERED_MESSAGE(msg, fn)
-#define ON_WM_CREATE()
-#define ON_WM_DESTROY()
-#define ON_WM_PAINT()
-#define ON_WM_SIZE()
-#define ON_WM_TIMER()
-#define ON_WM_LBUTTONDOWN()
-#define ON_WM_LBUTTONUP()
-#define ON_WM_LBUTTONDBLCLK()
-#define ON_WM_RBUTTONDOWN()
-#define ON_WM_RBUTTONUP()
-#define ON_WM_MOUSEMOVE()
-#define ON_WM_KEYDOWN()
-#define ON_WM_KEYUP()
-#define ON_WM_CHAR()
-#define ON_WM_SETFOCUS()
-#define ON_WM_KILLFOCUS()
-#define ON_WM_CLOSE()
-#define ON_WM_ERASEBKGND()
-#define ON_WM_VSCROLL()
-#define ON_WM_HSCROLL()
-#define ON_WM_MOUSEWHEEL()
-#define ON_WM_SETCURSOR()
-#define ON_WM_CONTEXTMENU()
-#define ON_WM_SYSCOLORCHANGE()
-#define ON_WM_INITMENUPOPUP()
-#define ON_WM_MEASUREITEM()
-#define ON_WM_DRAWITEM()
-#define ON_WM_WINDOWPOSCHANGING()
-#define ON_WM_GETMINMAXINFO()
-#define ON_WM_ACTIVATE()
-#define ON_WM_NCHITTEST()
-#define ON_WM_QUERYNEWPALETTE()
-#define ON_WM_PALETTECHANGED()
-#define ON_WM_HELPINFO()
-#define ON_WM_SHOWWINDOW()
-#define ON_WM_MOVE()
-#define ON_WM_CANCELMODE()
-// bodycam.cpp's map. A missing ON_WM_* macro does not fail where it is used - the line
-// parses as a declaration and the error lands on the NEXT entry as "expected function
-// body after function declarator", which is why these are worth keeping complete.
-#define ON_WM_NCDESTROY()
-#define ON_WM_GETDLGCODE()
-#define ON_WM_MENUSELECT()
-#define ON_WM_ENTERIDLE()
-#define ON_EN_CHANGE(id, fn)
-#define ON_BN_CLICKED(id, fn)
-#define ON_CBN_SELCHANGE(id, fn)
-#define ON_CBN_EDITCHANGE(id, fn)
-#define ON_LBN_SELCHANGE(id, fn)
+// --- maps that are still declarations only ---------------------------------
+// The MESSAGE map is real; see the #include "msgmap.h" further down, after the WM_ and
+// notification constants it needs. These others are not: no OLE automation, dispatch or
+// interface surface is reachable in this build.
 #define ON_BEGIN_OLECMD_MAP(cls, base)
 #define BEGIN_OLECMD_MAP(cls, base)
 #define END_OLECMD_MAP()
@@ -207,6 +150,63 @@
 #define WM_GETDLGCODE       0x0087
 #define WM_VSCROLL          0x0115
 #define WM_HSCROLL          0x0114
+
+// The rest of the messages named by a BEGIN_MESSAGE_MAP anywhere in the tree. Real Win32
+// values: the map table stores these, and the host delivers events by them, so a wrong
+// one is a handler that silently never fires.
+#define WM_CREATE           0x0001
+#define WM_MOVE             0x0003
+#define WM_ACTIVATE         0x0006
+#define WM_ERASEBKGND       0x0014
+#define WM_SYSCOLORCHANGE   0x0015
+#define WM_SHOWWINDOW       0x0018
+#define WM_CANCELMODE       0x001F
+#define WM_SETCURSOR        0x0020
+#define WM_DRAWITEM         0x002B
+#define WM_MEASUREITEM      0x002C
+#define WM_WINDOWPOSCHANGING 0x0046
+#define WM_NCDESTROY        0x0082
+#define WM_NCHITTEST        0x0084
+#define WM_GETMINMAXINFO    0x0024
+#define WM_INITMENUPOPUP    0x0117
+#define WM_KEYUP            0x0101
+#define WM_LBUTTONUP        0x0202
+#define WM_LBUTTONDBLCLK    0x0203
+#define WM_RBUTTONUP        0x0205
+#define WM_RBUTTONDBLCLK    0x0206
+#define WM_MOUSEWHEEL       0x020A
+#define WM_QUERYNEWPALETTE  0x030F
+#define WM_PALETTECHANGED   0x0311
+#define WM_CONTEXTMENU      0x007B
+#define WM_HELP             0x0053
+
+// Control notification codes, as sent in the high word of WM_COMMAND's wParam.
+#define EN_SETFOCUS         0x0100
+#define EN_KILLFOCUS        0x0200
+#define EN_CHANGE           0x0300
+#define EN_UPDATE           0x0400
+#define BN_CLICKED          0
+#define BN_DOUBLECLICKED    5
+#define LBN_SELCHANGE       1
+#define LBN_DBLCLK          2
+#define CBN_SELCHANGE       1
+#define CBN_DBLCLK          2
+#define CBN_SETFOCUS        3
+#define CBN_KILLFOCUS       4
+#define CBN_EDITCHANGE      5
+#define CBN_EDITUPDATE      6
+#define CBN_DROPDOWN        7
+#define CBN_CLOSEUP         8
+#define CBN_SELENDOK        9
+
+// The real message map. Included here because its entry macros embed the WM_ and
+// notification values above, and because the class definitions below use
+// DECLARE_MESSAGE_MAP().
+#include "msgmap.h"
+
+// MFC's standard command ids. Needed only now that map bodies compile: pageview.cpp's map
+// names ID_FILE_PRINT, mainfrm.cpp's OnCreate names AFX_IDW_DOCKBAR_TOP.
+#include "afxres.h"
 
 #define SWP_NOSIZE          0x0001
 #define SWP_NOMOVE          0x0002
@@ -329,6 +329,18 @@ class CCmdTarget : public CObject {
 public:
     virtual ~CCmdTarget() {}
     void EnableAutomation() {}
+
+    // Root of the message-map chain. Its map is empty and its pfnGetBaseMap is NULL, which
+    // is what terminates the walk in msgmap.cpp.
+    static const AFX_MSGMAP* GetThisMessageMap();
+    virtual const AFX_MSGMAP* GetMessageMap() const;
+
+    // Command routing. Searches this target's map chain for a CN_COMMAND or
+    // CN_UPDATE_COMMAND_UI entry matching nID and invokes it; returns FALSE if nothing
+    // claimed the command, which is how a frame passes it on to the next target.
+    // Signature must match rtfctrl.h:124, which overrides it.
+    virtual BOOL OnCmdMsg(UINT nID, int nCode, void* pExtra,
+                          struct AFX_CMDHANDLERINFO* pHandlerInfo);
 };
 
 // CCmdUI is the object passed to ON_UPDATE_COMMAND_UI handlers. Those handlers
@@ -386,18 +398,57 @@ public:
 class CWnd : public CCmdTarget {
 public:
     HWND m_hWnd;
-    CWnd() : m_hWnd(0) {}
+
+    // --- the host seam -----------------------------------------------------
+    // A CWnd is now a real, if minimal, window: it knows its own client size and, while a
+    // paint is in progress, the CGContext to draw into. An AppKit view sets these and then
+    // calls SendMessage(WM_PAINT); CPaintDC picks the context up from here, so
+    // `CPaintDC dc(this)` inside an untouched OnPaint lands on the screen.
+    //
+    // m_hWnd is set to `this` on attach, so ::IsWindow(m_hWnd), ::GetFocus() == m_hWnd and
+    // the other handle comparisons scattered through the engine compare equal for a live
+    // window and remain false for one that was never attached.
+    int   m_clientW, m_clientH;
+    void* m_paintCtx;           // CGContextRef during WM_PAINT, else NULL
+    bool  m_hasFocus;
+    void* m_hostView;           // the NSView, for InvalidateRect -> setNeedsDisplay
+
+    // Attach/detach are the host's, not the engine's: nothing in the tree calls them.
+    void NativeAttach(void* hostView, int w, int h) {
+        m_hostView = hostView; m_clientW = w; m_clientH = h; m_hWnd = (HWND)this;
+    }
+    void NativeSetClientSize(int w, int h) { m_clientW = w; m_clientH = h; }
+
+    CWnd() : m_hWnd(0), m_clientW(0), m_clientH(0), m_paintCtx(0), m_hasFocus(false),
+             m_hostView(0) {}
     virtual ~CWnd() {}
-    static CWnd* FromHandle(HWND) { return 0; }
+    static CWnd* FromHandle(HWND h) { return (CWnd*)h; }
     static CWnd* GetDesktopWindow() { return 0; }
     static CWnd* GetActiveWindow() { return 0; }
-    static CWnd* GetFocus() { return 0; }
+    static CWnd* GetFocus();
     HWND GetSafeHwnd() const { return m_hWnd; }
-    BOOL IsWindow() const { return FALSE; }
-    void GetClientRect(RECT* r) const { if (r) { r->left = r->top = r->right = r->bottom = 0; } }
-    void GetWindowRect(RECT* r) const { if (r) { r->left = r->top = r->right = r->bottom = 0; } }
-    void InvalidateRect(const RECT*, BOOL = TRUE) {}
-    BOOL RedrawWindow(const RECT* = 0, CRgn* = 0, UINT = 0) { return TRUE; }
+    BOOL IsWindow() const { return m_hWnd != 0; }
+    void GetClientRect(RECT* r) const {
+        if (!r) return;
+        r->left = 0; r->top = 0; r->right = m_clientW; r->bottom = m_clientH;
+    }
+    void GetWindowRect(RECT* r) const { GetClientRect(r); }
+    void InvalidateRect(const RECT* = 0, BOOL = TRUE);
+    BOOL RedrawWindow(const RECT* = 0, CRgn* = 0, UINT = 0) { InvalidateRect(); return TRUE; }
+
+    // --- dispatch ----------------------------------------------------------
+    // OnWndMsg walks the map chain and calls the handler with its real signature restored;
+    // it returns FALSE when nothing handled the message. WindowProc adds the command
+    // routing that WM_COMMAND needs. SendMessage is what a host calls.
+    virtual BOOL OnWndMsg(UINT message, WPARAM wParam, LPARAM lParam, LRESULT* pResult);
+    virtual LRESULT WindowProc(UINT message, WPARAM wParam, LPARAM lParam);
+    LRESULT SendMessage(UINT message, WPARAM wParam = 0, LPARAM lParam = 0) {
+        return WindowProc(message, wParam, lParam);
+    }
+    BOOL PostMessage(UINT message, WPARAM wParam = 0, LPARAM lParam = 0) {
+        WindowProc(message, wParam, lParam); return TRUE;
+    }
+    virtual LRESULT DefWindowProc(UINT, WPARAM, LPARAM) { return 0; }
     virtual BOOL PreCreateWindow(CREATESTRUCT&) { return TRUE; }
     virtual BOOL PreTranslateMessage(MSG*) { return FALSE; }
     BOOL IsWindowVisible() const { return FALSE; }
@@ -425,6 +476,37 @@ public:
     // a static GetFocus above, so only SetCapture is missing.
     CWnd* SetCapture() { return 0; }
     void OnEnterIdle(UINT, CWnd*) {}
+    // The rest of the shapes a map in this tree can name. A derived class that declares its
+    // own hides these; one that does not gets a no-op, which is what an unhandled message
+    // means. They must exist as members because `&ThisClass::OnMouseWheel` in a derived
+    // class's map resolves through the base when the derived class has no such handler.
+    void OnPaint() {}
+    void OnLButtonDblClk(UINT, CPoint) {}
+    void OnRButtonDblClk(UINT, CPoint) {}
+    void OnContextMenu(CWnd*, CPoint) {}
+    void OnMenuSelect(UINT, UINT, HMENU) {}
+    void OnPaletteChanged(CWnd*) {}
+    BOOL OnQueryNewPalette() { return FALSE; }
+    void OnShowWindow(BOOL, UINT) {}
+    UINT OnGetDlgCode() { return 0; }
+    BOOL OnEraseBkgnd(CDC*) { return FALSE; }
+    BOOL OnMouseWheel(UINT, short, CPoint) { return FALSE; }
+    void OnClose() {}
+    void OnMove(int, int) {}
+    BOOL OnSetCursor(CWnd*, UINT, UINT) { return FALSE; }
+    void OnSysColorChange() {}
+    void OnInitMenuPopup(CMenu*, UINT, BOOL) {}
+    void OnMeasureItem(int, LPMEASUREITEMSTRUCT) {}
+    void OnDrawItem(int, LPDRAWITEMSTRUCT) {}
+    void OnWindowPosChanging(WINDOWPOS*) {}
+    void OnGetMinMaxInfo(MINMAXINFO*) {}
+    void OnActivate(UINT, CWnd*, BOOL) {}
+    UINT OnNcHitTest(CPoint) { return 0; }
+    // HELPINFO is declared further down this header, after CWnd. Taken as void* because
+    // this handler is AfxSig_unsupported anyway - a derived class that declares the real
+    // signature simply hides this one.
+    BOOL OnHelpInfo(void*) { return FALSE; }
+    void OnCancelMode() {}
     void OnKeyDown(UINT, UINT, UINT) {}
     void OnKeyUp(UINT, UINT, UINT) {}
     void OnChar(UINT, UINT, UINT) {}
@@ -453,8 +535,6 @@ public:
     BOOL EnableWindow(BOOL = TRUE) { return TRUE; }
     UINT SetTimer(UINT, UINT, void*) { return 0; }
     BOOL KillTimer(UINT) { return TRUE; }
-    LONG SendMessage(UINT, UINT = 0, LONG = 0) { return 0; }
-    BOOL PostMessage(UINT, UINT = 0, LONG = 0) { return TRUE; }
     void SetRedraw(BOOL = TRUE) {}
     void ScreenToClient(POINT*) const {}
     void ClientToScreen(POINT*) const {}
@@ -462,12 +542,14 @@ public:
     int ReleaseDC(CDC*) { return 0; }
     void MoveWindow(int, int, int, int, BOOL = TRUE) {}
     void SetWindowPos(const CWnd*, int, int, int, int, UINT) {}
+    DECLARE_MESSAGE_MAP()
 };
 
 class CFrameWnd : public CWnd {
 public:
     void ActivateFrame(int = -1) {}
     CView* GetActiveView() const { return 0; }
+    DECLARE_MESSAGE_MAP()
 };
 class CMDIFrameWnd : public CFrameWnd {
 public:
@@ -604,6 +686,13 @@ public:
     virtual void OnPrint(CDC*, CPrintInfo*) {}
     virtual void OnPrepareDC(CDC*, CPrintInfo* = 0) {}
     class CDocument* GetDocument() const { return 0; }
+    // The standard print commands. pageview.cpp's map routes ID_FILE_PRINT and friends
+    // straight to these, so they must exist as members even though printing is not wired
+    // up - the entry is `ON_COMMAND(ID_FILE_PRINT, CView::OnFilePrint)`, an explicitly
+    // qualified base handler.
+    void OnFilePrint() {}
+    void OnFilePrintPreview() {}
+    DECLARE_MESSAGE_MAP()
 };
 class CScrollView : public CView {
 public:
@@ -629,6 +718,7 @@ public:
     int GetScrollPos(int) const { return 0; }
     int GetScrollLimit(int) const { return 0; }
     SIZE GetTotalSize() const { CSize s(0, 0); return s; }
+    DECLARE_MESSAGE_MAP()
 };
 
 class CDocTemplate;   // returned by CDocument::GetDocTemplate
@@ -657,6 +747,7 @@ public:
     CString GetTitle() const { return m_strTitle; }
     void SetTitle(LPCTSTR t) { m_strTitle = t ? t : ""; }
     void SetPathName(LPCTSTR p, BOOL = TRUE) { m_strPathName = p ? p : ""; }
+    DECLARE_MESSAGE_MAP()
 };
 class COleServerItem;   // returned by COleServerDoc::GetEmbeddedItem below
 class COleDocument : public CDocument {};

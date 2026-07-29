@@ -45,8 +45,26 @@ class CPage;
 //
 // Shared by native/render.cpp and the CDC text backend in native/shim/cgdraw.cpp, so there is
 // one text path rather than two that can disagree.
+// yDown selects the caller's vertical convention: false for the engine's page space
+// (y NEGATIVE downward, no CTM flip), true for an MM_TEXT window pane (y POSITIVE downward,
+// flipped CTM - see NativeWndPaint). It decides which side of the cell top the baseline
+// falls on and whether the glyph outlines need countering.
 void NativeDrawPinnedRun(CGContextRef ctx, const char* s, int len,
-                         int x, int yTop, unsigned long color);
+                         int x, int yTop, unsigned long color, bool yDown = false);
+
+// --- painting a real CWnd ---------------------------------------------------
+// Sends `wnd` a WM_PAINT with `ctx` bound, so the window's OWN OnPaint draws it. This is how
+// CBodyCam puts the self-view and the emotion wheel on screen: nothing here knows what a
+// bulls-eye is, it just delivers the message and lets bodycam.cpp:OnPaint run as written.
+//
+// Installs the MM_TEXT transform (origin top-left, y positive downward) that a window's
+// client coordinates assume, and takes it down afterwards.
+class CWnd;
+void NativeWndPaint(CWnd* wnd, CGContextRef ctx, int widthPx, int heightPx);
+
+// Convenience: paint a window to a PNG at a given size. Used to exercise a pane headlessly,
+// which is how the self-view was verified before the app shell had a place to put it.
+bool NativeWndPaintToPNG(CWnd* wnd, int widthPx, int heightPx, const char* path);
 
 // Draws `page` into `ctx`, which must already be sized for the page (see
 // NativeRenderPageSize) and must NOT have a flip applied - this installs its own transform.

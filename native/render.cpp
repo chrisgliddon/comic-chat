@@ -82,8 +82,12 @@ CTFontRef MakeFont(int lfHeight, bool italic) {
 // Advances come from the frozen table, not from Core Text: the glyphs are positioned one
 // at a time at the pinned offsets. Letting Core Text advance instead would drift from the
 // engine's own line widths and eventually push text outside its balloon.
+// yDown: the caller's coordinates run y-POSITIVE-downward with a flipped CTM (an MM_TEXT
+// window such as the self-view pane), rather than the engine's y-negative-downward page
+// space. It changes two things - which way the baseline sits from the cell top, and whether
+// the glyph outlines need countering so they are not drawn mirrored.
 void DrawRunWithFont(CGContextRef c, CTFontRef font, const char* s, int len,
-                     int x, int yTop, int tmAscent) {
+                     int x, int yTop, int tmAscent, bool yDown) {
     if (!s || len <= 0) return;
 
     std::vector<CGGlyph>  glyphs;
@@ -103,14 +107,27 @@ void DrawRunWithFont(CGContextRef c, CTFontRef font, const char* s, int len,
         if (adv < 0) adv = 0;
         if (g) {
             glyphs.push_back(g);
-            // Baseline sits tmAscent below the cell top. y is negative-down in engine
-            // space, so the baseline is at yTop - tmAscent.
-            pos.push_back(CGPointMake((CGFloat)pen, (CGFloat)(yTop - tmAscent)));
+            // Baseline sits tmAscent BELOW the cell top. Which arithmetic that is depends on
+            // which way "down" runs: engine page space is y-negative-down, so subtract; an
+            // MM_TEXT window is y-positive-down, so add.
+            CGFloat baseline = yDown ? (CGFloat)(yTop + tmAscent)
+                                     : (CGFloat)(yTop - tmAscent);
+            pos.push_back(CGPointMake((CGFloat)pen, baseline));
         }
         pen += adv;
     }
-    if (!glyphs.empty())
-        CTFontDrawGlyphs(font, &glyphs[0], &pos[0], glyphs.size(), c);
+    if (!glyphs.empty()) {
+        // A flipped CTM would draw every outline upside down. The text matrix flips back,
+        // leaving the POSITIONS in the caller's coordinates and only the glyphs uninverted.
+        if (yDown) {
+            CGContextSaveGState(c);
+            CGContextSetTextMatrix(c, CGAffineTransformMakeScale(1.0, -1.0));
+            CTFontDrawGlyphs(font, &glyphs[0], &pos[0], glyphs.size(), c);
+            CGContextRestoreGState(c);
+        } else {
+            CTFontDrawGlyphs(font, &glyphs[0], &pos[0], glyphs.size(), c);
+        }
+    }
 }
 
 // --- balloon outline --------------------------------------------------------------
@@ -175,12 +192,13 @@ void DrawLabelText(CGContextRef c, CLabel* lab, int baseX, int baseY) {
         int yTop = 0;                       // balloon-local; see the note above
         for (int i = 0; i < fi->m_nLines; i++) {
             DrawRunWithFont(c, font, fi->m_rgszStarts[i], fi->m_rgiLengths[i],
-                            baseX + fi->m_rgiLeftX[i], baseY + yTop, gm->tmAscent);
+                            baseX + fi->m_rgiLeftX[i], baseY + yTop, gm->tmAscent, false);
             yTop -= lab->m_fontI->m_lineHeight;
         }
     } else if (lab->m_str) {
         DrawRunWithFont(c, font, lab->m_str, (int)strlen(lab->m_str),
-                        baseX + lab->m_bbox.Left, baseY + lab->m_bbox.Top, gm->tmAscent);
+                        baseX + lab->m_bbox.Left, baseY + lab->m_bbox.Top, gm->tmAscent,
+                        false);
     }
     CFRelease(font);
 }
@@ -338,14 +356,14 @@ void DrawPanel(CGContextRef c, CPanel* panel, int px, int py) {
 // See render.h. Uses whatever font the glyph table currently has selected, which is what the
 // engine's own SelectObject set - so a title run measures and draws with title advances.
 void NativeDrawPinnedRun(CGContextRef ctx, const char* s, int len,
-                         int x, int yTop, unsigned long color) {
+                         int x, int yTop, unsigned long color, bool yDown) {
     if (!ctx || !s || len <= 0) return;
     const GlyphMetrics* gm = GlyphTableMetrics();
     if (!gm) return;
     CTFontRef font = MakeFont(gm->lfHeight, gm->lfItalic != 0);
     CGContextSaveGState(ctx);
     SetFill(ctx, (COLORREF)color);
-    DrawRunWithFont(ctx, font, s, len, x, yTop, gm->tmAscent);
+    DrawRunWithFont(ctx, font, s, len, x, yTop, gm->tmAscent, yDown);
     CGContextRestoreGState(ctx);
     CFRelease(font);
 }
@@ -408,6 +426,57 @@ void NativeRenderPage(CPage* page, CGContextRef ctx) {
     }
 
     CGContextRestoreGState(ctx);
+}
+
+// Shared by both PNG helpers below: make a bitmap context, let `draw` fill it, write a PNG.
+static bool RenderToPNG(int wpx, int hpx, const char* path,
+                        void (*draw)(CGContextRef, void*), void* arg) {
+    if (wpx <= 0 || hpx <= 0 || !path) return false;
+
+    CGColorSpaceRef cs = CGColorSpaceCreateDeviceRGB();
+    CGContextRef ctx = CGBitmapContextCreate(NULL, wpx, hpx, 8, 0, cs,
+                                             kCGImageAlphaPremultipliedLast);
+    CGColorSpaceRelease(cs);
+    if (!ctx) return false;
+
+    draw(ctx, arg);
+
+    CGImageRef img = CGBitmapContextCreateImage(ctx);
+    bool ok = false;
+    if (img) {
+        CFStringRef sp = CFStringCreateWithCString(NULL, path, kCFStringEncodingUTF8);
+        CFURLRef url = CFURLCreateWithFileSystemPath(NULL, sp, kCFURLPOSIXPathStyle, false);
+        CGImageDestinationRef dst = CGImageDestinationCreateWithURL(url, kUTTypePNG, 1, NULL);
+        if (dst) {
+            CGImageDestinationAddImage(dst, img, NULL);
+            ok = CGImageDestinationFinalize(dst);
+            CFRelease(dst);
+        }
+        CFRelease(url);
+        CFRelease(sp);
+        CFRelease(img);
+    }
+    CFRelease(ctx);
+    return ok;
+}
+
+namespace {
+struct WndPaintArg { CWnd* wnd; int w, h; };
+void DrawWndThunk(CGContextRef c, void* a) {
+    WndPaintArg* p = (WndPaintArg*)a;
+    // A window starts opaque white, the way GDI's class background brush would leave it.
+    // CBodyCam::OnPaint clears only the strip above the emotion wheel and relies on the
+    // erase for the rest.
+    CGContextSetRGBFillColor(c, 1, 1, 1, 1);
+    CGContextFillRect(c, CGRectMake(0, 0, p->w, p->h));
+    NativeWndPaint(p->wnd, c, p->w, p->h);
+}
+} // namespace
+
+bool NativeWndPaintToPNG(CWnd* wnd, int widthPx, int heightPx, const char* path) {
+    if (!wnd) return false;
+    WndPaintArg a; a.wnd = wnd; a.w = widthPx; a.h = heightPx;
+    return RenderToPNG(widthPx, heightPx, path, DrawWndThunk, &a);
 }
 
 bool NativeRenderPageToPNG(CPage* page, const char* path) {

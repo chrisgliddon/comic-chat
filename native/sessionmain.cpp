@@ -101,6 +101,32 @@ int main(int argc, char** argv) {
     for (size_t i = 0; i < sizeof(lines) / sizeof(lines[0]); i++)
         NativeSessionSay(lines[i].who, lines[i].text);
 
+    // The SELF-VIEW pane, painted by the engine's own CBodyCam::OnPaint. Worth doing here
+    // rather than only in the app: it isolates whether the message map and the window paint
+    // path work from whether the app has laid the pane out correctly.
+    //
+    // 256x400 is roughly the proportion the original gives it - the character standing above
+    // the emotion wheel (see the screenshots in docs). CBodyCam caches the wheel's geometry
+    // from the window width, so the size genuinely changes what it draws.
+    if (outDir) {
+        CWnd* cam = NativeSessionBodyCamWnd();
+        if (!cam) {
+            printf("bodycam: none\n");
+        } else {
+            cam->NativeAttach(0, 256, 400);
+            // WM_SIZE first: CacheBullSide computes the wheel's radius and icon positions from
+            // the client width, and OnPaint uses those. Painting without it draws the wheel at
+            // whatever the constructor's defaults were.
+            cam->SendMessage(WM_SIZE, 0, (400 << 16) | 256);
+            char path[1024];
+            snprintf(path, sizeof(path), "%s/bodycam.png", outDir);
+            if (NativeWndPaintToPNG(cam, 256, 400, path))
+                printf("bodycam: wrote %s\n", path);
+            else
+                printf("bodycam: paint failed\n");
+        }
+    }
+
     int pages = NativeSessionPageCount();
     printf("pages: %d\n", pages);
     for (int i = 0; i < pages; i++) {

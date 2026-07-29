@@ -32,18 +32,22 @@ namespace {
 inline CGFloat LX(const CDC* dc, int x) { return (CGFloat)(x - dc->m_winOrgX); }
 inline CGFloat LY(const CDC* dc, int y) { return (CGFloat)(y - dc->m_winOrgY); }
 
-void ApplyStroke(CGContextRef c, const CPen* pen) {
+// onePixel: how many LOGICAL units make one device pixel in the calling DC. It is 15 in
+// MM_TWIPS page space (1440/96) and 1 in an MM_TEXT window, where logical units already ARE
+// pixels. This has to be passed in rather than assumed: a GDI pen of width 0 means "one
+// device pixel", and hardcoding the twips answer drew the emotion wheel's outline 15 pixels
+// thick - a black annulus instead of a thin circle. The dash lengths scale the same way.
+void ApplyStroke(CGContextRef c, const CPen* pen, int onePixel) {
     COLORREF col = pen ? pen->m_color : RGB(0, 0, 0);
     CGContextSetRGBStrokeColor(c, (CGFloat)GetRValue(col) / 255.0,
                                   (CGFloat)GetGValue(col) / 255.0,
                                   (CGFloat)GetBValue(col) / 255.0, 1.0);
-    // A GDI pen width of 0 means "one device pixel"; in twips that is 15.
     int w = pen ? pen->m_width : 0;
-    CGContextSetLineWidth(c, (CGFloat)(w > 0 ? w : 15));
+    CGContextSetLineWidth(c, (CGFloat)(w > 0 ? w : onePixel));
     // PS_DASH is 1, PS_DOT 2, PS_DASHDOT 3. Whisper balloons use a dashed "nimbus" pen, which
     // is exactly how the paper describes them, so the style has to survive.
     if (pen && pen->m_style >= 1 && pen->m_style <= 3) {
-        CGFloat dash[2] = { 60, 60 };
+        CGFloat dash[2] = { (CGFloat)(4 * onePixel), (CGFloat)(4 * onePixel) };
         CGContextSetLineDash(c, 0, dash, 2);
     } else {
         CGContextSetLineDash(c, 0, NULL, 0);
@@ -102,7 +106,7 @@ BOOL CDC::LineTo(int x, int y) {
         CGContextBeginPath(c);
         CGContextMoveToPoint(c, LX(this, m_curX), LY(this, m_curY));
         CGContextAddLineToPoint(c, LX(this, x), LY(this, y));
-        ApplyStroke(c, m_pPen);
+        ApplyStroke(c, m_pPen, OnePixel());
         CGContextStrokePath(c);
         CGContextRestoreGState(c);
     }
@@ -166,7 +170,7 @@ BOOL CDC::Ellipse(int l, int t, int r, int b) {
         ApplyFill(c, m_pBrush);
         if (!m_pBrush || !m_pBrush->m_null) CGContextFillPath(c);
         CGContextAddEllipseInRect(c, rc);
-        ApplyStroke(c, m_pPen);
+        ApplyStroke(c, m_pPen, OnePixel());
         CGContextStrokePath(c);
         CGContextRestoreGState(c);
     }
@@ -197,7 +201,7 @@ BOOL CDC::StrokeAndFillPath() {
         CGContextFillPath(c);
     }
     CGContextAddPath(c, path);
-    ApplyStroke(c, m_pPen);
+    ApplyStroke(c, m_pPen, OnePixel());
     CGContextStrokePath(c);
     CGContextRestoreGState(c);
 
@@ -214,7 +218,7 @@ BOOL CDC::StrokePath() {
     CGContextSetLineJoin(c, kCGLineJoinRound);
     CGContextSetLineCap(c, kCGLineCapRound);
     CGContextAddPath(c, (CGPathRef)m_cgPath);
-    ApplyStroke(c, m_pPen);
+    ApplyStroke(c, m_pPen, OnePixel());
     CGContextStrokePath(c);
     CGContextRestoreGState(c);
     CFRelease((CGPathRef)m_cgPath);
@@ -262,8 +266,14 @@ BOOL CDC::TextOut(int x, int y, LPCTSTR s, int len) {
     // Advances come from the frozen glyph table, glyph by glyph - never from Core Text - so
     // drawn text lands exactly where the engine's own measurement said it would. Core Text
     // supplies outlines only. See native/render.cpp for the same reasoning.
+    //
+    // MM_TEXT means this DC belongs to a WINDOW: client pixels with y positive downward and a
+    // flipped CTM (NativeWndPaint). MM_TWIPS means engine page space, y negative downward and
+    // no flip. Only the text path can tell the difference - see NativeDrawPinnedRun - because
+    // the baseline sits below the cell top in whichever direction "below" happens to be.
     NativeDrawPinnedRun((CGContextRef)m_cgCtx, s, len,
-                        (int)LX(this, x), (int)LY(this, y), m_textColor);
+                        (int)LX(this, x), (int)LY(this, y), m_textColor,
+                        m_nDcMapMode == MM_TEXT);
     return TRUE;
 }
 

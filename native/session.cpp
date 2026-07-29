@@ -23,6 +23,7 @@ class CPageView;
 #include "panel.h"
 #include "glyphtable.h"
 #include "stringtable.h"
+#include "resources.h"
 #include "bodycam.h"
 #include "resource.h"      // IDS_DEFAULT_BACKDROP
 #include "ircproto.h"
@@ -78,6 +79,12 @@ bool NativeSessionStart(const char* treeDir) {
         fprintf(stderr, "session: no string table - there would be no emotion rules.\n");
         return false;
     }
+    // The BINARY resources - the emotion wheel's eight face icons, the toolbar strips - are
+    // served from res/ under the tree, so the resource layer needs the same root the art
+    // does. Not fatal if absent: FindResource then returns NULL, which is what it did before
+    // there was a resource layer at all, and the engine's own callers check for it.
+    ResourceSetRoot(treeDir);
+    ResourceLoadManifest();
 
     AfxWinInit(GetModuleHandle(NULL), NULL, ::GetCommandLine(), SW_HIDE);
 
@@ -234,7 +241,16 @@ unsigned short NativeSessionAddSpeaker(const char* avatarName, const char* nickn
 }
 
 void NativeSessionSetSelf(unsigned short avatarID) {
-    if (g_doc) g_doc->m_myAvatarID = avatarID;
+    if (!g_doc) return;
+    // SetMyAvatar (avatar.cpp:590), NOT a direct write to m_myAvatarID. Assigning the field
+    // set the id and nothing else, and three other things have to happen with it:
+    // SetMyPUIAvatarID puts the id in the local CUserInfo, SetMyCharacter records the
+    // character name, and RefreshBodyCam ATTACHES THE AVATAR TO THE SELF-VIEW - without which
+    // CBodyCam::OnPaint has m_avatar == NULL and paints an empty pane above the emotion wheel.
+    //
+    // bBroadcast FALSE: this is local setup, called before any connection exists. The real
+    // client announces its character on joining a room, from CIrcProto's login path, not here.
+    SetMyAvatar(avatarID, FALSE);
 }
 
 void NativeSessionSay(unsigned short avatarID, const char* text) {
@@ -343,6 +359,11 @@ void NativeSessionSendToChannel(const char* text) {
     // The engine both transmits this and adds it to the local comic, which is the behaviour
     // the Windows client has: your own line appears in your own comic as it is sent.
     GetIrcProto()->bChatSendToChannel(NULL, text, NULL, 1 /*BM_SAY*/);
+}
+
+CWnd* NativeSessionBodyCamWnd() {
+    // GetBodyCam() reads it off the document, which is where session start put it.
+    return g_doc ? (CWnd*)g_doc->m_bodyCam : NULL;
 }
 
 void NativeSessionRunLoopOnce(double seconds) {
